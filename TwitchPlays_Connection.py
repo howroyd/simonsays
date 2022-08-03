@@ -8,6 +8,7 @@ import socket
 import re
 import random
 import time
+import logging
 
 MAX_TIME_TO_WAIT_FOR_LOGIN = 3
 
@@ -20,7 +21,9 @@ class Twitch:
     login_timestamp = 0
 
     def twitch_connect(self, channel):
-        if self.sock: self.sock.close()
+        if self.sock:
+            self.sock.close()
+        
         self.sock = None
         self.partial = b''
         self.login_ok = False
@@ -30,7 +33,7 @@ class Twitch:
         self.re_prog = re.compile(b'^(?::(?:([^ !\r\n]+)![^ \r\n]*|[^ \r\n]*) )?([^ \r\n]+)(?: ([^:\r\n]*))?(?: :([^\r\n]*))?\r\n', re.MULTILINE)
 
         # Create socket
-        print('Connecting to Twitch...')
+        logging.debug("Connecting to Twitch")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Attempt to connect socket
@@ -38,7 +41,7 @@ class Twitch:
 
         # Log in anonymously
         user = 'justinfan%i' % random.randint(10000, 99999)
-        print('Connected to Twitch. Logging in anonymously...')
+        logging.debug("Connected to Twitch. Logging in anonymously")
         self.sock.send(('PASS asdf\r\nNICK %s\r\n' % user).encode())
 
         self.sock.settimeout(1.0/60.0)
@@ -64,11 +67,11 @@ class Twitch:
             #         # This "error" is expected -- we receive it if timeout is set to zero, and there is no data to read on the socket.
             #         break
             except Exception as e:
-                print('Unexpected connection error. Reconnecting in a second...', e)
+                logging.error("Unexpected connection error. Will retry. %s", e)
                 self.reconnect(1)
                 return []
             if not received:
-                print('Connection closed by Twitch. Reconnecting in 5 seconds...')
+                logging.warning("Connection closed by Twitch. Reconnecting in 5 seconds")
                 self.reconnect(5)
                 return []
             buffer += received
