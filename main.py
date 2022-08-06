@@ -50,15 +50,11 @@ if __name__ == "__main__":
     
     print_preamble(START_KEY, STOP_KEY)    
     
-    pkt = b'JOIN Hello world'
-    
-    x = twitch.TwitchMessage.from_bytes(pkt)
-    print(x)
     
     with twitch.ChannelConnection("katatouille93") as tw:
         while True:
             tw.run()
-            print(tw.get_all())
+            print(tw.get_chat_messages())
             sleep(1)
 
     #conn = TwitchAPI("eldel_")

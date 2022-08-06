@@ -15,11 +15,13 @@ from enum import Enum, auto, unique
 
 from TwitchPlays_KeyCodes import CAPSLOCK
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s:%(message)s", datefmt="%y%m%d %H:%M:%S")
+logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s:%(message)s", datefmt="%y%m%d %H:%M:%S")
 MAX_TIME_TO_WAIT_FOR_LOGIN = 3
 
 @dataclass
 class MessageBuilder:
+    '''Dataclass to hold a raw incoming bytes and output complete packets defined by the regex pattern'''
+    '''Basically a way of assembling partial packets incrementally and knowing when a complete packet has been assembled'''
     parser: re.Pattern[bytes]
     buffer: bytes = b''
 
@@ -35,10 +37,17 @@ class MessageBuilder:
         return ret
 
 def MessageBuilderDefault() -> MessageBuilder:
+    """Default message builder and regex pattern match from the orignal author
+
+    Returns:
+        MessageBuilder
+    """
     return MessageBuilder(re.compile(b'^(?::(?:([^ !\r\n]+)![^ \r\n]*|[^ \r\n]*) )?([^ \r\n]+)(?: ([^:\r\n]*))?(?: :([^\r\n]*))?\r\n', re.MULTILINE))
 
 @unique
 class TwitchMessageEnum(Enum):
+    '''Message types defined by Twitch IRC server'''
+    '''Ref: https://dev.twitch.tv/docs/irc/example-parser'''
     JOIN            = auto()
     PART            = auto()
     NOTICE          = auto()
@@ -51,58 +60,10 @@ class TwitchMessageEnum(Enum):
     USERSTATE       = auto()
     ROOMSTATE       = auto()
     RECONNECT       = auto()
-    NUMERIC         = auto()
-
-def split_command_and_packet(packet: bytes) -> tuple[TwitchMessageEnum, bytes]:
-    logging.debug("Splitting: %s", packet)
-    ret_fail = (None, None)
-    if not packet or 0 == len(packet):
-        return ret_fail
-    first, second, third = packet.split(b' ', maxsplit=2) # todo tiudy this. Packet sometimes starts with url not cmd
-    if first.endswith(b'.tmi.twitch.tv'):
-        first = second
-        second = third
-    else:
-        second = second + third
-
-    try:
-        return (TwitchMessageEnum[first.decode()], second)
-    except KeyError:
-        match first:
-            case ["421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376"]:
-                return (TwitchMessageEnum.NUMERIC, second)
-            case _:
-                return ret_fail
-
-@dataclass
-class TwitchMessage:
-    id:      TwitchMessageEnum
-    payload: bytes
-
-    @classmethod
-    def from_bytes(cls, data: bytes):
-        return cls(*split_command_and_packet(data))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    NUMERIC         = auto() # All numerics lumped in here.  Extend if required
+    
 class TwitchIrc:
+    '''Definition of the Twitch IRC server'''
     url:  str = "irc.chat.twitch.tv"
     port: int = 6667
     
@@ -112,18 +73,81 @@ class TwitchIrc:
     
     @staticmethod
     def login_message(username: str, password: str) -> bytes:
+        """Make a Twitch IRC login message
+
+        Args:
+            username (str): username
+            password (str): password (may be a random string if not using authenticated features)
+
+        Returns:
+            bytes: bytestring of the login message to be sent to the socket
+        """
         return ("PASS %s\r\nNICK %s\r\n" % (password, username)).encode()
     
     @staticmethod
     def join_message(channel: str) -> bytes:
+        """Make a Twitch IRC join message to join a channels chat
+
+        Args:
+            channel (str): channel name
+
+        Returns:
+            bytes: bytestring of the join message to be sent to the socket
+        """
         return ("JOIN #%s\r\n" % channel).encode()
     
     @staticmethod
     def pong_message() -> bytes:
+        """Make a Twitch IRC pong message reply to a server initiated ping
+
+        Returns:
+            bytes: bytestring of the pong message to be sent to the socket
+        """
         return b'PONG :tmi.twitch.tv\r\n'
+    
+    @classmethod
+    def split_command_and_packet(cls, packet: bytes) -> tuple[TwitchMessageEnum, bytes]:
+        """Take some bytes and try to split them into the command:payload format of the IRC Server
+
+        Args:
+            packet (bytes): complete packet in bytes to parse
+
+        Returns:
+            tuple[TwitchMessageEnum, bytes]: Tuple of the message type and the rest of the message as bytes
+        """
+        logging.debug("Splitting: %s", packet)
+        ret_fail = (None, None)
+        if not packet or 0 == len(packet):
+            return ret_fail
+        first, second, third = packet.split(b' ', maxsplit=2) # todo tiudy this. Packet sometimes starts with url not cmd
+        if first.endswith(b'.tmi.twitch.tv'):
+            first = second
+            second = third
+        else:
+            second = second + third
+
+        try:
+            return (TwitchMessageEnum[first.decode()], second)
+        except KeyError:
+            match first:
+                case ["421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376"]:
+                    return (TwitchMessageEnum.NUMERIC, second)
+                case _:
+                    return ret_fail
+
+    @dataclass
+    class Message:
+        '''Container for a Twitch IRC message'''
+        id:      TwitchMessageEnum
+        payload: bytes
+
+        @classmethod
+        def from_bytes(cls, data: bytes):
+            return cls(*TwitchIrc.split_command_and_packet(data))
 
 @dataclass
 class TwitchConnection:
+    """Create a connection to Twith IRC and login"""
     username:     str           = "justinfan%i" % random.randint(10000, 99999)
     sock:         socket.socket = None
     last_attempt: float         = None # time.time()
@@ -134,6 +158,11 @@ class TwitchConnection:
         return True if self.sock else False
 
     def connect(self) -> bool:
+        """Open a socket and send the login message to the Twitch IRC
+
+        Returns:
+            bool: true if connected else false or exception
+        """
         if not self.is_connected():
             for _ in range(5):
                 try:
@@ -150,16 +179,29 @@ class TwitchConnection:
             
             logging.debug("Logging into twitch as %s", self.username)
             self.send(self.twitchIrc.login_message(self.username, "asdf"))
-        
+            # todo parse the server response here
         return True
             
     def receive(self, len: int = 4096) -> bytes:
+        """Receive any bytes waiting in the socket
+
+        Args:
+            len (int, optional): Max number of bytes to get. Defaults to 4096.
+
+        Returns:
+            bytes: _description_
+        """
         try:
             return self.sock.recv(4096)
         except socket.timeout:
             return None
 
     def send(self, data: bytes) -> None:
+        """Push raw bytes out of the socket
+
+        Args:
+            data (bytes): bytes to push
+        """
         logging.debug("Sending: %s", data)
         self.sock.send(data)
    
@@ -172,9 +214,6 @@ class TwitchConnection:
     def reconnect(self) -> bool:
         self.disconnect()
         return self.connect()
-        #self.sock.connect(('irc.chat.twitch.tv', 6667))
-        #self.sock.send(('PASS asdf\r\nNICK %s\r\n' % self.username).encode())
-        #self.sock.settimeout(self.timeout)
     
     def __del__(self): # todo convert to enter and exit dunders so compatible with "with"
         self.disconnect()
@@ -187,26 +226,8 @@ class TwitchConnection:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-# @dataclass
-# class ChannelConnection:
-#     channel: str = None
-#     twitch_conn: TwitchConnection = TwitchConnection()
-    
-#     def connect(self) -> bool:
-#         if self.twitch_conn.connect():
-#             self.twitctwitch_conn.sock.send(self.twitch.twitchIrc.join_message(self.channel))
-#         else:
-#             raise socket.timeout
-
-#     def __enter__(self):
-#         if not self.connect():
-#             raise socket.timeout
-    
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         pass
-
-
 class SockHandler:
+    '''Wrapper to create the socket and login to twitch on construction'''
     def __init__(self) -> None:
         print("Init SockHandler")
         self.sock = TwitchConnection()
@@ -216,8 +237,8 @@ class SockHandler:
         print("Deinit SockHandler")
     
 class MessageSplitter:
-    # Just to find the start and end of a message and return it
-    def __call__(self, data: bytes) -> tuple[list[bytes], bytes]:
+    '''Just to find the start and end of a message and return it'''
+    def __call__(self, data: bytes) -> tuple[list[bytes], bytes]: # TODO this is probably redundant??
         packets = data.split(b"\r\n")
         if data.endswith(b"\r\n"):
             return (packets, None)
@@ -225,6 +246,9 @@ class MessageSplitter:
             return (packets[:-1], packets[-1])
 
 class BufferedSocket:
+    """Container around a Twitch connection, a buffer and a message splitter
+    """
+    # todo I feel the twitch login should be after this layer, not before
     def __init__(self, splitter: MessageSplitter = None) -> None:
         self.sock     = SockHandler()
         self.buffer   = MessageBuilderDefault()
@@ -243,34 +267,82 @@ class BufferedSocket:
         self.sock.sock.send(data)
 
 class IrcParser:
-    def parse(self, packets: list[bytes]) -> list[TwitchMessage]:
-        return [TwitchMessage.from_bytes(x) for x in packets if TwitchMessage.from_bytes(x).id is not None]
+    def parse(self, packets: list[bytes]) -> list[TwitchIrc.Message]:
+        """Take a list of complete packets and parse them into a list of IRC message containers
+
+        Args:
+            packets (list[bytes]): list of complete packets in binary
+
+        Returns:
+            list[TwitchIrc.Message]: list of IRC messages
+        """
+        return [TwitchIrc.Message.from_bytes(x) for x in packets if TwitchIrc.Message.from_bytes(x).id is not None]
 
 class IrcConnection:
+    """Queue of messages with interface to get more from the socket
+    """
     def __init__(self, parser: IrcParser = None, incomingSocket: BufferedSocket = None):
         self.parser = parser if parser else IrcParser()
         self.incomingSocket = incomingSocket if incomingSocket else BufferedSocket()
         self.buf = []
         self.n_max_messages = 50
     
-    def get(self, which: TwitchMessageEnum = None) -> list[TwitchMessage]:
-        ret = [x for x in self.get_all() if x.id == which]
-        return ret
+    def get(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
+        """Get all messages matching an IRC ID and delete them from the internal buffer.
+
+        Args:
+            which (TwitchMessageEnum, optional): Which message ID to get.  If None, retrieves them all. Defaults to None.
+
+        Returns:
+            list[TwitchIrc.Message]: list of all matching messages received
+        """
+        if which:
+            ret = [x for x in self.buf if x.id == which]
+            self.remove_all(which)
+            return ret
+        else:
+            return self.get()
     
-    def get_all(self) -> list[TwitchMessage]:
+    def get_all(self) -> list[TwitchIrc.Message]:
+        """Get all messages.  Deletes all contained messages from the internal buffer.
+
+        Returns:
+            list[TwitchIrc.Message]: list of all received messages
+        """
         ret = self.peek_all()
-        self.buf = []
+        self.remove_all()
         return ret
     
-    def peek(self, which: TwitchMessageEnum = None) -> list[TwitchMessage]:
+    def peek(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
+        """Get a copy of all messages matching an IRC ID.  Does not delete any messages from the internal buffer.
+
+        Args:
+            which (TwitchMessageEnum, optional): Which message ID to get.  If None, retrieves them all. Defaults to None.
+
+        Returns:
+            list[TwitchIrc.Message]: list of all matching messages received
+        """
         return [x for x in self.peek_all() if x.id == which]
     
-    def peek_all(self) -> list[TwitchMessage]:
+    def peek_all(self) -> list[TwitchIrc.Message]:
+        """Get a copy of all messages.  Does not delete any messages from the internal buffer.
+
+        Returns:
+            list[TwitchIrc.Message]: list of all received messages
+        """
         self._get_all()
         return self.buf
     
-    def remove_all(self, which: TwitchMessageEnum):
-        self.buf = [x for x in self.buf if x.id is not which]
+    def remove_all(self, which: TwitchMessageEnum = None):
+        """Delete messages from the internal buffer
+
+        Args:
+            which (TwitchMessageEnum, optional): Message ID's to delete, or ALL if None. Defaults to None.
+        """
+        if which:
+            self.buf = [x for x in self.buf if x.id is not which]
+        else:
+            self.buf = []
     
     def _get_all(self) -> None:
         self.buf += self.parser.parse(self.incomingSocket.receive())
@@ -279,6 +351,10 @@ class IrcConnection:
             logging.debug(self.buf)
 
 class ChannelConnection(IrcConnection):
+    """Connection to a Twitch channel's chat
+    
+    Note; call the run() method periodically so that pingpongs get returned so Twitch doesn't kick us
+    """
     def __init__(self, channel: str, parser: IrcParser = None, incomingSocket: BufferedSocket = None):
         super().__init__(parser, incomingSocket)
         self.channel = channel
@@ -290,7 +366,7 @@ class ChannelConnection(IrcConnection):
             self.remove_all(TwitchMessageEnum.PING)
     
     def get_chat_messages(self) -> list[str]:
-        return []
+        return self.get(TwitchMessageEnum.PRIVMSG)
     
     def connect(self) -> bool:
         if self.connected:
@@ -314,24 +390,6 @@ class ChannelConnection(IrcConnection):
     
     def __exit__(self, exc_type, exc_value, traceback):
         pass
-
-# @dataclass
-# class ChannelConnection:
-#     channel: str = None
-#     twitch_conn: TwitchConnection = TwitchConnection()
-    
-#     def connect(self) -> bool:
-#         if self.twitch_conn.connect():
-#             self.twitctwitch_conn.sock.send(self.twitch.twitchIrc.join_message(self.channel))
-#         else:
-#             raise socket.timeout
-
-#     def __enter__(self):
-#         if not self.connect():
-#             raise socket.timeout
-    
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         pass
 
 #########################################
 ### WIP: This is the interface I want ###
@@ -357,163 +415,3 @@ class TwitchCLEAN:
         # Get any "messages" and filter out matches to arg
         # Return list/queue of matching strings this iter
         pass
-
-
-
-
-
-
-
-#####################
-### ORIGINAL CODE ###
-#####################
-class Twitch:
-    re_prog = None
-    sock = None
-    partial = b''
-    login_ok = False
-    channel = ''
-    login_timestamp = 0
-
-    def twitch_connect(self, channel):
-        if self.sock:
-            self.sock.close()
-        
-        self.sock = None
-        self.partial = b''
-        self.login_ok = False
-        self.channel = channel
-
-        # Compile regular expression
-        self.re_prog = re.compile(b'^(?::(?:([^ !\r\n]+)![^ \r\n]*|[^ \r\n]*) )?([^ \r\n]+)(?: ([^:\r\n]*))?(?: :([^\r\n]*))?\r\n', re.MULTILINE)
-
-        # Create socket
-        logging.debug("Connecting to Twitch")
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # Attempt to connect socket
-        self.sock.connect(('irc.chat.twitch.tv', 6667))
-
-        # Log in anonymously
-        user = 'justinfan%i' % random.randint(10000, 99999)
-        logging.debug("Connected to Twitch. Logging in anonymously")
-        self.sock.send(('PASS asdf\r\nNICK %s\r\n' % user).encode())
-
-        self.sock.settimeout(1.0/60.0)
-
-        self.login_timestamp = time.time()
-
-    # Attempt to reconnect after a delay
-    def reconnect(self, delay):
-        time.sleep(delay)
-        self.twitch_connect(self.channel)
-
-    # Returns a list of irc messages received
-    def receive_and_parse_data(self):
-        buffer = b''
-        while True:
-            received = b''
-            try:
-                received = self.sock.recv(4096)
-            except socket.timeout:
-                break
-            # except OSError as e:
-            #     if e.winerror == 10035:
-            #         # This "error" is expected -- we receive it if timeout is set to zero, and there is no data to read on the socket.
-            #         break
-            except Exception as e:
-                logging.error("Unexpected connection error. Will retry. %s", e)
-                self.reconnect(1)
-                return []
-            if not received:
-                logging.warning("Connection closed by Twitch. Reconnecting in 5 seconds")
-                self.reconnect(5)
-                return []
-            buffer += received
-
-        if buffer:
-            # Prepend unparsed data from previous iterations
-            if self.partial:
-                buffer = self.partial + buffer
-                self.partial = []
-
-            # Parse irc messages
-            res = []
-            matches = list(self.re_prog.finditer(buffer))
-            for match in matches:
-                res.append({
-                    'name':     (match.group(1) or b'').decode(errors='replace'),
-                    'command':  (match.group(2) or b'').decode(errors='replace'),
-                    'params':   list(map(lambda p: p.decode(errors='replace'), (match.group(3) or b'').split(b' '))),
-                    'trailing': (match.group(4) or b'').decode(errors='replace'),
-                })
-
-            # Save any data we couldn't parse for the next iteration
-            if not matches:
-                self.partial += buffer
-            else:
-                end = matches[-1].end()
-                if end < len(buffer):
-                    self.partial = buffer[end:]
-
-                if matches[0].start() != 0:
-                    # If we get here, we might have missed a message. pepeW
-                    # ⣿⣿⣿⣿⣿⣿⣿⠿⢛⢛⡛⡻⢿⣿⣿⣿⣿⠟⠛⢛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿
-                    # ⣿⣿⣿⣿⢟⢱⡔⡝⣜⣜⢜⢜⡲⡬⡉⢕⢆⢏⢎⢇⢇⣧⡉⠿⣿⣿⣿⣿⣿⣿
-                    # ⣿⣿⡟⡱⣸⠸⢝⢅⢆⢖⣜⣲⣵⣴⣱⣈⡣⣋⢣⠭⣢⣒⣬⣕⣄⣝⡻⢿⣿⣿
-                    # ⣿⠟⡜⣎⢎⢇⢇⣵⣷⣿⣿⡿⠛⠉⠉⠛⢿⣦⢵⣷⣿⣿⣿⠟⠛⠋⠓⢲⡝⣿
-                    # ⢏⢰⢱⣞⢜⢵⣿⣿⣿⣿⣿⠁⠐⠄⠄⠄⠄⢹⣻⣿⣿⣿⠡⠄⠄⠄⠄⠄⠹⣺
-                    # ⢕⢜⢕⢕⢵⠹⢿⣿⣿⣿⣿⡀⠸⠗⣀⠄⠄⣼⣻⣿⣿⣿⡀⢾⠆⣀⠄⠄⣰⢳
-                    # ⡕⣝⢜⡕⣕⢝⣜⢙⢿⣿⣿⣷⣦⣤⣥⣤⣾⢟⠸⢿⣿⣿⣿⣦⣄⣉⣤⡴⢫⣾
-                    # ⡪⡪⣪⢪⢎⢮⢪⡪⡲⢬⢩⢩⢩⠩⢍⡪⢔⢆⢏⡒⠮⠭⡙⡙⠭⢝⣨⣶⣿⣿
-                    # ⡪⡪⡎⡮⡪⡎⡮⡪⣪⢣⢳⢱⢪⢝⢜⢜⢕⢝⢜⢎⢧⢸⢱⡹⡍⡆⢿⣿⣿⣿
-                    # ⡪⡺⡸⡪⡺⣸⠪⠚⡘⠊⠓⠕⢧⢳⢹⡸⣱⢹⡸⡱⡱⡕⡵⡱⡕⣝⠜⢿⣿⣿
-                    # ⡪⡺⡸⡪⡺⢐⢪⢑⢈⢁⢋⢊⠆⠲⠰⠬⡨⡡⣁⣉⠨⡈⡌⢥⢱⠐⢕⣼⣿⣿
-                    # ⡪⣪⢣⢫⠪⢢⢅⢥⢡⢅⢅⣑⡨⡑⠅⠕⠔⠔⠄⠤⢨⠠⡰⠠⡂⣎⣼⣿⣿⣿
-                    # ⠪⣪⡪⡣⡫⡢⡣⡣⡣⡣⡣⣣⢪⡪⡣⡣⡲⣑⡒⡎⡖⢒⣢⣥⣶⣿⣿⣿⣿⣿
-                    # ⢁⢂⠲⠬⠩⣁⣙⢊⡓⠝⠎⠮⠮⠚⢎⡣⡳⠕⡉⣬⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿
-                    # ⢐⠐⢌⠐⠅⡂⠄⠄⢌⢉⠩⠡⡉⠍⠄⢄⠢⡁⡢⠠⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿
-                    print('either ddarknut fucked up or twitch is bonkers, or both I mean who really knows anything at this point')
-
-            return res
-
-        return []
-
-    def twitch_receive_messages(self):
-        privmsgs = []
-        for irc_message in self.receive_and_parse_data():
-            cmd = irc_message['command']
-            if cmd == 'PRIVMSG':
-                privmsgs.append({
-                    'username': irc_message['name'],
-                    'message': irc_message['trailing'],
-                })
-            elif cmd == 'PING':
-                self.sock.send(b'PONG :tmi.twitch.tv\r\n')
-            elif cmd == '001':
-                print('Successfully logged in. Joining channel %s.' % self.channel)
-                self.sock.send(('JOIN #%s\r\n' % self.channel).encode())
-                self.login_ok = True
-            elif cmd == 'JOIN':
-                print('Successfully joined channel %s' % irc_message['params'][0])
-            elif cmd == 'NOTICE':
-                print('Server notice:', irc_message['params'], irc_message['trailing'])
-            elif cmd == '002': continue
-            elif cmd == '003': continue
-            elif cmd == '004': continue
-            elif cmd == '375': continue
-            elif cmd == '372': continue
-            elif cmd == '376': continue
-            elif cmd == '353': continue
-            elif cmd == '366': continue
-            else:
-                print('Unhandled irc message:', irc_message)
-
-        if not self.login_ok:
-            # We are still waiting for the initial login message. If we've waited longer than we should, try to reconnect.
-            if time.time() - self.login_timestamp > MAX_TIME_TO_WAIT_FOR_LOGIN:
-                print('No response from Twitch. Reconnecting...')
-                self.reconnect(0)
-                return []
-
-        return privmsgs
