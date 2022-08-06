@@ -34,4 +34,6 @@ emotemap = {
     "katatoNORTY":      (LogOutputs.log, ("katatoNORTY",)),
     "katatoSOSIG":      (LogOutputs.log, ("katatoSOSIG",)),
     "katatoHAH":        (LogOutputs.log, ("katatoHAH",)),
+    
+    "veekay1":          (LogOutputs.log, ("Veekay emote!",)),
 }
