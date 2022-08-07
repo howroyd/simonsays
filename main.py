@@ -30,7 +30,6 @@ class TwitchAPI:
     def receive(self):
         return self.impl.twitch_receive_messages()
 
-
 def print_preamble(start_key: str, stop_key: str = None):
     if not stop_key:
         stop_key = start_key
@@ -47,15 +46,17 @@ def print_preamble(start_key: str, stop_key: str = None):
     print("\n")
 
 if __name__ == "__main__":
-    
     print_preamble(START_KEY, STOP_KEY)    
-    
     
     with twitch.ChannelConnection("katatouille93") as tw:
         while True:
             tw.run()
-            print(tw.get_chat_messages())
+            msgs = tw.get_chat_messages()
+            for x in msgs:
+                print(x.payload_as_tuple())
             sleep(1)
+
+    exit()
 
     #conn = TwitchAPI("eldel_")
     #conn = TwitchAPI("katatouille93")

@@ -7,6 +7,29 @@ I was unable to find the work on github, so created a fresh repository.  If anyo
 
 The initial commit on `main` whows the original files as taken from the website when I started this.  The original header is at the bottom of this readme.  I've added a GNU GPL v2 as I believe this license matches the header comments and way the code has been distributed before me.  Any issues, please do let me know.
 
+# Windows Defender
+In the releases section of this repository are `exe` files you can download and try.  For now they are hard coded to a particular channel, I will sort that out in the future.  If you do download this `exe`, Windows Defender will throw a fit.  Feel free to Google "pyinstaller windows defender" to see what the issue is with needing to pay for a certificate, which I can't justify for free software.
+
+So you have a few options:
+- Disable Windows Defender; Hell no.  Don't do this.  Anyone who tells you to is either an idiot, dangerous or both.
+- Go into Windows Defender, look at the history, and allow this `exe` that it had blocked.
+- Don't use the `exe`; instead run the raw Python (see below)
+
+I am not hating on Defender really.  This code opens connections over the internet, sends and receives data and initiates HID (keyboard and mouse) commands.  It looks exactly like many Trojans.  It is only you the human that can decide whether it is malicious or not, hopefully you can see all the information here to inform that decision.
+
+## Running the raw Python
+Many tutorials on the internet on how to get Python.  I am using v3.10.  Eventually I might make a `requirements.txt` to make the process of getting dependencies easier.  I don't think I am using any libraries not already packaged with Python so I think it is good.  I will check this another day though.
+
+The only difference between running the `exe` or running the Python, is that the `exe` does not require the host machine to have Python installed.  I assume most broadcasters don't use Python, don't care about it and don't want to install loads of extra stuff on their machines.  The `exe` is also more portable as it doesn't care if you do already have Python installed, but the wrong version, missing dependencies, etc.  However, it is less portable because of Windows Defender flagging this.
+
+## Building your own exe
+There is a batch script, `create_exe.bat` which you can run from a cmd window to build the `exe`.  This is what I use and I have included it in the repo for visibility for those concerned about the above security issues.
+
+You have all the source and also the mechanism to build the `exe` I put in the Releases section of this repo.  It is up to you to exercise due diligence as to whether you trust this process enough to make exceptions in Windows Defender.
+
+## Suggestions or Queries
+If you have any suggestions, questions or concerns, then please do use the appropriate features of Github (issues and discussions) to get in touch.
+
 ---
 
 # Original file header comments

@@ -12,6 +12,7 @@ import logging
 
 from dataclasses import dataclass
 from enum import Enum, auto, unique
+from typing import Tuple
 
 from TwitchPlays_KeyCodes import CAPSLOCK
 
@@ -119,19 +120,17 @@ class TwitchIrc:
         ret_fail = (None, None)
         if not packet or 0 == len(packet):
             return ret_fail
-        first, second, third = packet.split(b' ', maxsplit=2) # todo tiudy this. Packet sometimes starts with url not cmd
-        if first.endswith(b'.tmi.twitch.tv'):
-            first = second
-            second = third
-        else:
-            second = second + third
+        cmd, payload = packet.split(b' ', maxsplit=1)
+        if cmd.endswith(b'.tmi.twitch.tv'):
+            # Handle stupid case where URL comes first not the command
+            cmd, payload = payload.split(b' ', maxsplit=1)
 
         try:
-            return (TwitchMessageEnum[first.decode()], second)
+            return (TwitchMessageEnum[cmd.decode()], payload)
         except KeyError:
-            match first:
+            match cmd:
                 case ["421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376"]:
-                    return (TwitchMessageEnum.NUMERIC, second)
+                    return (TwitchMessageEnum.NUMERIC, payload)
                 case _:
                     return ret_fail
 
@@ -144,6 +143,10 @@ class TwitchIrc:
         @classmethod
         def from_bytes(cls, data: bytes):
             return cls(*TwitchIrc.split_command_and_packet(data))
+        
+        def payload_as_tuple(self) -> tuple[str, str]:
+            channel, message = self.payload.split(b':', maxsplit=1)
+            return (channel.decode().rstrip().lstrip('#'), message.decode().lstrip().rstrip())
 
 @dataclass
 class TwitchConnection:
@@ -229,12 +232,12 @@ class TwitchConnection:
 class SockHandler:
     '''Wrapper to create the socket and login to twitch on construction'''
     def __init__(self) -> None:
-        print("Init SockHandler")
+        logging.debug("Init SockHandler")
         self.sock = TwitchConnection()
         if not self.sock.connect():
             raise socket.timeout
     def __del__(self) -> None:
-        print("Deinit SockHandler")
+        logging.debug("Deinit SockHandler")
     
 class MessageSplitter:
     '''Just to find the start and end of a message and return it'''
@@ -365,7 +368,7 @@ class ChannelConnection(IrcConnection):
             self.incomingSocket.send(TwitchIrc.pong_message())
             self.remove_all(TwitchMessageEnum.PING)
     
-    def get_chat_messages(self) -> list[str]:
+    def get_chat_messages(self) -> list[TwitchIrc.Message]:
         return self.get(TwitchMessageEnum.PRIVMSG)
     
     def connect(self) -> bool:
