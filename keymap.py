@@ -1,3 +1,4 @@
+import logging
 from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
 
 dungeon = "In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo"
@@ -23,7 +24,7 @@ emotemap = {
     "eldel3LUV":        (PrintOutputs.printer, ("eldel3LUV",)),
     "eldel3HI":         (PrintOutputs.printer, ("eldel3HI",)),
     
-    "katatoSILLY":      (PrintOutputs.printer, ("katatoSILLY",)),
+    "katatoSILLY":      (LogOutputs.log,       ("katatoSILLY", logging.WARN)),
     "katatoMURDER":     (PrintOutputs.printer, ("katatoMURDER",)),
     "katatoBONER":      (PrintOutputs.printer, ("katatoBONER",)),
     "katatoNORTY2":     (PrintOutputs.printer, ("katatoNORTY2",)),

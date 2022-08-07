@@ -1,14 +1,13 @@
-VERSION = 0.1
+VERSION = 0.2
 
-import logging
+import logging, sys
 from time import sleep
 from keymap import iomap, emotemap
 from types import FunctionType
 
 import twitch
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s:%(message)s", datefmt="%y%m%d %H:%M:%S")
-
+CHANNEL = "katatouille93"
 START_KEY: str = "shift+backspace"
 STOP_KEY:  str = None # None means use same as START_KEY
 
@@ -23,7 +22,7 @@ test_keys = [
 
 class TwitchAPI:
     def __init__(self, channel: str):
-        logging.debug("Instantiating Twitch API connection to %s", channel)
+        logging.info("Instantiating Twitch API connection to %s", channel)
         self.channel = channel
         self.impl = twitch.Twitch()
         self.impl.twitch_connect(self.channel)
@@ -31,22 +30,59 @@ class TwitchAPI:
     def receive(self):
         return self.impl.twitch_receive_messages()
 
-def print_preamble(start_key: str, stop_key: str = None):
+def setup_logging() -> None:
+    """Setup the global logger
+    """
+    logging.root.handlers = []
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s:%(message)s",
+        datefmt="%y%m%d %H:%M:%S",
+        handlers=[
+            logging.FileHandler("debug.log"),
+            logging.StreamHandler()
+        ]
+    )
+    logging.log(logging.root.getEffectiveLevel(), "Logging initialised")
+
+def print_preamble(start_key: str, stop_key: str = None) -> None:
+    """Function to print programme start text to the console.
+    
+    Does not go to the logger therefore doesn't go to the logfile.
+
+    Args:
+        start_key (str): key to start outputting HID commands
+        stop_key (str, optional): key to stop outputting HID commands. Defaults to None which means same as `start_key`.
+    """
     if not stop_key:
         stop_key = start_key
         
-    print("\TwitchPlays")
-    print("Version", VERSION, "\n")
+    print("\n--- TwitchPlays", VERSION, " ---\n")
     
     print("For more info visit:")
-    print("https://github.com/howroyd/twitchplays\n")
+    print("    https://github.com/howroyd/twitchplays\n")
     
-    print("To start press", start_key)
-    print("To stop press",  stop_key)
+    print("To exit cleanly press: ctrl + c")
+    print("    i.e. the \"ctrl\" button and the \"c\" buttons on you keyboard at the same time!\n")
+    
+    #print("To start press", start_key)
+    #print("To stop press",  stop_key)
     
     print("\n")
 
 def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionType, tuple[str, ...]]]) -> tuple[FunctionType, tuple[str, ...]]:
+    """Get the mapped function call for a given message.
+    
+    This is a glorified keyword based dict lookup.  It will take the first few characters of the message and try to match it to a key.
+    It's basically message.startswith(key) where key is from the passed in map.
+
+    Args:
+        message (str): text to parse from Twitch chat
+        key_to_function_map (dict[str, tuple[FunctionType, tuple[str, ...]]]): map of messages and tuples of function objects with args
+
+    Returns:
+        tuple[FunctionType, tuple[str, ...]]: message and function object with args or (None, None)
+    """
     matches = [value for key, value in key_to_function_map.items() if message.startswith(key)]
     if n_matches := len(matches):
         if n_matches > 1:
@@ -55,9 +91,12 @@ def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionTy
     return (None, None)
 
 if __name__ == "__main__":
+    setup_logging()
     print_preamble(START_KEY, STOP_KEY)    
     
-    with twitch.ChannelConnection("katatouille93") as tw:
+    with twitch.ChannelConnection(CHANNEL) as tw:
+        logging.info("Connected to #%s", CHANNEL)
+        
         while True:
             tw.run()
             msgs = tw.get_chat_messages()

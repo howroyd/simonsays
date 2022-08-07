@@ -3,20 +3,15 @@
 # You should not need to modify anything in this file, just use as is.
 # Original code by Wituz, updated by DDarknut
 
-import sys
-import socket
-import re
-import random
-import time
 import logging
+import socket, re, random, time
 
 from dataclasses import dataclass
-from enum import Enum, auto, unique
-from typing import Tuple
+from enum        import Enum, auto, unique
+from typing      import Tuple
 
-from TwitchPlays_KeyCodes import CAPSLOCK
+#from TwitchPlays_KeyCodes import CAPSLOCK
 
-logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s:%(message)s", datefmt="%y%m%d %H:%M:%S")
 MAX_TIME_TO_WAIT_FOR_LOGIN = 3
 
 @dataclass

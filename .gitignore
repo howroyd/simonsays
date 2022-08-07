@@ -161,3 +161,4 @@ cython_debug/
 
 # Custom, repo specific files to ignore
 katatoRIOT.png
+debug.log

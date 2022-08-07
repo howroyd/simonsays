@@ -4,9 +4,9 @@ class KeyboardOutputs:
     @staticmethod
     def press_key_for(key: str, seconds: float = None):
         if seconds:
-            logging.debug("Press keyboard %s for %0.2fs", key, seconds)
+            logging.info("Press keyboard %s for %0.2fs", key, seconds)
         else:
-            logging.debug("Press keyboard %s", key)
+            logging.info("Press keyboard %s", key)
     
     @staticmethod
     def press_key(key: str):
@@ -16,9 +16,9 @@ class MouseOutputs:
     @staticmethod
     def press_button_for(button: str, seconds: float = None):
         if seconds:
-            logging.debug("Press mouse %s for %0.2fs", button, seconds)
+            logging.info("Press mouse %s for %0.2fs", button, seconds)
         else:
-            logging.debug("Press mouse %s", button)
+            logging.info("Press mouse %s", button)
         
     @staticmethod
     def press_button(button: str):
@@ -26,8 +26,8 @@ class MouseOutputs:
     
 class LogOutputs:
     @staticmethod
-    def log(logstr: str):
-        logging.debug(logstr)
+    def log(logstr: str, level: int = logging.INFO):
+        logging.log(level, logstr)
         
 class PrintOutputs:
     @staticmethod
