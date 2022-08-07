@@ -1,6 +1,8 @@
 VERSION = 0.2
 
 import logging, sys
+from logging.handlers import TimedRotatingFileHandler
+
 from time import sleep
 from keymap import iomap, emotemap
 from types import FunctionType
@@ -39,7 +41,13 @@ def setup_logging() -> None:
         format="%(asctime)s %(levelname)s:%(message)s",
         datefmt="%y%m%d %H:%M:%S",
         handlers=[
-            logging.FileHandler("debug.log"),
+            TimedRotatingFileHandler(
+                "log",
+                when="H",
+                interval=3,
+                backupCount=10
+            ),
+            #logging.FileHandler("debug.log"),
             logging.StreamHandler()
         ]
     )
