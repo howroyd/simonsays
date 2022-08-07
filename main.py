@@ -3,13 +3,14 @@ VERSION = 0.1
 import logging
 from time import sleep
 from keymap import iomap, emotemap
+from types import FunctionType
 
 import twitch
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s:%(message)s", datefmt="%y%m%d %H:%M:%S")
 
 START_KEY: str = "shift+backspace"
-STOP_KEY:  str = None # None means, s
+STOP_KEY:  str = None # None means use same as START_KEY
 
 test_keys = [
     "lmb",
@@ -45,6 +46,14 @@ def print_preamble(start_key: str, stop_key: str = None):
     
     print("\n")
 
+def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionType, tuple[str, ...]]]) -> tuple[FunctionType, tuple[str, ...]]:
+    matches = [value for key, value in key_to_function_map.items() if message.startswith(key)]
+    if n_matches := len(matches):
+        if n_matches > 1:
+            logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
+        return matches[0]
+    return (None, None)
+
 if __name__ == "__main__":
     print_preamble(START_KEY, STOP_KEY)    
     
@@ -53,37 +62,7 @@ if __name__ == "__main__":
             tw.run()
             msgs = tw.get_chat_messages()
             for x in msgs:
-                print(x.payload_as_tuple())
-            sleep(1)
-
-    exit()
-
-    #conn = TwitchAPI("eldel_")
-    #conn = TwitchAPI("katatouille93")
-    conn = TwitchAPI("veekaytv")
-    
-    # for msg in test_keys:
-    #     try:
-    #         fn, params = iomap[msg]
-    #         fn(*params)
-    #         sleep(1)
-    #     except KeyError:
-    #         logging.debug("Ignoring %s", msg)
-    #         pass
-        
-    while True:
-        new_messages = conn.receive();
-        
-        if (new_messages):
-            for msg in new_messages:
-                first_word = msg['message'].split()[0]
-                try:
-                    fn, params = emotemap[first_word]
-                    fn(*params)
-                    #sleep(1)
-                except TypeError as e:
-                    logging.error("Key %s threw %s", first_word, e)
-                except KeyError:
-                    pass
-        
-        sleep(0.1)
+                fn, args = message_filter(x.payload_as_tuple()[1], emotemap)
+                if fn:
+                    fn(*args)
+            sleep(0.1)

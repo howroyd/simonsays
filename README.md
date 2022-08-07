@@ -25,6 +25,8 @@ The only difference between running the `exe` or running the Python, is that the
 ## Building your own exe
 There is a batch script, `create_exe.bat` which you can run from a cmd window to build the `exe`.  This is what I use and I have included it in the repo for visibility for those concerned about the above security issues.
 
+You will see that in the batch script there is a link to a `png` image to use as the `exe` icon.  This is image file is NOT included in this repo as I do not own the rights to distribute it as an image, but I am permitted by _katatouille93_ to use it embedded inside the `exe` for the icon.  You can just remove the `-i <image_file>` from the script, or change `<filename>` to an image of your choosing.
+
 You have all the source and also the mechanism to build the `exe` I put in the Releases section of this repo.  It is up to you to exercise due diligence as to whether you trust this process enough to make exceptions in Windows Defender.
 
 ## Suggestions or Queries

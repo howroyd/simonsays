@@ -29,3 +29,7 @@ class LogOutputs:
     def log(logstr: str):
         logging.debug(logstr)
         
+class PrintOutputs:
+    @staticmethod
+    def printer(*args: str):
+        print(*args)
