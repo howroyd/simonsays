@@ -37,12 +37,13 @@ def setup_logging() -> None:
     """
     logging.root.handlers = []
     logging.basicConfig(
-        level=logging.DEBUG, # Change this to change the global logging level. Normally .INFO, or if needed, .DEBUG
+        level=logging.INFO, # Change this to change the global logging level. Normally .INFO, or if needed, .DEBUG
         format="%(asctime)s %(levelname)s:%(message)s",
         datefmt="%y%m%d %H:%M:%S",
         handlers=[
             TimedRotatingFileHandler(
                 "log",
+                encoding="utf-8",
                 when="H",
                 interval=3,
                 backupCount=10
@@ -109,8 +110,9 @@ if __name__ == "__main__":
             tw.run()
             msgs = tw.get_chat_messages()
             for x in msgs:
-                logging.info("From: %s: %s" % (x.username, x.payload))
-                fn, args = message_filter(x.payload_as_tuple()[1], emotemap | iomap)
+                channel, message = x.payload_as_tuple()
+                logging.debug(f"From {x.username} in {channel}: {message}")
+                fn, args = message_filter(message, emotemap | iomap)
                 if fn:
                     fn(*args)
             sleep(0.1)

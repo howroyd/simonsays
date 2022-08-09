@@ -115,7 +115,7 @@ class TwitchIrc:
         ret_fail = (None, None, None)
         if not packet or 0 == len(packet):
             return ret_fail
-        username = None
+        username = b''
         cmd, payload = packet.split(b' ', maxsplit=1)
         if cmd.endswith(b'.tmi.twitch.tv'):
             # Handle stupid case where URL comes first not the command
@@ -126,11 +126,11 @@ class TwitchIrc:
                 pass
             cmd, payload = payload.split(b' ', maxsplit=1)
         try:
-            return (username, TwitchMessageEnum[cmd.decode()], payload)
+            return (username.decode("utf-8"), TwitchMessageEnum[cmd.decode("utf-8")], payload.decode("utf-8"))
         except KeyError:
             match cmd:
                 case ["421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376"]:
-                    return (username, TwitchMessageEnum.NUMERIC, payload)
+                    return (username.decode("utf-8"), TwitchMessageEnum.NUMERIC, payload.decode("utf-8"))
                 case _:
                     return ret_fail
 
@@ -139,15 +139,15 @@ class TwitchIrc:
         '''Container for a Twitch IRC message'''
         username:   str
         id:         TwitchMessageEnum
-        payload:    bytes
+        payload:    str
 
         @classmethod
         def from_bytes(cls, data: bytes):
             return cls(*TwitchIrc.split_command_and_packet(data))
         
         def payload_as_tuple(self) -> tuple[str, str]:
-            channel, message = self.payload.split(b':', maxsplit=1)
-            return (channel.decode().rstrip().lstrip('#'), message.decode().lstrip().rstrip())
+            channel, message = self.payload.split(':', maxsplit=1)
+            return (channel.rstrip().lstrip('#'), message.lstrip().rstrip())
 
 @dataclass
 class TwitchConnection:
@@ -280,7 +280,8 @@ class IrcParser:
         Returns:
             list[TwitchIrc.Message]: list of IRC messages
         """
-        return [TwitchIrc.Message.from_bytes(x) for x in packets if TwitchIrc.Message.from_bytes(x).id is not None]
+        parsed = [TwitchIrc.Message.from_bytes(x) for x in packets if len(x)]
+        return [x for x in parsed if x.id is not None]
 
 class IrcConnection:
     """Queue of messages with interface to get more from the socket
