@@ -15,6 +15,7 @@ if __name__ == "__main__":
         try:
             ret = test_channel_connection()
             if ret:
+                print(f"Test success, connected to {CHANNEL}")
                 assert(ret)
                 exit()
         except Exception as e:
