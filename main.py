@@ -3,6 +3,7 @@ VERSION = 0.2
 import logging, sys
 from logging.handlers import TimedRotatingFileHandler
 
+import pytest
 from time import sleep
 from keymap import iomap, emotemap
 from types import FunctionType
@@ -116,3 +117,16 @@ if __name__ == "__main__":
                 if fn:
                     fn(*args)
             sleep(0.1)
+            
+def test_channel_connection():
+    with twitch.ChannelConnection(CHANNEL) as tw:
+        tw.run()
+        assert(True)
+        #test_message = None
+        #for i in range(5):
+        #    tw.run()
+        #    msgs = tw.get_chat_messages()
+        #    if msgs:
+        #        test_message = msgs[0]
+        #        break
+        #assert(test_message.payload)
