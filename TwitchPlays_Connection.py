@@ -23,7 +23,7 @@ class Twitch:
     def twitch_connect(self, channel):
         if self.sock:
             self.sock.close()
-        
+
         self.sock = None
         self.partial = b''
         self.login_ok = False
