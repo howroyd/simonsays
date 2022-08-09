@@ -37,7 +37,7 @@ def setup_logging() -> None:
     """
     logging.root.handlers = []
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG, # Change this to change the global logging level. Normally .INFO, or if needed, .DEBUG
         format="%(asctime)s %(levelname)s:%(message)s",
         datefmt="%y%m%d %H:%M:%S",
         handlers=[
@@ -51,7 +51,7 @@ def setup_logging() -> None:
             logging.StreamHandler()
         ]
     )
-    logging.log(logging.root.getEffectiveLevel(), "Logging initialised")
+    logging.log(logging.root.getEffectiveLevel(), "Logging initialised for %s" % __file__.rsplit("\\", 1)[1])
 
 def print_preamble(start_key: str, stop_key: str = None) -> None:
     """Function to print programme start text to the console.
@@ -71,7 +71,7 @@ def print_preamble(start_key: str, stop_key: str = None) -> None:
     print("    https://github.com/howroyd/twitchplays\n")
     
     print("To exit cleanly press: ctrl + c")
-    print("    i.e. the \"ctrl\" button and the \"c\" buttons on you keyboard at the same time!\n")
+    print("    i.e. the \"ctrl\" button and the \"c\" button on you keyboard at the same time!\n")
     
     #print("To start press", start_key)
     #print("To stop press",  stop_key)
@@ -109,7 +109,8 @@ if __name__ == "__main__":
             tw.run()
             msgs = tw.get_chat_messages()
             for x in msgs:
-                fn, args = message_filter(x.payload_as_tuple()[1], emotemap)
+                logging.info("From: %s: %s" % (x.username, x.payload))
+                fn, args = message_filter(x.payload_as_tuple()[1], emotemap | iomap)
                 if fn:
                     fn(*args)
             sleep(0.1)

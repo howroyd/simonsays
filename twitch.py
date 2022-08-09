@@ -112,28 +112,34 @@ class TwitchIrc:
             tuple[TwitchMessageEnum, bytes]: Tuple of the message type and the rest of the message as bytes
         """
         logging.debug("Splitting: %s", packet)
-        ret_fail = (None, None)
+        ret_fail = (None, None, None)
         if not packet or 0 == len(packet):
             return ret_fail
+        username = None
         cmd, payload = packet.split(b' ', maxsplit=1)
         if cmd.endswith(b'.tmi.twitch.tv'):
             # Handle stupid case where URL comes first not the command
+            username = cmd.split(b'.tmi.twitch.tv', maxsplit=1)[0]
+            try:
+                username = username.split(b'@', maxsplit=1)[1]
+            except IndexError:
+                pass
             cmd, payload = payload.split(b' ', maxsplit=1)
-
         try:
-            return (TwitchMessageEnum[cmd.decode()], payload)
+            return (username, TwitchMessageEnum[cmd.decode()], payload)
         except KeyError:
             match cmd:
                 case ["421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376"]:
-                    return (TwitchMessageEnum.NUMERIC, payload)
+                    return (username, TwitchMessageEnum.NUMERIC, payload)
                 case _:
                     return ret_fail
 
     @dataclass
     class Message:
         '''Container for a Twitch IRC message'''
-        id:      TwitchMessageEnum
-        payload: bytes
+        username:   str
+        id:         TwitchMessageEnum
+        payload:    bytes
 
         @classmethod
         def from_bytes(cls, data: bytes):
