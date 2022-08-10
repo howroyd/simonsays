@@ -1,14 +1,28 @@
 import logging
+
+import keyboard, mouse
 from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
+
+# Mouse API: https://github.com/boppreh/mouse#api
+# Keyboard API: https://pypi.org/project/keyboard/
 
 dungeon = "In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo"
 
 iomap = {
-    "left":             (KeyboardOutputs.press_key, ("leftarrow",)),
+    "strafe left":      (keyboard.press_and_release, ("a",)),
+    "strafe right":     (keyboard.press_and_release, ("d",)),
+    "forward":          (keyboard.press_and_release, ("w",)),
+    "backward":         (keyboard.press_and_release, ("s",)),
+    "journal":          (keyboard.press_and_release, ("j",)),
+    "talk":             (keyboard.press_and_release, ("v",)),
+    "crouch":           (keyboard.press_and_release, ("c",)),
+    "use":              (keyboard.press_and_release, ("f",)),
+    
+    "lmb":              (mouse.click, ("left",)),
+    "rmb":              (mouse.click, ("right",)),
+    "mmb":              (mouse.click, ("middle",)),
+    
     "spin":             (KeyboardOutputs.press_key_for, ("leftarrow", 3)),
-    "lmb":              (MouseOutputs.press_button_for, ("leftmouse", 1)),
-    "rmb":              (MouseOutputs.press_button, ("rightmouse",)),
-    "mmb":              (MouseOutputs.press_button, ("middlemouse",)),
 }
 
 EMOTE_PREFIX = "Parsed an emote! "
@@ -16,7 +30,7 @@ EMOTE_PREFIX = "Parsed an emote! "
 emotemap = {
     "KEKW":             (LogOutputs.log, (EMOTE_PREFIX + "KEKW",)),
     "Kappa":            (LogOutputs.log, (EMOTE_PREFIX + "Kappa",)),
-    "eldel3Dirty":      (LogOutputs.log, (EMOTE_PREFIX + "eldel3Dirty",)),
+    #"eldel3Dirty":      (LogOutputs.log, (EMOTE_PREFIX + "eldel3Dirty",)),
     "eldel3HYPERSS":    (LogOutputs.log, (EMOTE_PREFIX + "eldel3HYPERSS",)),
     "eldel3OMEGAREE":   (LogOutputs.log, (EMOTE_PREFIX + "eldel3OMEGAREE",)),
     "eldel3JAM":        (LogOutputs.log, (EMOTE_PREFIX + "eldel3JAM",)),

@@ -1,12 +1,15 @@
 import logging
 
+import keyboard, mouse
+
 class KeyboardOutputs:
     @staticmethod
     def press_key_for(key: str, seconds: float = None):
         if seconds:
-            logging.info("Press keyboard %s for %0.2fs", key, seconds)
+            logging.error("NOT IMPLEMENTED Press keyboard %s for %0.2fs", key, seconds)
         else:
             logging.info("Press keyboard %s", key)
+            keyboard.press_and_release(key)
     
     @staticmethod
     def press_key(key: str):
@@ -16,10 +19,11 @@ class MouseOutputs:
     @staticmethod
     def press_button_for(button: str, seconds: float = None):
         if seconds:
-            logging.info("Press mouse %s for %0.2fs", button, seconds)
+            logging.error("NOT IMPLEMENTED Press mouse %s for %0.2fs", button, seconds)
         else:
             logging.info("Press mouse %s", button)
-        
+            mouse.click(button)
+
     @staticmethod
     def press_button(button: str):
         return __class__.press_button_for(button)

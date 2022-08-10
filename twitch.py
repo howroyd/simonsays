@@ -1,4 +1,5 @@
 import logging
+
 import socket, re, random, time
 
 from dataclasses import dataclass
@@ -387,29 +388,4 @@ class ChannelConnection(IrcConnection):
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-#########################################
-### WIP: This is the interface I want ###
-#########################################
-
-# with TwitchCLEAN as tw:
-#    commands = tw.run(list_of_commands_to_match_against: str)
-#    ....do stuff with commands
-class TwitchCLEAN:    
-    def __init__(self, channel: str):
-        self.channel = channel
-        self.sock    = SockHandler()
-    
-    def __enter__(self):
-        print("Entering", self.channel)
-        return self
-    
-    def __exit__(self, exc_type, exc_value, traceback):
-        print("Exiting", self.channel)
-        
-    def run(self, matcher: list[str]):
-        # Maintain the connection to the *channel*
-        # Get any "messages" and filter out matches to arg
-        # Return list/queue of matching strings this iter
         pass

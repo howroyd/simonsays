@@ -1,18 +1,18 @@
 VERSION = 0.2
 
-import logging, sys
+import logging
 from logging.handlers import TimedRotatingFileHandler
 
-import pytest
+import sys, keyboard
 from time import sleep
 from keymap import iomap, emotemap
 from types import FunctionType
+from dataclasses import dataclass
 
 import twitch
 
 CHANNEL = "katatouille93"
 START_KEY: str = "shift+backspace"
-STOP_KEY:  str = None # None means use same as START_KEY
 
 test_keys = [
     "lmb",
@@ -55,7 +55,7 @@ def setup_logging() -> None:
     )
     logging.log(logging.root.getEffectiveLevel(), "Logging initialised for %s" % __file__.rsplit("\\", 1)[1])
 
-def print_preamble(start_key: str, stop_key: str = None) -> None:
+def print_preamble(start_key: str) -> None:
     """Function to print programme start text to the console.
     
     Does not go to the logger therefore doesn't go to the logfile.
@@ -63,10 +63,7 @@ def print_preamble(start_key: str, stop_key: str = None) -> None:
     Args:
         start_key (str): key to start outputting HID commands
         stop_key (str, optional): key to stop outputting HID commands. Defaults to None which means same as `start_key`.
-    """
-    if not stop_key:
-        stop_key = start_key
-        
+    """        
     print("\n--- TwitchPlays", VERSION, " ---\n")
     
     print("For more info visit:")
@@ -75,8 +72,7 @@ def print_preamble(start_key: str, stop_key: str = None) -> None:
     print("To exit cleanly press: ctrl + c")
     print("    i.e. the \"ctrl\" button and the \"c\" button on you keyboard at the same time!\n")
     
-    #print("To start press", start_key)
-    #print("To stop press",  stop_key)
+    print("To toggle keyboard and mouse interactions on or off, press", start_key)
     
     print("\n")
 
@@ -100,9 +96,19 @@ def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionTy
         return matches[0]
     return (None, None)
 
+@dataclass
+class OnOffSwitch:
+    state: bool = True
+    
+    def toggle(self):
+        self.state = not self.state
+        logging.info("Turned %s" % ("ON" if self.state else "OFF"))
+
 if __name__ == "__main__":
     setup_logging()
-    print_preamble(START_KEY, STOP_KEY)    
+    print_preamble(START_KEY)
+    is_active = OnOffSwitch()
+    onOffHandler = keyboard.add_hotkey(START_KEY, lambda is_active=is_active: is_active.toggle())
     
     with twitch.ChannelConnection(CHANNEL) as tw:
         logging.info("Connected to #%s", CHANNEL)
@@ -113,20 +119,9 @@ if __name__ == "__main__":
             for x in msgs:
                 channel, message = x.payload_as_tuple()
                 logging.debug(f"From {x.username} in {channel}: {message}")
+                
                 fn, args = message_filter(message, emotemap | iomap)
-                if fn:
+                if fn and is_active.state:
+                    #sleep(1)
                     fn(*args)
             sleep(0.1)
-            
-def test_channel_connection():
-    with twitch.ChannelConnection(CHANNEL) as tw:
-        tw.run()
-        assert(True)
-        #test_message = None
-        #for i in range(5):
-        #    tw.run()
-        #    msgs = tw.get_chat_messages()
-        #    if msgs:
-        #        test_message = msgs[0]
-        #        break
-        #assert(test_message.payload)
