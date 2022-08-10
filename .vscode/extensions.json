@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "aaron-bond.better-comments",
+        "alefragnani.bookmarks",
+        "donjayamanne.githistory",
+        "github.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "donjayamanne.python-extension-pack",
+        "kevinrose.vsc-python-indent",
+        "Gruntfuggly.todo-tree"
+    ]
+}
