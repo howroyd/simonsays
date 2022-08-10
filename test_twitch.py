@@ -1,11 +1,16 @@
+import time
 import twitch
 
 CHANNEL = "katatouille93"
 
 def test_channel_connection() -> bool:
     with twitch.ChannelConnection(CHANNEL) as tw:
-        tw.run()
-        return True
+        t_start = time.time()
+        for i in range(5):
+            tw.run()
+            if tw.last_ping and tw.last_ping > t_start:
+                return True
+            time.sleep(1)
     return False
 
 if __name__ == "__main__":
@@ -15,8 +20,7 @@ if __name__ == "__main__":
         try:
             ret = test_channel_connection()
             if ret:
-                assert(ret)
-                exit()
+                break
         except Exception as e:
             print(e)
         

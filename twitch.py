@@ -1,18 +1,9 @@
-# DougDoug Note: 
-# This is the code that connects to Twitch and checks for new messages.
-# You should not need to modify anything in this file, just use as is.
-# Original code by Wituz, updated by DDarknut
-
 import logging
 import socket, re, random, time
 
 from dataclasses import dataclass
 from enum        import Enum, auto, unique
 from typing      import Tuple
-
-#from TwitchPlays_KeyCodes import CAPSLOCK
-
-MAX_TIME_TO_WAIT_FOR_LOGIN = 3
 
 @dataclass
 class MessageBuilder:
@@ -291,6 +282,13 @@ class IrcConnection:
         self.incomingSocket = incomingSocket if incomingSocket else BufferedSocket()
         self.buf = []
         self.n_max_messages = 50
+        self.last_ping = None
+    
+    def run(self) -> None:
+        if self.peek(TwitchMessageEnum.PING):
+            self.incomingSocket.send(TwitchIrc.pong_message())
+            self.remove_all(TwitchMessageEnum.PING)
+            self.last_ping = time.time()
     
     def get(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
         """Get all messages matching an IRC ID and delete them from the internal buffer.
@@ -364,11 +362,6 @@ class ChannelConnection(IrcConnection):
         super().__init__(parser, incomingSocket)
         self.channel = channel
         self.connected = False;
-        
-    def run(self):
-        if self.peek(TwitchMessageEnum.PING):
-            self.incomingSocket.send(TwitchIrc.pong_message())
-            self.remove_all(TwitchMessageEnum.PING)
     
     def get_chat_messages(self) -> list[TwitchIrc.Message]:
         return self.get(TwitchMessageEnum.PRIVMSG)
