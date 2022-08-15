@@ -8,6 +8,7 @@
         "ms-python.python",
         "donjayamanne.python-extension-pack",
         "kevinrose.vsc-python-indent",
-        "Gruntfuggly.todo-tree"
+        "gruntfuggly.todo-tree",
+        "shardulm94.trailing-spaces"
     ]
 }
