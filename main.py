@@ -9,10 +9,14 @@ from keymap import iomap, emotemap
 from types import FunctionType
 from dataclasses import dataclass
 
+import keyboard, mouse
+
+from configparser import ConfigParser
+
 import twitch
 
-CHANNEL = "katatouille93"
-START_KEY: str = "shift+backspace"
+CHANNEL   = "katatouille93"
+START_KEY = "shift+backspace"
 
 test_keys = [
     "lmb",
@@ -29,7 +33,7 @@ class TwitchAPI:
         self.channel = channel
         self.impl = twitch.Twitch()
         self.impl.twitch_connect(self.channel)
-        
+
     def receive(self):
         return self.impl.twitch_receive_messages()
 
@@ -57,28 +61,28 @@ def setup_logging() -> None:
 
 def print_preamble(start_key: str) -> None:
     """Function to print programme start text to the console.
-    
+
     Does not go to the logger therefore doesn't go to the logfile.
 
     Args:
         start_key (str): key to start outputting HID commands
         stop_key (str, optional): key to stop outputting HID commands. Defaults to None which means same as `start_key`.
-    """        
+    """
     print("\n--- TwitchPlays", VERSION, " ---\n")
-    
+
     print("For more info visit:")
     print("    https://github.com/howroyd/twitchplays\n")
-    
+
     print("To exit cleanly press: ctrl + c")
     print("    i.e. the \"ctrl\" button and the \"c\" button on you keyboard at the same time!\n")
-    
+
     print("To toggle keyboard and mouse interactions on or off, press", start_key)
-    
+
     print("\n")
 
 def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionType, tuple[str, ...]]]) -> tuple[FunctionType, tuple[str, ...]]:
     """Get the mapped function call for a given message.
-    
+
     This is a glorified keyword based dict lookup.  It will take the first few characters of the message and try to match it to a key.
     It's basically message.startswith(key) where key is from the passed in map.
 
@@ -99,27 +103,65 @@ def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionTy
 @dataclass
 class OnOffSwitch:
     state: bool = True
-    
+
     def toggle(self):
         self.state = not self.state
         logging.info("Turned %s" % ("ON" if self.state else "OFF"))
 
+
+
+
+def get_config_chat_commands(config: ConfigParser):
+    return config["chat.commands"]
+
+def make_keymap_entry(config: ConfigParser):
+    mouse_commands = {
+        "lmb": "left",
+        "mmb": "middle",
+        "rmb": "right"
+    }
+
+    ret = {}
+
+    for key in get_config_chat_commands(config):
+        value = config["chat.commands"][key]
+
+        match value.split()[0]:
+            case [mouse_commands.keys()]:
+                ret[key] = (mouse.click, (mouse_commands[value],))
+            case _:
+                ret[key] = (keyboard.press_and_release, tuple(value.split()))
+
+    return ret
+
 if __name__ == "__main__":
+    config = ConfigParser()
+    config.read("config.ini")
+    for key in config["DEFAULT"]:
+        print(f"""{key} is {config["DEFAULT"][key]}""")
+    for section in config.sections():
+        for key in config[section]:
+            print(f"""{key} is {config[section][key]}""")
+
+
+    print(make_keymap_entry(config))
+
     setup_logging()
+
     print_preamble(START_KEY)
     is_active = OnOffSwitch()
     onOffHandler = keyboard.add_hotkey(START_KEY, lambda is_active=is_active: is_active.toggle())
-    
+
     with twitch.ChannelConnection(CHANNEL) as tw:
         logging.info("Connected to #%s", CHANNEL)
-        
+
         while True:
             tw.run()
             msgs = tw.get_chat_messages()
             for x in msgs:
                 channel, message = x.payload_as_tuple()
                 logging.debug(f"From {x.username} in {channel}: {message}")
-                
+
                 fn, args = message_filter(message, emotemap | iomap)
                 if fn and is_active.state:
                     #sleep(1)
