@@ -15,10 +15,10 @@ class MessageBuilder:
 
     def append(self, new_data: bytes):
         self.buffer += new_data
-        
+
     def clear(self):
         self.buffer = b''
-        
+
     def get_and_clear(self):
         ret = self.buffer
         self.clear()
@@ -49,16 +49,16 @@ class TwitchMessageEnum(Enum):
     ROOMSTATE       = auto()
     RECONNECT       = auto()
     NUMERIC         = auto() # All numerics lumped in here.  Extend if required
-    
+
 class TwitchIrc:
     '''Definition of the Twitch IRC server'''
     url:  str = "irc.chat.twitch.tv"
     port: int = 6667
-    
+
     @classmethod
     def url_port(cls) -> tuple[str, int]:
         return (cls.url, cls.port)
-    
+
     @staticmethod
     def login_message(username: str, password: str) -> bytes:
         """Make a Twitch IRC login message
@@ -71,7 +71,7 @@ class TwitchIrc:
             bytes: bytestring of the login message to be sent to the socket
         """
         return ("PASS %s\r\nNICK %s\r\n" % (password, username)).encode()
-    
+
     @staticmethod
     def join_message(channel: str) -> bytes:
         """Make a Twitch IRC join message to join a channels chat
@@ -83,7 +83,7 @@ class TwitchIrc:
             bytes: bytestring of the join message to be sent to the socket
         """
         return ("JOIN #%s\r\n" % channel).encode()
-    
+
     @staticmethod
     def pong_message() -> bytes:
         """Make a Twitch IRC pong message reply to a server initiated ping
@@ -92,7 +92,7 @@ class TwitchIrc:
             bytes: bytestring of the pong message to be sent to the socket
         """
         return b'PONG :tmi.twitch.tv\r\n'
-    
+
     @classmethod
     def split_command_and_packet(cls, packet: bytes) -> tuple[TwitchMessageEnum, bytes]:
         """Take some bytes and try to split them into the command:payload format of the IRC Server
@@ -136,7 +136,7 @@ class TwitchIrc:
         @classmethod
         def from_bytes(cls, data: bytes):
             return cls(*TwitchIrc.split_command_and_packet(data))
-        
+
         def payload_as_tuple(self) -> tuple[str, str]:
             channel, message = self.payload.split(':', maxsplit=1)
             return (channel.rstrip().lstrip('#'), message.lstrip().rstrip())
@@ -149,7 +149,7 @@ class TwitchConnection:
     last_attempt: float         = None # time.time()
     timeout:      float         = 1.0 #1.0 / 60.0
     twitchIrc                   = TwitchIrc()
-    
+
     def is_connected(self) -> bool:
         return True if self.sock else False
 
@@ -169,15 +169,15 @@ class TwitchConnection:
                     break
                 except socket.timeout:
                     pass
-            
+
             if not self.is_connected():
                 return False
-            
+
             logging.debug("Logging into twitch as %s", self.username)
             self.send(self.twitchIrc.login_message(self.username, "asdf"))
             # todo parse the server response here
         return True
-            
+
     def receive(self, len: int = 4096) -> bytes:
         """Receive any bytes waiting in the socket
 
@@ -200,25 +200,25 @@ class TwitchConnection:
         """
         logging.debug("Sending: %s", data)
         self.sock.send(data)
-   
+
     def disconnect(self):
         if self.is_connected():
             logging.debug("Closing socket to %s", self.twitchIrc.url_port())
             self.sock.close()
         self.sock = None
-        
+
     def reconnect(self) -> bool:
         self.disconnect()
         return self.connect()
-    
+
     def __del__(self): # todo convert to enter and exit dunders so compatible with "with"
         self.disconnect()
-        
+
     def __enter__(self):
         if not self.connect():
             raise socket.timeout
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
@@ -231,7 +231,7 @@ class SockHandler:
             raise socket.timeout
     def __del__(self) -> None:
         logging.debug("Deinit SockHandler")
-    
+
 class MessageSplitter:
     '''Just to find the start and end of a message and return it'''
     def __call__(self, data: bytes) -> tuple[list[bytes], bytes]: # TODO this is probably redundant??
@@ -249,7 +249,7 @@ class BufferedSocket:
         self.sock     = SockHandler()
         self.buffer   = MessageBuilderDefault()
         self.splitter = splitter if splitter else MessageSplitter()
-        
+
     def receive(self) -> list[bytes]:
         while (buf := self.sock.sock.receive()):
             self.buffer.append(buf)
@@ -284,13 +284,13 @@ class IrcConnection:
         self.buf = []
         self.n_max_messages = 50
         self.last_ping = None
-    
+
     def run(self) -> None:
         if self.peek(TwitchMessageEnum.PING):
             self.incomingSocket.send(TwitchIrc.pong_message())
             self.remove_all(TwitchMessageEnum.PING)
             self.last_ping = time.time()
-    
+
     def get(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
         """Get all messages matching an IRC ID and delete them from the internal buffer.
 
@@ -306,7 +306,7 @@ class IrcConnection:
             return ret
         else:
             return self.get()
-    
+
     def get_all(self) -> list[TwitchIrc.Message]:
         """Get all messages.  Deletes all contained messages from the internal buffer.
 
@@ -316,7 +316,7 @@ class IrcConnection:
         ret = self.peek_all()
         self.remove_all()
         return ret
-    
+
     def peek(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
         """Get a copy of all messages matching an IRC ID.  Does not delete any messages from the internal buffer.
 
@@ -327,7 +327,7 @@ class IrcConnection:
             list[TwitchIrc.Message]: list of all matching messages received
         """
         return [x for x in self.peek_all() if x.id == which]
-    
+
     def peek_all(self) -> list[TwitchIrc.Message]:
         """Get a copy of all messages.  Does not delete any messages from the internal buffer.
 
@@ -336,7 +336,7 @@ class IrcConnection:
         """
         self._get_all()
         return self.buf
-    
+
     def remove_all(self, which: TwitchMessageEnum = None):
         """Delete messages from the internal buffer
 
@@ -347,7 +347,7 @@ class IrcConnection:
             self.buf = [x for x in self.buf if x.id is not which]
         else:
             self.buf = []
-    
+
     def _get_all(self) -> None:
         self.buf += self.parser.parse(self.incomingSocket.receive())
         if len(self.buf) > self.n_max_messages:
@@ -356,17 +356,17 @@ class IrcConnection:
 
 class ChannelConnection(IrcConnection):
     """Connection to a Twitch channel's chat
-    
+
     Note; call the run() method periodically so that pingpongs get returned so Twitch doesn't kick us
     """
     def __init__(self, channel: str, parser: IrcParser = None, incomingSocket: BufferedSocket = None):
         super().__init__(parser, incomingSocket)
         self.channel = channel
         self.connected = False;
-    
+
     def get_chat_messages(self) -> list[TwitchIrc.Message]:
         return self.get(TwitchMessageEnum.PRIVMSG)
-    
+
     def connect(self) -> bool:
         if self.connected:
             return True
@@ -386,6 +386,6 @@ class ChannelConnection(IrcConnection):
         if not self.connect():
             raise socket.timeout
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         pass

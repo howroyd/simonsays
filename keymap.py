@@ -17,11 +17,11 @@ iomap = {
     "talk":             (keyboard.press_and_release, ("v",)),
     "crouch":           (keyboard.press_and_release, ("c",)),
     "use":              (keyboard.press_and_release, ("f",)),
-    
+
     "lmb":              (mouse.click, ("left",)),
     "rmb":              (mouse.click, ("right",)),
     "mmb":              (mouse.click, ("middle",)),
-    
+
     "spin":             (KeyboardOutputs.press_key_for, ("leftarrow", 3)),
 }
 
@@ -51,10 +51,10 @@ emotemap = {
     "katatoNORTY":      (LogOutputs.log, (EMOTE_PREFIX + "katatoNORTY",)),
     "katatoSOSIG":      (LogOutputs.log, (EMOTE_PREFIX + "katatoSOSIG",)),
     "katatoHAH":        (LogOutputs.log, (EMOTE_PREFIX + "katatoHAH",)),
- 
+
     "!dungeon":         (LogOutputs.log, (dungeon,)),
-    
+
     "veekay1":          (LogOutputs.log, ("Veekay emote!",)),
-    
+
     #"katatoHAH ":        (LogOutputs.log, ("katatoHAH2",)), # multiple matching keys in map (enable to test error handling)
 }

@@ -10,11 +10,11 @@ class KeyboardOutputs:
         else:
             logging.info("Press keyboard %s", key)
             keyboard.press_and_release(key)
-    
+
     @staticmethod
     def press_key(key: str):
         return __class__.press_key_for(key)
-        
+
 class MouseOutputs:
     @staticmethod
     def press_button_for(button: str, seconds: float = None):
@@ -27,12 +27,12 @@ class MouseOutputs:
     @staticmethod
     def press_button(button: str):
         return __class__.press_button_for(button)
-    
+
 class LogOutputs:
     @staticmethod
     def log(logstr: str, level: int = logging.INFO):
         logging.log(level, logstr)
-        
+
 class PrintOutputs:
     @staticmethod
     def printer(*args: str):

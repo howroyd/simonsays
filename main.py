@@ -29,7 +29,7 @@ class TwitchAPI:
         self.channel = channel
         self.impl = twitch.Twitch()
         self.impl.twitch_connect(self.channel)
-        
+
     def receive(self):
         return self.impl.twitch_receive_messages()
 
@@ -57,28 +57,28 @@ def setup_logging() -> None:
 
 def print_preamble(start_key: str) -> None:
     """Function to print programme start text to the console.
-    
+
     Does not go to the logger therefore doesn't go to the logfile.
 
     Args:
         start_key (str): key to start outputting HID commands
         stop_key (str, optional): key to stop outputting HID commands. Defaults to None which means same as `start_key`.
-    """        
+    """
     print("\n--- TwitchPlays", VERSION, " ---\n")
-    
+
     print("For more info visit:")
     print("    https://github.com/howroyd/twitchplays\n")
-    
+
     print("To exit cleanly press: ctrl + c")
     print("    i.e. the \"ctrl\" button and the \"c\" button on you keyboard at the same time!\n")
-    
+
     print("To toggle keyboard and mouse interactions on or off, press", start_key)
-    
+
     print("\n")
 
 def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionType, tuple[str, ...]]]) -> tuple[FunctionType, tuple[str, ...]]:
     """Get the mapped function call for a given message.
-    
+
     This is a glorified keyword based dict lookup.  It will take the first few characters of the message and try to match it to a key.
     It's basically message.startswith(key) where key is from the passed in map.
 
@@ -99,7 +99,7 @@ def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionTy
 @dataclass
 class OnOffSwitch:
     state: bool = True
-    
+
     def toggle(self):
         self.state = not self.state
         logging.info("Turned %s" % ("ON" if self.state else "OFF"))
@@ -109,17 +109,17 @@ if __name__ == "__main__":
     print_preamble(START_KEY)
     is_active = OnOffSwitch()
     onOffHandler = keyboard.add_hotkey(START_KEY, lambda is_active=is_active: is_active.toggle())
-    
+
     with twitch.ChannelConnection(CHANNEL) as tw:
         logging.info("Connected to #%s", CHANNEL)
-        
+
         while True:
             tw.run()
             msgs = tw.get_chat_messages()
             for x in msgs:
                 channel, message = x.payload_as_tuple()
                 logging.debug(f"From {x.username} in {channel}: {message}")
-                
+
                 fn, args = message_filter(message, emotemap | iomap)
                 if fn and is_active.state:
                     #sleep(1)
