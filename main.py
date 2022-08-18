@@ -63,6 +63,7 @@ def print_preamble(start_key: str) -> None:
 
 def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTuple:
     matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
+
     if n_matches := len(matches):
         if n_matches > 1:
             logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
