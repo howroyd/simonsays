@@ -1,60 +1,79 @@
 import logging
 
-import keyboard, mouse
+from types import FunctionType
+from configparser import ConfigParser
 from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
 
-# Mouse API: https://github.com/boppreh/mouse#api
-# Keyboard API: https://pypi.org/project/keyboard/
+FunctionArgTuple = tuple[FunctionType, tuple[str, ...]]
+Keymap = dict[str, FunctionArgTuple]
 
-dungeon = "In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo"
+def make_mouse_keymap(config: ConfigParser) -> Keymap:
+    mouse_commands = {
+        "lmb": "left",
+        "mmb": "middle",
+        "rmb": "right"
+    }
 
-iomap = {
-    "strafe left":      (keyboard.press_and_release, ("a",)),
-    "strafe right":     (keyboard.press_and_release, ("d",)),
-    "forward":          (keyboard.press_and_release, ("w",)),
-    "backward":         (keyboard.press_and_release, ("s",)),
-    "journal":          (keyboard.press_and_release, ("j",)),
-    "talk":             (keyboard.press_and_release, ("v",)),
-    "crouch":           (keyboard.press_and_release, ("c",)),
-    "use":              (keyboard.press_and_release, ("f",)),
+    distance = int(config['mouse.movement']['distance'])
+    mouse_movement = {
+        "right":    (distance, 0),
+        "left":     (-distance, 0),
+        "up":       (0, -distance),
+        "down":     (0, distance),
+    }
 
-    "lmb":              (mouse.click, ("left",)),
-    "rmb":              (mouse.click, ("right",)),
-    "mmb":              (mouse.click, ("middle",)),
+    ret = {}
 
-    "spin":             (KeyboardOutputs.press_key_for, ("leftarrow", 3)),
-}
+    for k, v in config['mouse.chat.commands'].items():
+        args = v.split()
 
-EMOTE_PREFIX = "Parsed an emote! "
+        if args[0] in mouse_commands.keys():
+            ret[k] = (MouseOutputs.press_button_for, (mouse_commands[args[0]],))
+        elif args[0] in mouse_movement.keys():
+            ret[k] = (MouseOutputs.move, (*mouse_movement[args[0]],))
+        else:
+            logging.error(f"Unknown mouse command config {k}: {v}")
 
-emotemap = {
-    "KEKW":             (LogOutputs.log, (EMOTE_PREFIX + "KEKW",)),
-    "Kappa":            (LogOutputs.log, (EMOTE_PREFIX + "Kappa",)),
-    #"eldel3Dirty":      (LogOutputs.log, (EMOTE_PREFIX + "eldel3Dirty",)),
-    "eldel3HYPERSS":    (LogOutputs.log, (EMOTE_PREFIX + "eldel3HYPERSS",)),
-    "eldel3OMEGAREE":   (LogOutputs.log, (EMOTE_PREFIX + "eldel3OMEGAREE",)),
-    "eldel3JAM":        (LogOutputs.log, (EMOTE_PREFIX + "eldel3JAM",)),
-    "eldel3EYESS":      (LogOutputs.log, (EMOTE_PREFIX + "eldel3EYESS",)),
-    "eldel3KappaSlide": (LogOutputs.log, (EMOTE_PREFIX + "eldel3KappaSlide",)),
-    "eldel3LUV":        (LogOutputs.log, (EMOTE_PREFIX + "eldel3LUV",)),
-    "eldel3HI":         (LogOutputs.log, (EMOTE_PREFIX + "eldel3HI",)),
-    "katatoSILLY":      (LogOutputs.log, (EMOTE_PREFIX + "katatoSILLY", logging.WARN)),
-    "katatoMURDER":     (LogOutputs.log, (EMOTE_PREFIX + "katatoMURDER",)),
-    "katatoBONER":      (LogOutputs.log, (EMOTE_PREFIX + "katatoBONER",)),
-    "katatoNORTY2":     (LogOutputs.log, (EMOTE_PREFIX + "katatoNORTY2",)),
-    "katatoEGGY":       (LogOutputs.log, (EMOTE_PREFIX + "katatoEGGY",)),
-    "katatoWave":       (LogOutputs.log, (EMOTE_PREFIX + "katatoWave",)),
-    "katatoLOVE":       (LogOutputs.log, (EMOTE_PREFIX + "katatoLOVE",)),
-    "katatoHYPE2":      (LogOutputs.log, (EMOTE_PREFIX + "katatoHYPE2",)),
-    "katatoRIOT":       (LogOutputs.log, (EMOTE_PREFIX + "katatoRIOT" + " Riot time!",)),
-    "katatoHUG":        (LogOutputs.log, (EMOTE_PREFIX + "katatoHUG",)),
-    "katatoNORTY":      (LogOutputs.log, (EMOTE_PREFIX + "katatoNORTY",)),
-    "katatoSOSIG":      (LogOutputs.log, (EMOTE_PREFIX + "katatoSOSIG",)),
-    "katatoHAH":        (LogOutputs.log, (EMOTE_PREFIX + "katatoHAH",)),
+    return ret
 
-    "!dungeon":         (LogOutputs.log, (dungeon,)),
+def make_keyboard_keymap(config: ConfigParser) -> Keymap:
+    ret = {}
 
-    "veekay1":          (LogOutputs.log, ("Veekay emote!",)),
+    for k, v in config['keyboard.chat.commands'].items():
+        args = v.split()
 
-    #"katatoHAH ":        (LogOutputs.log, ("katatoHAH2",)), # multiple matching keys in map (enable to test error handling)
+        match len(args):
+            case 1:
+                ret[k] = (KeyboardOutputs.press_key, tuple(args))
+            case 2:
+                ret[k] = (KeyboardOutputs.press_key_for, (args[0], float(args[1]))) # TODO this arg parse is a bit shit
+            case _:
+                logging.error(f"Unknown keyboard command config {k}: {v}")
+
+    return ret
+
+def make_keymap_entry(config: ConfigParser) -> Keymap:
+    return make_mouse_keymap(config) | make_keyboard_keymap(config)
+
+def log_keymap(keymap: Keymap, to_console = False) -> None:
+    out_fn = logging.debug
+    if to_console:
+        out_fn = print
+
+        key_length  = max(len(k) for k in keymap.keys())
+        key_padding = 5
+        key_space   = key_length + key_padding
+
+        func_length  = max(len(v[0].__qualname__) for v in keymap.values())
+        func_padding = 1
+        func_space   = func_length + func_padding
+
+        for k, v in keymap.items():
+            out_fn(f"{k:{key_space}}: ({v[0].__qualname__:{func_space}}, {v[1]})")
+    else:
+        for k, v in keymap.items():
+            out_fn(f"{k}: {(v[0].__qualname__, v[1])}")
+
+easter_eggs: Keymap = {
+    "!dungeon": (PrintOutputs.printer, ("In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo",)),
 }

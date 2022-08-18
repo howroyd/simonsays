@@ -1,61 +1,46 @@
-VERSION = 0.2
+VERSION = 0.5
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-import sys, keyboard
-from time import sleep
-from keymap import iomap, emotemap
-from types import FunctionType
-from dataclasses import dataclass
+import keyboard
+from time           import sleep
+from dataclasses    import dataclass
+from pathlib        import Path
 
 import twitch
+from default_config import get_from_file, print_config, ConfigKeys
+from keymap         import easter_eggs, make_keymap_entry, log_keymap, FunctionArgTuple, Keymap
 
-CHANNEL = "katatouille93"
-START_KEY: str = "shift+backspace"
+def setup_logging(log_level: int = logging.INFO) -> None:
+    """Setup the global logger"""
+    directory = "logs"
+    filename = "log"
+    Path(directory).mkdir(parents=True, exist_ok=True)
 
-test_keys = [
-    "lmb",
-    "left",
-    "spin",
-    "bollocks",
-    "mmb",
-    "rmb",
-]
+    h = TimedRotatingFileHandler(
+                f"{directory}/{filename}",
+                encoding="utf-8",
+                when="m",
+                interval=30,
+                backupCount=10
+            )
+    h.namer = lambda name: name.replace(".log", "") + ".log"
 
-class TwitchAPI:
-    def __init__(self, channel: str):
-        logging.info("Instantiating Twitch API connection to %s", channel)
-        self.channel = channel
-        self.impl = twitch.Twitch()
-        self.impl.twitch_connect(self.channel)
-
-    def receive(self):
-        return self.impl.twitch_receive_messages()
-
-def setup_logging() -> None:
-    """Setup the global logger
-    """
     logging.root.handlers = []
     logging.basicConfig(
-        level=logging.INFO, # Change this to change the global logging level. Normally .INFO, or if needed, .DEBUG
+        level=log_level,
         format="%(asctime)s %(levelname)s:%(message)s",
         datefmt="%y%m%d %H:%M:%S",
         handlers=[
-            TimedRotatingFileHandler(
-                "log",
-                encoding="utf-8",
-                when="H",
-                interval=3,
-                backupCount=10
-            ),
-            #logging.FileHandler("debug.log"),
+            h,
             logging.StreamHandler()
         ]
     )
-    logging.log(logging.root.getEffectiveLevel(), "Logging initialised for %s" % __file__.rsplit("\\", 1)[1])
+    sourceFilename = __file__.rsplit('\\', 1)[1]
+    logging.log(logging.root.getEffectiveLevel(), f"Logging initialised for {sourceFilename} at level {logging.getLevelName(log_level)}")
 
-def print_preamble(start_key: str) -> None:
+def print_preamble(start_key: str, keymap: Keymap) -> None:
     """Function to print programme start text to the console.
 
     Does not go to the logger therefore doesn't go to the logfile.
@@ -76,52 +61,60 @@ def print_preamble(start_key: str) -> None:
 
     print("\n")
 
-def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionType, tuple[str, ...]]]) -> tuple[FunctionType, tuple[str, ...]]:
-    """Get the mapped function call for a given message.
+    log_keymap(keymap, to_console=True)
 
-    This is a glorified keyword based dict lookup.  It will take the first few characters of the message and try to match it to a key.
-    It's basically message.startswith(key) where key is from the passed in map.
+    print("\n")
 
-    Args:
-        message (str): text to parse from Twitch chat
-        key_to_function_map (dict[str, tuple[FunctionType, tuple[str, ...]]]): map of messages and tuples of function objects with args
+def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTuple:
+    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
 
-    Returns:
-        tuple[FunctionType, tuple[str, ...]]: message and function object with args or (None, None)
-    """
-    matches = [value for key, value in key_to_function_map.items() if message.startswith(key)]
     if n_matches := len(matches):
         if n_matches > 1:
             logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
         return matches[0]
     return (None, None)
 
-@dataclass
-class OnOffSwitch:
-    state: bool = True
-
-    def toggle(self):
-        self.state = not self.state
-        logging.info("Turned %s" % ("ON" if self.state else "OFF"))
-
 if __name__ == "__main__":
-    setup_logging()
-    print_preamble(START_KEY)
-    is_active = OnOffSwitch()
-    onOffHandler = keyboard.add_hotkey(START_KEY, lambda is_active=is_active: is_active.toggle())
+    config = get_from_file()
 
-    with twitch.ChannelConnection(CHANNEL) as tw:
-        logging.info("Connected to #%s", CHANNEL)
+    channel   = config[ConfigKeys.twitch]['TwitchChannelName']
+    start_key = config[ConfigKeys.broadcaster]['OutputToggleOnOff']
+    log_level = logging.getLevelName(config[ConfigKeys.logging]['DebugLevel'])
+
+    setup_logging(log_level)
+    keymap = make_keymap_entry(config)
+    log_keymap(keymap)
+
+    print_preamble(start_key, keymap)
+
+    @dataclass
+    class OnOffSwitch:
+        state: bool = True
+
+        def toggle(self):
+            self.state = not self.state
+            logging.info("Turned %s" % ("ON" if self.state else "OFF"))
+
+    is_active    = OnOffSwitch()
+    onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+
+    with twitch.ChannelConnection(channel) as tw:
+        logging.info(f"Connected to #{channel}")
 
         while True:
             tw.run()
             msgs = tw.get_chat_messages()
+
             for x in msgs:
                 channel, message = x.payload_as_tuple()
                 logging.debug(f"From {x.username} in {channel}: {message}")
 
-                fn, args = message_filter(message, emotemap | iomap)
-                if fn and is_active.state:
-                    #sleep(1)
-                    fn(*args)
+                fn, args = message_filter(message, keymap | easter_eggs)
+
+                if fn:
+                    logging.debug(f"{fn.__qualname__} with {(*args,)}")
+                    if is_active.state:
+                        logging.debug(f"Calling {fn.__name__}")
+                        fn(*args)
+
             sleep(0.1)
