@@ -2,52 +2,52 @@ import logging
 
 import keyboard, mouse
 from time import sleep
+#import pyautogui
+import pydirectinput
 
-def release(key: str):
-    logging.info(f"Releasing {key}")
-    keyboard.release(key)
 
 class KeyboardOutputs:
     @staticmethod
-    def press_key_for(key: str, seconds: float = None):
+    def press_key_for(key: str, seconds: float = None) -> None:
         if seconds:
-            logging.info("Press keyboard %s for %0.2fs", key, seconds)
+            logging.info("Press keyboard {key} for {seconds:.2f}s")
             keyboard.press(key)
-            keyboard.call_later(release, (key,), seconds)
-            #sleep(seconds)
-            #keyboard.release(key)
+            keyboard.call_later(__class__._release, (key,), seconds)
         else:
-            logging.info("Press keyboard %s", key)
+            logging.info("Press keyboard {key}")
             keyboard.press_and_release(key)
 
     @staticmethod
-    def press_key(key: str):
-        return __class__.press_key_for(key)
+    def press_key(key: str) -> None:
+        __class__.press_key_for(key)
 
+    @staticmethod
+    def _release(key: str) -> None:
+        logging.info(f"Releasing {key}")
+        keyboard.release(key)
 class MouseOutputs:
     @staticmethod
-    def press_button_for(button: str, seconds: float = None):
-        if seconds:
-            logging.error("NOT IMPLEMENTED Press mouse %s for %0.2fs", button, seconds)
-        else:
-            logging.info("Press mouse %s", button)
-            mouse.click(button)
+    def press_button_for(button: str, seconds: float = 0.01) -> None:
+        logging.info("Press mouse {button} for {seconds:.2f}s")
+        pydirectinput.mouseDown(button=button)
+        sleep(0.01) # Keep this short, else we need threads really
+        pydirectinput.mouseUp(button=button)
 
     @staticmethod
-    def press_button(button: str):
-        return __class__.press_button_for(button)
+    def press_button(button: str) -> None:
+        __class__.press_button_for(button)
 
     @staticmethod
-    def move(x: int, y: int):
+    def move(x: int, y: int) -> None:
         logging.info(f"Move mouse by x={x}, y={y}")
-        mouse.move(x, y, absolute=False, duration=0.5)
+        pydirectinput.moveRel(x, y, 0.5, relative=True)
 
 class LogOutputs:
     @staticmethod
-    def log(logstr: str, level: int = logging.INFO):
+    def log(logstr: str, level: int = logging.INFO) -> None:
         logging.log(level, logstr)
 
 class PrintOutputs:
     @staticmethod
-    def printer(*args: str):
+    def printer(*args: str) -> None:
         print(*args)

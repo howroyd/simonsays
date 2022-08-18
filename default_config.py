@@ -1,20 +1,29 @@
 import os.path
 from configparser import ConfigParser
 
-def make_default(filename: str) -> ConfigParser:
+class ConfigKeys:
+    default         = "DEFAULT"
+    logging         = "logging"
+    twitch          = "twitch.tv"
+    broadcaster     = "broadcaster.commands"
+    keyboard        = "keyboard.chat.commands"
+    mouse_config    = "mouse.movement"
+    mouse           = "mouse.chat.commands"
+
+def generate_default_config() -> ConfigParser:
     config = ConfigParser()
 
-    config['DEFAULT'] = {}
-    config['logging'] = {
-        "DebugLevel": "DEBUG"
+    config[ConfigKeys.default] = {}
+    config[ConfigKeys.logging] = {
+        "DebugLevel": "INFO"
     }
-    config['twitch.tv'] = {
+    config[ConfigKeys.twitch] = {
         "TwitchChannelName": "katatouille93"
     }
-    config['broadcaster.commands'] = {
+    config[ConfigKeys.broadcaster] = {
         "OutputToggleOnOff": "shift+backspace"
     }
-    config['keyboard.chat.commands'] = {
+    config[ConfigKeys.keyboard] = {
         "forward, forwards":            "w   3",
         "back, backward, backwards":    "s   3",
         "left, strafe left":            "a   2",
@@ -22,7 +31,10 @@ def make_default(filename: str) -> ConfigParser:
         "journal":                      "j",
         "talk":                         "v",
     }
-    config['mouse.chat.commands'] = {
+    config[ConfigKeys.mouse_config] = {
+        "distance":                     "500",
+    }
+    config[ConfigKeys.mouse] = {
         "lmb":                          "lmb",
         "mmb":                          "mmb",
         "rmb":                          "rmb",
@@ -31,6 +43,11 @@ def make_default(filename: str) -> ConfigParser:
         "look up":                      "up",
         "look down":                    "down",
     }
+
+    return config
+
+def make_default(filename: str) -> ConfigParser:
+    config = generate_default_config()
 
     with open(filename, 'w') as configfile:
         config.write(configfile)
@@ -45,8 +62,8 @@ def get_from_file(filename: str = "config.ini") -> ConfigParser:
     return make_default(filename)
 
 def print_config(config: ConfigParser) -> None:
-    for key in config["DEFAULT"]:
-        print(f"""{key} is {config["DEFAULT"][key]}""")
+    for key in config[ConfigKeys.default]:
+        print(f"""{key} is {config[ConfigKeys.default][key]}""")
 
     for section in config.sections():
         for key in config[section]:
