@@ -55,9 +55,24 @@ def make_keyboard_keymap(config: ConfigParser) -> Keymap:
 def make_keymap_entry(config: ConfigParser) -> Keymap:
     return make_mouse_keymap(config) | make_keyboard_keymap(config)
 
-def log_keymap(keymap: Keymap) -> None:
-    for k, v in keymap.items():
-        logging.debug(f"{k}: {v}")
+def log_keymap(keymap: Keymap, to_console = False) -> None:
+    out_fn = logging.debug
+    if to_console:
+        out_fn = print
+
+        key_length  = max(len(k) for k in keymap.keys())
+        key_padding = 5
+        key_space   = key_length + key_padding
+
+        func_length  = max(len(v[0].__qualname__) for v in keymap.values())
+        func_padding = 1
+        func_space   = func_length + func_padding
+
+        for k, v in keymap.items():
+            out_fn(f"{k:{key_space}}: ({v[0].__qualname__:{func_space}}, {v[1]})")
+    else:
+        for k, v in keymap.items():
+            out_fn(f"{k}: {(v[0].__qualname__, v[1])}")
 
 easter_eggs: Keymap = {
     "!dungeon": (PrintOutputs.printer, ("In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo",)),

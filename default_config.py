@@ -11,19 +11,23 @@ class ConfigKeys:
     mouse           = "mouse.chat.commands"
 
 def generate_default_config() -> ConfigParser:
-    config = ConfigParser()
+    config = ConfigParser(allow_no_value=True)
 
     config[ConfigKeys.default] = {}
     config[ConfigKeys.logging] = {
+        "; DEBUG, INFO, WARNING, ERROR, CRITICAL": None,
         "DebugLevel": "INFO"
     }
     config[ConfigKeys.twitch] = {
         "TwitchChannelName": "katatouille93"
     }
     config[ConfigKeys.broadcaster] = {
-        "OutputToggleOnOff": "shift+backspace"
+        "; Allows you to start and stop the keyboard and mouse outputs of this programme when in game": None,
+        "OutputToggleOnOff": "shift+backspace",
+        "StartState": "on",
     }
     config[ConfigKeys.keyboard] = {
+        "; Chat commands, comma seperated = key duration(seconds, optional)": None,
         "forward, forwards":            "w   3",
         "back, backward, backwards":    "s   3",
         "left, strafe left":            "a   2",
@@ -32,9 +36,12 @@ def generate_default_config() -> ConfigParser:
         "talk":                         "v",
     }
     config[ConfigKeys.mouse_config] = {
+        "; Mouse config": None,
+        "; distance is how far the mouse will move when looking around, in pixels (I think)": None,
         "distance":                     "500",
     }
     config[ConfigKeys.mouse] = {
+        "; Mouse commands, comma seperated = button or direction (lmb, mmb, rmb, up, down, left, right)": None,
         "lmb":                          "lmb",
         "mmb":                          "mmb",
         "rmb":                          "rmb",
@@ -55,11 +62,11 @@ def make_default(filename: str) -> ConfigParser:
     return config
 
 def get_from_file(filename: str = "config.ini") -> ConfigParser:
-    if os.path.isfile(filename):
-        cfg = ConfigParser()
-        cfg.read(filename)
-        return cfg
-    return make_default(filename)
+    if not os.path.isfile(filename):
+        make_default(filename)
+    cfg = ConfigParser()
+    cfg.read(filename)
+    return cfg
 
 def print_config(config: ConfigParser) -> None:
     for key in config[ConfigKeys.default]:

@@ -1,4 +1,4 @@
-VERSION = 0.2
+VERSION = 0.4
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -40,7 +40,7 @@ def setup_logging(log_level: int = logging.INFO) -> None:
     sourceFilename = __file__.rsplit('\\', 1)[1]
     logging.log(logging.root.getEffectiveLevel(), f"Logging initialised for {sourceFilename} at level {logging.getLevelName(log_level)}")
 
-def print_preamble(start_key: str) -> None:
+def print_preamble(start_key: str, keymap: Keymap) -> None:
     """Function to print programme start text to the console.
 
     Does not go to the logger therefore doesn't go to the logfile.
@@ -61,6 +61,10 @@ def print_preamble(start_key: str) -> None:
 
     print("\n")
 
+    log_keymap(keymap, to_console=True)
+
+    print("\n")
+
 def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTuple:
     matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
 
@@ -72,7 +76,6 @@ def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTupl
 
 if __name__ == "__main__":
     config = get_from_file()
-    print_config(config)
 
     channel   = config[ConfigKeys.twitch]['TwitchChannelName']
     start_key = config[ConfigKeys.broadcaster]['OutputToggleOnOff']
@@ -82,7 +85,7 @@ if __name__ == "__main__":
     keymap = make_keymap_entry(config)
     log_keymap(keymap)
 
-    print_preamble(start_key)
+    print_preamble(start_key, keymap)
 
     @dataclass
     class OnOffSwitch:
