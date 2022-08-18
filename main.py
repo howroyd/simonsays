@@ -5,27 +5,17 @@ from logging.handlers import TimedRotatingFileHandler
 
 import sys, keyboard
 from time import sleep
-from keymap import iomap, emotemap
+from keymap import easter_eggs
 from types import FunctionType
 from dataclasses import dataclass
+from pathlib import Path
 
 import keyboard, mouse
 
 from configparser import ConfigParser
 
-import twitch
-
-CHANNEL   = "katatouille93"
-START_KEY = "shift+backspace"
-
-test_keys = [
-    "lmb",
-    "left",
-    "spin",
-    "bollocks",
-    "mmb",
-    "rmb",
-]
+import twitch, outputs
+from default_config import get_from_file, print_config
 
 class TwitchAPI:
     def __init__(self, channel: str):
@@ -40,19 +30,26 @@ class TwitchAPI:
 def setup_logging() -> None:
     """Setup the global logger
     """
+    directory = "logs"
+    filename = "log"
+    Path(directory).mkdir(parents=True, exist_ok=True)
+
+    h = TimedRotatingFileHandler(
+                f"{directory}/{filename}",
+                encoding="utf-8",
+                when="m",
+                interval=1,
+                backupCount=10
+            )
+    h.namer = lambda name: name.replace(".log", "") + ".log"
+
     logging.root.handlers = []
     logging.basicConfig(
         level=logging.INFO, # Change this to change the global logging level. Normally .INFO, or if needed, .DEBUG
         format="%(asctime)s %(levelname)s:%(message)s",
         datefmt="%y%m%d %H:%M:%S",
         handlers=[
-            TimedRotatingFileHandler(
-                "log",
-                encoding="utf-8",
-                when="H",
-                interval=3,
-                backupCount=10
-            ),
+            h,
             #logging.FileHandler("debug.log"),
             logging.StreamHandler()
         ]
@@ -93,7 +90,7 @@ def message_filter(message: str, key_to_function_map: dict[str, tuple[FunctionTy
     Returns:
         tuple[FunctionType, tuple[str, ...]]: message and function object with args or (None, None)
     """
-    matches = [value for key, value in key_to_function_map.items() if message.startswith(key)]
+    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
     if n_matches := len(matches):
         if n_matches > 1:
             logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
@@ -110,50 +107,73 @@ class OnOffSwitch:
 
 
 
-
-def get_config_chat_commands(config: ConfigParser):
-    return config["chat.commands"]
-
-def make_keymap_entry(config: ConfigParser):
+def make_mouse_keymap(config: ConfigParser):
     mouse_commands = {
         "lmb": "left",
         "mmb": "middle",
         "rmb": "right"
     }
 
+    mouse_movement = {
+        "right":    (100, 0),
+        "left":     (-100, 0),
+        "up":       (0, -100),
+        "down":     (0, 100),
+    }
+
     ret = {}
 
-    for key in get_config_chat_commands(config):
-        value = config["chat.commands"][key]
+    for k, v in config['mouse.chat.commands'].items():
+        args = v.split()
 
-        match value.split()[0]:
-            case [mouse_commands.keys()]:
-                ret[key] = (mouse.click, (mouse_commands[value],))
-            case _:
-                ret[key] = (keyboard.press_and_release, tuple(value.split()))
+        if args[0] in mouse_commands.keys():
+            ret[k] = (outputs.MouseOutputs.press_button_for, (mouse_commands[args[0]],))
+        elif args[0] in mouse_movement.keys():
+            ret[k] = (outputs.MouseOutputs.move, (*mouse_movement[args[0]],))
+        else:
+            logging.error(f"Unknown mouse command config {k}: {v}")
 
     return ret
 
+def make_keyboard_keymap(config: ConfigParser):
+    ret = {}
+
+    for k, v in config['keyboard.chat.commands'].items():
+        args = v.split()
+
+        match len(args):
+            case 1:
+                ret[k] = (outputs.KeyboardOutputs.press_key, tuple(args))
+            case 2:
+                ret[k] = (outputs.KeyboardOutputs.press_key_for, (args[0], float(args[1]))) # TODO this arg parse is a bit shit
+            case _:
+                logging.error(f"Unknown keyboard command config {k}: {v}")
+
+    return ret
+
+def make_keymap_entry(config: ConfigParser):
+    return make_mouse_keymap(config) | make_keyboard_keymap(config)
+
 if __name__ == "__main__":
-    config = ConfigParser()
-    config.read("config.ini")
-    for key in config["DEFAULT"]:
-        print(f"""{key} is {config["DEFAULT"][key]}""")
-    for section in config.sections():
-        for key in config[section]:
-            print(f"""{key} is {config[section][key]}""")
+    config = get_from_file()
+    print_config(config)
 
+    channel = config['twitch.tv']['TwitchChannelName']
+    start_key = config['broadcaster.commands']['OutputToggleOnOff']
 
-    print(make_keymap_entry(config))
+    keymap = make_keymap_entry(config)
+
+    for k, v in keymap.items():
+        print(f"{k}: {v}")
 
     setup_logging()
 
-    print_preamble(START_KEY)
+    print_preamble(start_key)
     is_active = OnOffSwitch()
-    onOffHandler = keyboard.add_hotkey(START_KEY, lambda is_active=is_active: is_active.toggle())
+    onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
 
-    with twitch.ChannelConnection(CHANNEL) as tw:
-        logging.info("Connected to #%s", CHANNEL)
+    with twitch.ChannelConnection(channel) as tw:
+        logging.info(f"Connected to #{channel}")
 
         while True:
             tw.run()
@@ -162,7 +182,7 @@ if __name__ == "__main__":
                 channel, message = x.payload_as_tuple()
                 logging.debug(f"From {x.username} in {channel}: {message}")
 
-                fn, args = message_filter(message, emotemap | iomap)
+                fn, args = message_filter(message, keymap | easter_eggs)
                 if fn and is_active.state:
                     #sleep(1)
                     fn(*args)
