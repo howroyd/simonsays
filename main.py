@@ -9,7 +9,7 @@ from dataclasses    import dataclass
 from pathlib        import Path
 
 import twitch
-from default_config import get_from_file, print_config, ConfigKeys
+from default_config import get_from_file, ConfigKeys
 from keymap         import easter_eggs, make_keymap_entry, log_keymap, FunctionArgTuple, Keymap
 
 def setup_logging(log_level: int = logging.INFO) -> None:

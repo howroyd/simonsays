@@ -1,6 +1,6 @@
 import logging
 
-import keyboard, mouse
+import keyboard
 from time import sleep
 #import pyautogui
 import pydirectinput
