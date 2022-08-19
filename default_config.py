@@ -2,7 +2,6 @@ import os.path
 from configparser import ConfigParser
 
 class ConfigKeys:
-    default         = "DEFAULT"
     logging         = "logging"
     twitch          = "twitch.tv"
     broadcaster     = "broadcaster.commands"
@@ -10,10 +9,27 @@ class ConfigKeys:
     mouse_config    = "mouse.movement"
     mouse           = "mouse.chat.commands"
 
+    @staticmethod
+    def as_dict() -> dict[str, str]:
+        objvars = dict(vars(__class__))
+        print(objvars)
+
+        keys_to_delete = []
+
+        for k, v in objvars.items():
+            if k.startswith("__"):
+                keys_to_delete.append(k)
+            elif callable(getattr(ConfigKeys(), k)):
+                keys_to_delete.append(k)
+
+        for k in keys_to_delete:
+            del objvars[k]
+
+        return objvars
+
 def generate_default_config() -> ConfigParser:
     config = ConfigParser(allow_no_value=True)
 
-    config[ConfigKeys.default] = {}
     config[ConfigKeys.logging] = {
         "; DEBUG, INFO, WARNING, ERROR, CRITICAL": None,
         "DebugLevel": "INFO"
