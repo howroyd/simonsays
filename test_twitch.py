@@ -1,27 +1,27 @@
+import logging
 import time
 import twitch
 
-CHANNEL = "katatouille93"
+def channel_connection(channel: str) -> bool:
+    timeout_s = 15
 
-def test_channel_connection() -> bool:
-    with twitch.ChannelConnection(CHANNEL) as tw:
-        t_start = time.time()
-        for i in range(5):
-            tw.run()
-            if tw.last_ping and tw.last_ping > t_start:
+    with twitch.ChannelConnection(channel) as tw:
+        return True
+    return False # FIXME Throws if failed, so False is unreachable making this code wrong.
+
+def test_channel_connection(n_retries: int = 4) -> bool:
+    ret = False
+
+    for i in range(n_retries):
+        try:
+            if channel_connection("katatouille93"):
                 return True
+        except Exception as e:
+            print(e)
             time.sleep(1)
+
     return False
 
 if __name__ == "__main__":
-    ret = False
-    
-    for i in range(3):
-        try:
-            ret = test_channel_connection()
-            if ret:
-                break
-        except Exception as e:
-            print(e)
-        
-    assert(ret)
+    assert test_channel_connection(), "test_channel_connection failed"
+    print("Passed")

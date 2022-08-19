@@ -284,12 +284,16 @@ class IrcConnection:
         self.buf = []
         self.n_max_messages = 50
         self.last_ping = None
+        self.joined_at = None
 
     def run(self) -> None:
         if self.peek(TwitchMessageEnum.PING):
             self.incomingSocket.send(TwitchIrc.pong_message())
             self.remove_all(TwitchMessageEnum.PING)
             self.last_ping = time.time()
+        if self.peek(TwitchMessageEnum.JOIN):
+            self.remove_all(TwitchMessageEnum.JOIN)
+            self.joined_at = time.time()
 
     def get(self, which: TwitchMessageEnum = None) -> list[TwitchIrc.Message]:
         """Get all messages matching an IRC ID and delete them from the internal buffer.
