@@ -1,3 +1,15 @@
+# Who am I?
+Hi, I am Simon.  You might know me on Twitch as `GreenaGiant`.
+
+My day job is as a senior embedded firmware engineer in the UK.  Normally writing C++ for bare metal devices, previously working in healthcare and also in construction.
+
+I use Python regularly to create tools to help with work, and used it extensively in my PhD and postdoc.  I am pretty good at Python but I probably fall sort of being a Python professional, or maybe I am being too modest.
+
+# Naming
+I am not content with the name "TwitchPlays".   There are loads of other bits of software with this name.  Not only do I not wish to tread on their toes, it would also be nice to have a more unique identity.
+
+If you have any suggestions, then please submit it in the `issues` tab, or create a `discussion`.  All ideas are greatly received and will of course be fully accredited.
+
 # TwitchPlays
 This work in progress code is a rewrite and extension of an excellent system seen on DoudDougW's Twitch channel (https://www.twitch.tv/dougdougw). They've kindly provided the code on their website (https://www.dougdoug.com/twitchplays)
 
