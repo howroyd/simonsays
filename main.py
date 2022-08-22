@@ -1,9 +1,10 @@
-VERSION = 0.5
+VERSION = 0.6
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-import keyboard
+#import keyboard
+from pynput import keyboard
 from time           import sleep
 from dataclasses    import dataclass
 from pathlib        import Path
@@ -96,25 +97,34 @@ if __name__ == "__main__":
             logging.info("Turned %s" % ("ON" if self.state else "OFF"))
 
     is_active    = OnOffSwitch()
-    onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+    #onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+    onOffHandler = keyboard.HotKey(
+        keyboard.HotKey.parse('<shift>+<backspace>'),
+        lambda is_active=is_active: is_active.toggle()
+        )
 
     with twitch.ChannelConnection(channel) as tw:
         logging.info(f"Connected to #{channel}")
 
-        while True:
-            tw.run()
-            msgs = tw.get_chat_messages()
+        with keyboard.Listener(
+                on_press=onOffHandler.press,
+                on_release=onOffHandler.release
+            ) as l:
 
-            for x in msgs:
-                channel, message = x.payload_as_tuple()
-                logging.debug(f"From {x.username} in {channel}: {message}")
+            while True:
+                tw.run()
+                msgs = tw.get_chat_messages()
 
-                fn, args = message_filter(message, keymap | easter_eggs)
+                for x in msgs:
+                    channel, message = x.payload_as_tuple()
+                    logging.debug(f"From {x.username} in {channel}: {message}")
 
-                if fn:
-                    logging.debug(f"{fn.__qualname__} with {(*args,)}")
-                    if is_active.state:
-                        logging.debug(f"Calling {fn.__name__}")
-                        fn(*args)
+                    fn, args = message_filter(message, keymap | easter_eggs)
 
-            sleep(0.1)
+                    if fn:
+                        logging.debug(f"{fn.__qualname__} with {(*args,)}")
+                        if is_active.state:
+                            logging.debug(f"Calling {fn.__name__}")
+                            fn(*args)
+
+                sleep(0.01)
