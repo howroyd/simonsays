@@ -5,6 +5,7 @@ python -m pip install -U pyinstaller Pillow
 
 pyinstaller --noconfirm --log-level=WARN ^
     --onefile ^
+    --hidden-import "win32api" ^
     --add-data="README.md;." ^
     --add-data="katatoRIOT.png;img" ^
     --i katatoRIOT.png ^
