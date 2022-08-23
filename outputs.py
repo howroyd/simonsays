@@ -6,8 +6,8 @@ from threading import Thread
 from pynput.keyboard import Key
 from pynput.keyboard import Controller as Keyboard
 
-from pynput.mouse import Button
-from pynput.mouse import Controller as Mouse
+from pynput_local.lib.pynput.mouse._win32 import Button
+from pynput_local.lib.pynput.mouse._win32 import Controller as Mouse
 
 keyboard = Keyboard()
 mouse    = Mouse()
