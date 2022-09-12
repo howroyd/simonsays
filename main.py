@@ -4,7 +4,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 
 #import keyboard
-from pynput import keyboard
+from pynput         import keyboard
 from time           import sleep
 from dataclasses    import dataclass
 from pathlib        import Path
