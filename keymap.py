@@ -33,6 +33,7 @@ def make_mouse_keymap(config: ConfigParser) -> Keymap:
             ret[k] = (MouseOutputs.move, (*mouse_movement[args[0]],))
         else:
             logging.error(f"Unknown mouse command config {k}: {v}")
+            raise ValueError
 
     return ret
 
@@ -49,6 +50,7 @@ def make_keyboard_keymap(config: ConfigParser) -> Keymap:
                 ret[k] = (KeyboardOutputs.press_key_for, (args[0], float(args[1]))) # TODO this arg parse is a bit shit
             case _:
                 logging.error(f"Unknown keyboard command config {k}: {v}")
+                raise ValueError
 
     return ret
 

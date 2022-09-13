@@ -1,6 +1,8 @@
 import os.path
 from configparser import ConfigParser
+from dataclasses import dataclass
 
+@dataclass(frozen=True, slots=True)
 class ConfigKeys:
     logging         = "logging"
     twitch          = "twitch.tv"
