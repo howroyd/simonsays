@@ -39,5 +39,5 @@ jobs:
     - name: Test with pytest
       run: |
         dir
-        python -m pip install pynput_local
+        python -m pip install -e ./pynput_local
         python run_tests.py
