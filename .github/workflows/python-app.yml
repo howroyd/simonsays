@@ -26,6 +26,7 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        git submodule init --update --recursive
         python -m pip install --upgrade pip
         pip install flake8
         if (Test-Path requirements.txt) {pip install -r requirements.txt}
@@ -37,4 +38,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        python -m pip install pynput_local
         python run_tests.py
