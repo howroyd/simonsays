@@ -8,7 +8,6 @@ class ConfigKeys:
     twitch          = "twitch.tv"
     broadcaster     = "broadcaster.commands"
     keyboard        = "keyboard.chat.commands"
-    mouse_config    = "mouse.movement"
     mouse           = "mouse.chat.commands"
 
     @staticmethod
@@ -50,23 +49,33 @@ def generate_default_config() -> ConfigParser:
         "back, backward, backwards":    "s   3",
         "left, strafe left":            "a   2",
         "right, strafe right":          "d   2",
+        #"fastforward, fastforwards":    "shift+w   3", # TODO, requires with statement to press shift
+        #"fastbackward, fastbackwards":  "shift+s   3", # TODO, requires with statement to press shift
+        #"fastleft, fast strafe left":   "shift+a   2", # TODO, requires with statement to press shift
+        #"fastright, fast strafe right": "shift+d   2", # TODO, requires with statement to press shift
         "journal":                      "j",
-        "talk":                         "v",
-    }
-    config[ConfigKeys.mouse_config] = {
-        "; Mouse config": None,
-        "; distance is how far the mouse will move when looking around, in pixels (I think)": None,
-        "distance":                     "500",
+        "talk":                         "v   3",
+        "flashlight, torch, light":     "t",
+        "throw, yeet, drop":            "g",
+        "use":                          "f",
+        "switch, change, swap":         "q",
+        "crouch":                       "c",
+        "pickup, grab":                 "e",
     }
     config[ConfigKeys.mouse] = {
         "; Mouse commands, comma seperated = button or direction (lmb, mmb, rmb, up, down, left, right)": None,
+        "; distance is how far the mouse will move when looking around, in pixels (I think)": None,
         "lmb":                          "lmb",
         "mmb":                          "mmb",
         "rmb":                          "rmb",
-        "look right":                   "right",
-        "look left":                    "left",
-        "look up":                      "up",
-        "look down":                    "down",
+        "look right":                   "right 500",
+        "look left":                    "left 500",
+        "look up":                      "up 500",
+        "look down":                    "down 500",
+        "peek right":                   "right 200",
+        "peek left":                    "left 200",
+        "peek up":                      "up 200",
+        "peek down":                    "down 200",
     }
 
     return config

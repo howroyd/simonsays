@@ -7,30 +7,29 @@ from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
 FunctionArgTuple = tuple[FunctionType, tuple[str, ...]]
 Keymap = dict[str, FunctionArgTuple]
 
+MOUSE_COMMANDS = {
+    "lmb": "left",
+    "mmb": "middle",
+    "rmb": "right"
+}
+
+MOUSE_IDENTITY = {
+    "right":    (1,  0),
+    "left":     (-1, 0),
+    "up":       (0,  -1),
+    "down":     (0,  1),
+}
+
 def make_mouse_keymap(config: ConfigParser) -> Keymap:
-    mouse_commands = {
-        "lmb": "left",
-        "mmb": "middle",
-        "rmb": "right"
-    }
-
-    distance = int(config['mouse.movement']['distance'])
-    mouse_movement = {
-        "right":    (distance, 0),
-        "left":     (-distance, 0),
-        "up":       (0, -distance),
-        "down":     (0, distance),
-    }
-
     ret = {}
 
     for k, v in config['mouse.chat.commands'].items():
         args = v.split()
 
-        if args[0] in mouse_commands.keys():
-            ret[k] = (MouseOutputs.press_button_for, (mouse_commands[args[0]],))
-        elif args[0] in mouse_movement.keys():
-            ret[k] = (MouseOutputs.move, (*mouse_movement[args[0]],))
+        if args[0] in MOUSE_COMMANDS.keys():
+            ret[k] = (MouseOutputs.press_button_for, (MOUSE_COMMANDS[args[0]],))
+        elif args[0] in MOUSE_IDENTITY.keys():
+            ret[k] = (MouseOutputs.move, tuple(x * int(args[1]) for x in MOUSE_IDENTITY[args[0]]))
         else:
             logging.error(f"Unknown mouse command config {k}: {v}")
             raise ValueError
