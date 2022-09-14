@@ -122,7 +122,7 @@ def main() -> None:
                     fn, args = message_filter(message, mykeymap | keymap.easter_eggs)
 
                     if fn:
-                        logging.debug(f"{fn.__qualname__} with {(*args,)}")
+                        logging.info(f"{fn.__qualname__} with {(*args,)} by {x.username}: {message}")
                         if is_active.state:
                             logging.debug(f"Calling {fn.__name__}")
                             fn(*args)
