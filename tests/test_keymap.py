@@ -9,12 +9,9 @@ def good_keymap() -> dict[str, dict[str, str]]:
             "talk":                 "v",
             "forward, forwards":    "w 3"
         },
-        default_config.ConfigKeys.mouse_config: {
-            "distance":             "500",
-        },
         default_config.ConfigKeys.mouse:        {
             "lmb":                  "lmb",
-            "look right":           "right"
+            "look right":           "right 500"
         },
     }
 
@@ -30,12 +27,9 @@ def bad_keyboard_keymap() -> dict[str, dict[str, str]]:
             "talk":                 "v",
             "forward, forwards":    ""
         },
-        default_config.ConfigKeys.mouse_config: {
-            "distance":             "500",
-        },
         default_config.ConfigKeys.mouse:        {
             "lmb":                  "lmb",
-            "look right":           "right"
+            "look right":           "right 500"
         },
     }
 
@@ -50,15 +44,16 @@ def bad_mouse_keymap() -> dict[str, dict[str, str]]:
             "talk":                 "v",
             "forward, forwards":    "w 3"
         },
-        default_config.ConfigKeys.mouse_config: {
-            "distance":             "500",
-        },
         default_config.ConfigKeys.mouse:        {
             "lmb":                  "invalid",
-            "look right":           "right"
+            "look right":           "right 500"
         },
     }
 
 def test_make_keymap_entry_bad_mouse(bad_mouse_keymap: dict[str, dict[str, str]]) -> None:
     with pytest.raises(ValueError):
-        keymap.make_keymap_entry(bad_mouse_keymap)
+        for _ in range(4):
+            try:
+                keymap.make_keymap_entry(bad_mouse_keymap)
+            except ConnectionResetError as e:
+                pass
