@@ -17,7 +17,7 @@ def channel_connection_with_retries(channel: str) -> bool:
             channel_connection(channel)
             ret = True
             break
-        except [socket.timeout, ConnectionError] as e:
+        except [TimeoutError, ConnectionError] as e:
             time.sleep(1)
 
     return ret
@@ -25,7 +25,7 @@ def channel_connection_with_retries(channel: str) -> bool:
 def test_channel_connection(n_retries: int = 4) -> None:
     assert channel_connection_with_retries("katatouille93"), "test_channel_connection failed"
 
-    with pytest.raises(socket.timeout):
+    with pytest.raises(TimeoutError):
         channel_connection("")
 
 def test_message_builder() -> bool:
