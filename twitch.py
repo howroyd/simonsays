@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum        import Enum, auto, unique
 from typing      import Tuple
 
-@dataclass
+@dataclass(slots=True)
 class MessageBuilder:
     '''Dataclass to hold a raw incoming bytes and output complete packets defined by the regex pattern'''
     '''Basically a way of assembling partial packets incrementally and knowing when a complete packet has been assembled'''
@@ -126,7 +126,7 @@ class TwitchIrc:
                 case _:
                     return ret_fail
 
-    @dataclass
+    @dataclass(slots=True)
     class Message:
         '''Container for a Twitch IRC message'''
         username:   str
@@ -141,7 +141,7 @@ class TwitchIrc:
             channel, message = self.payload.split(':', maxsplit=1)
             return (channel.rstrip().lstrip('#'), message.lstrip().rstrip())
 
-@dataclass
+@dataclass(slots=True)
 class TwitchConnection:
     """Create a connection to Twith IRC and login"""
     username:     str           = "justinfan%i" % random.randint(10000, 99999)

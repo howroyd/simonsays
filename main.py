@@ -1,22 +1,23 @@
-VERSION = 0.5
+VERSION = 0.9
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-import keyboard
 from time           import sleep
 from dataclasses    import dataclass
-from pathlib        import Path
+import pathlib
+
+import pynput.keyboard
 
 import twitch
-from default_config import get_from_file, ConfigKeys
-from keymap         import easter_eggs, make_keymap_entry, log_keymap, FunctionArgTuple, Keymap
+import default_config
+import keymap
 
 def setup_logging(log_level: int = logging.INFO) -> None:
     """Setup the global logger"""
     directory = "logs"
     filename = "log"
-    Path(directory).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
     h = TimedRotatingFileHandler(
                 f"{directory}/{filename}",
@@ -40,7 +41,7 @@ def setup_logging(log_level: int = logging.INFO) -> None:
     sourceFilename = __file__.rsplit('\\', 1)[1]
     logging.log(logging.root.getEffectiveLevel(), f"Logging initialised for {sourceFilename} at level {logging.getLevelName(log_level)}")
 
-def print_preamble(start_key: str, keymap: Keymap) -> None:
+def print_preamble(start_key: str, mykeymap: keymap.Keymap) -> None:
     """Function to print programme start text to the console.
 
     Does not go to the logger therefore doesn't go to the logfile.
@@ -61,11 +62,11 @@ def print_preamble(start_key: str, keymap: Keymap) -> None:
 
     print("\n")
 
-    log_keymap(keymap, to_console=True)
+    keymap.log_keymap(mykeymap, to_console=True)
 
     print("\n")
 
-def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTuple:
+def message_filter(message: str, key_to_function_map: keymap.Keymap) -> keymap.FunctionArgTuple:
     matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
 
     if n_matches := len(matches):
@@ -74,20 +75,20 @@ def message_filter(message: str, key_to_function_map: Keymap) -> FunctionArgTupl
         return matches[0]
     return (None, None)
 
-if __name__ == "__main__":
-    config = get_from_file()
+def main() -> None:
+    config = default_config.get_from_file()
 
-    channel   = config[ConfigKeys.twitch]['TwitchChannelName']
-    start_key = config[ConfigKeys.broadcaster]['OutputToggleOnOff']
-    log_level = logging.getLevelName(config[ConfigKeys.logging]['DebugLevel'])
+    channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName']
+    start_key = config[default_config.ConfigKeys.broadcaster]['OutputToggleOnOff']
+    log_level = logging.getLevelName(config[default_config.ConfigKeys.logging]['DebugLevel'])
 
     setup_logging(log_level)
-    keymap = make_keymap_entry(config)
-    log_keymap(keymap)
+    mykeymap = keymap.make_keymap_entry(config)
+    keymap.log_keymap(mykeymap)
 
-    print_preamble(start_key, keymap)
+    print_preamble(start_key, mykeymap)
 
-    @dataclass
+    @dataclass(slots=True)
     class OnOffSwitch:
         state: bool = True
 
@@ -96,25 +97,37 @@ if __name__ == "__main__":
             logging.info("Turned %s" % ("ON" if self.state else "OFF"))
 
     is_active    = OnOffSwitch()
-    onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+    #onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+    onOffHandler = pynput.keyboard.HotKey(
+        pynput.keyboard.HotKey.parse('<shift>+<backspace>'),
+        lambda is_active=is_active: is_active.toggle()
+        )
 
     with twitch.ChannelConnection(channel) as tw:
         logging.info(f"Connected to #{channel}")
 
-        while True:
-            tw.run()
-            msgs = tw.get_chat_messages()
+        with pynput.keyboard.Listener(
+                on_press=onOffHandler.press,
+                on_release=onOffHandler.release
+            ) as l:
 
-            for x in msgs:
-                channel, message = x.payload_as_tuple()
-                logging.debug(f"From {x.username} in {channel}: {message}")
+            while True:
+                tw.run()
+                msgs = tw.get_chat_messages()
 
-                fn, args = message_filter(message, keymap | easter_eggs)
+                for x in msgs:
+                    channel, message = x.payload_as_tuple()
+                    logging.debug(f"From {x.username} in {channel}: {message}")
 
-                if fn:
-                    logging.debug(f"{fn.__qualname__} with {(*args,)}")
-                    if is_active.state:
-                        logging.debug(f"Calling {fn.__name__}")
-                        fn(*args)
+                    fn, args = message_filter(message, mykeymap | keymap.easter_eggs)
 
-            sleep(0.1)
+                    if fn:
+                        logging.info(f"{fn.__qualname__} with {(*args,)} by {x.username}: {message}")
+                        if is_active.state:
+                            logging.debug(f"Calling {fn.__name__}")
+                            fn(*args)
+
+                sleep(0.01)
+
+if __name__ == "__main__":
+    main()

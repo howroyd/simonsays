@@ -11,6 +11,8 @@ I am not content with the name "TwitchPlays".   There are loads of other bits of
 If you have any suggestions, then please submit it in the `issues` tab, or create a `discussion`.  All ideas are greatly received and will of course be fully accredited.
 
 # TwitchPlays
+Example here: https://clips.twitch.tv/ExuberantEsteemedPistachioCurseLit-L-jTrUt1MRaZF1u3
+
 This work in progress code is a rewrite and extension of an excellent system seen on DoudDougW's Twitch channel (https://www.twitch.tv/dougdougw). They've kindly provided the code on their website (https://www.dougdoug.com/twitchplays)
 
 The inspiration and request was from my friend Kat who wants to use a similar concept to control Phasmophobia on her channel (https://www.twitch.tv/katatouille93)
