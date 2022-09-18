@@ -76,5 +76,9 @@ def log_keymap(keymap: Keymap, to_console = False) -> None:
             out_fn(f"{k}: {(v[0].__qualname__, v[1])}")
 
 easter_eggs: Keymap = {
-    "!dungeon": (PrintOutputs.printer, ("In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo",)),
+    "!dungeon": (PrintOutputs.printer, ("In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo!",)),
+    "!caulk": (PrintOutputs.printer, ("Caulk or, less frequently, caulking is a material used to seal joints or seams against leakage in various structures and piping.",)),
+    "!cock": (PrintOutputs.printer, ("Hahahaha, why did you say cock?",)),
+    "!tiethepoll": (PrintOutputs.printer, ("Kat loves it when chat ties the poll!",)),
+    "!sosig": (PrintOutputs.printer, ("Kat is a silly sosig!",)),
 }
