@@ -67,7 +67,7 @@ def print_preamble(start_key: str, mykeymap: keymap.Keymap) -> None:
     print("\n")
 
 def message_filter(message: str, key_to_function_map: keymap.Keymap) -> keymap.FunctionArgTuple:
-    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(key.split(',')))]
+    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(map(str.strip, key.split(','))))]
 
     if n_matches := len(matches):
         if n_matches > 1:
