@@ -28,6 +28,10 @@ def make_mouse_keymap(config: ConfigParser) -> Keymap:
 
         if args[0] in MOUSE_COMMANDS.keys():
             ret[k] = (MouseOutputs.press_button_for, (MOUSE_COMMANDS[args[0]],))
+        elif "spin" in k:
+            routine_args = tuple(x * int(args[1]) for x in MOUSE_IDENTITY[args[0]])
+            routine_args = *routine_args, float(args[2])
+            ret[k] = (MouseOutputs.move_routine, routine_args)
         elif args[0] in MOUSE_IDENTITY.keys():
             ret[k] = (MouseOutputs.move, tuple(x * int(args[1]) for x in MOUSE_IDENTITY[args[0]]))
         else:
@@ -47,6 +51,8 @@ def make_keyboard_keymap(config: ConfigParser) -> Keymap:
                 ret[k] = (KeyboardOutputs.press_key, tuple(args))
             case 2:
                 ret[k] = (KeyboardOutputs.press_key_for, (args[0], float(args[1]))) # TODO this arg parse is a bit shit
+            case 3:
+                ret[k] = (KeyboardOutputs.press_release_routine, (args[0], int(args[1]), float(args[2]))) # TODO this arg parse is a bit shit
             case _:
                 logging.error(f"Unknown keyboard command config {k}: {v}")
                 raise ValueError

@@ -25,6 +25,15 @@ def str_to_button(button: str) -> Button:
 
 class KeyboardOutputs:
     @staticmethod
+    def press_release_routine(key: str, n_cycles: int, seconds: float = None) -> None:
+        for _ in range(n_cycles):
+            logging.info(f"Press keyboard {key} then wait {seconds:.2f}s")
+            keyboard.press(key)
+            sleep(0.01)
+            keyboard.release(key)
+            sleep(seconds)
+
+    @staticmethod
     def press_key_for(key: str, seconds: float = None) -> None:
         if seconds:
             logging.info(f"Press keyboard {key} for {seconds:.2f}s")
@@ -68,6 +77,15 @@ class MouseOutputs:
     @staticmethod
     def press_button(button: str) -> None:
         __class__.press_button_for(button)
+
+    @staticmethod
+    def move_routine(x: int, y: int, seconds: float) -> None:
+        steps = max(abs(x), abs(y))
+        timestep = seconds / steps
+        logging.info(f"Move mouse by x={x}, y={y} in {seconds}s ({steps} steps {timestep}s apart)")
+        for _ in range(steps):
+            mouse.move(x // steps, y // steps)
+            sleep(timestep)
 
     @staticmethod
     def move(x: int, y: int) -> None:
