@@ -1,4 +1,5 @@
 import logging
+import random, math
 
 from time import sleep
 from threading import Thread
@@ -29,9 +30,9 @@ class KeyboardOutputs:
         for _ in range(n_cycles):
             logging.info(f"Press keyboard {key} then wait {seconds:.2f}s")
             keyboard.press(key)
-            sleep(0.01)
+            sleep(seconds / 2)
             keyboard.release(key)
-            sleep(seconds)
+            sleep(seconds / 2)
 
     @staticmethod
     def press_key_for(key: str, seconds: float = None) -> None:
@@ -59,6 +60,9 @@ class KeyboardOutputs:
     def _release(key: str) -> None:
         __class__._release_later(key)
 
+
+
+
 class MouseOutputs:
     @staticmethod
     def press_button_for(button: str, seconds: float = 0.01) -> None:
@@ -80,11 +84,18 @@ class MouseOutputs:
 
     @staticmethod
     def move_routine(x: int, y: int, seconds: float) -> None:
-        steps = max(abs(x), abs(y))
+        if x:
+            x = random.randint(x//2 - abs(x//2), x + abs(x//2))
+        if y:
+            y = random.randint(y//2 - abs(x//2), y + abs(y//2))
+        
+        print(f"{x=} {y=}")
+        
+        steps = max(abs(x/100), abs(y/100))
         timestep = seconds / steps
         logging.info(f"Move mouse by x={x}, y={y} in {seconds}s ({steps} steps {timestep}s apart)")
-        for _ in range(steps):
-            mouse.move(x // steps, y // steps)
+        for _ in range(int(steps)):
+            mouse.move(int(x / steps), int(y / steps))
             sleep(timestep)
 
     @staticmethod

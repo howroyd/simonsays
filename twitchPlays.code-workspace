@@ -4,7 +4,10 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+	"settings": {
+		"editor.fontSize": 13,
+		"window.zoomLevel": 1.5
+	},
 	"launch": {
 		"version": "0.2.0",
 		"configurations": []

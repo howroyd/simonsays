@@ -82,7 +82,7 @@ def main() -> None:
 
     config = default_config.get_from_file()
 
-    channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName']
+    channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName'].lower()
     start_key = config[default_config.ConfigKeys.broadcaster]['OutputToggleOnOff']
     log_level = logging.getLevelName(config[default_config.ConfigKeys.logging]['DebugLevel'])
 
@@ -130,6 +130,7 @@ def main() -> None:
                     if is_active.state:
                         logging.info(f"Calling {fn.__name__} with {args}")
                         Thread(target=fn, args=args).start()
+                        # TODO Cooldowns on commands, restrict parallel-execution of same fn
                         #pool.apply_async(fn, *args)
                         #fn(*args)
 
