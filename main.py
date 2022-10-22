@@ -1,4 +1,4 @@
-VERSION = 0.9
+VERSION = 0.10
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -8,6 +8,7 @@ from dataclasses    import dataclass
 import pathlib
 import multiprocessing as mp
 from threading import Thread
+from typing import Optional
 
 import pynput.keyboard
 
@@ -68,14 +69,12 @@ def print_preamble(start_key: str, mykeymap: keymap.Keymap) -> None:
 
     print("\n")
 
-def message_filter(message: str, key_to_function_map: keymap.Keymap) -> keymap.FunctionArgTuple:
-    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(map(str.strip, key.split(','))))]
-
-    if n_matches := len(matches):
-        if n_matches > 1:
-            logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
-        return matches[0]
-    return (None, None)
+def message_filter(message: str, key_to_function_map: keymap.Keymap) -> Optional[keymap.Command]:
+    for command in key_to_function_map:
+        for key in command.keys:
+            if message.lower().strip().startswith(key):
+                return command
+    return None
 
 def main() -> None:
     #mp.freeze_support()
@@ -123,17 +122,11 @@ def main() -> None:
                 channel, message_text = msg.payload_as_tuple()
                 logging.debug(f"From {msg.username} in {channel}: {message_text}")
 
-                fn, args = message_filter(message_text, mykeymap | keymap.easter_eggs)
-
-                if fn:
-                    logging.info(f"{fn.__qualname__} with {(*args,)} by {msg.username}: {message_text}")
-                    if is_active.state:
-                        logging.info(f"Calling {fn.__name__} with {args}")
-                        Thread(target=fn, args=args).start()
-                        # TODO Cooldowns on commands, restrict parallel-execution of same fn
-                        #pool.apply_async(fn, *args)
-                        #fn(*args)
-
+                action = message_filter(message_text, mykeymap) #TODO re-enable this or quit.... | keymap.easter_eggs)
+                
+                if action:
+                    action.run()
+                
             sleep(0.01)
 
 if __name__ == "__main__":

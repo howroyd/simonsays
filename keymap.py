@@ -1,68 +1,150 @@
 import logging
 
+import time
+
+from threading import Thread
 from types import FunctionType
+from typing import Callable, Optional
 from configparser import ConfigParser
 from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
+from dataclasses import dataclass, field
 
-FunctionArgTuple = tuple[FunctionType, tuple[str, ...]]
-Keymap = dict[str, FunctionArgTuple]
+@dataclass
+class Command:
+    keys: list[str]
+    fn: Callable
+    button: str
+    duration: float = 0
+    repeats: int = 1
+    cooldown: Optional[float] = None
+    random_chance: Optional[int] = None # TODO
 
-MOUSE_COMMANDS = {
+    last_run: float = 0
+    is_running: bool = False
+
+    @staticmethod
+    def tags_to_arg_dict() -> dict:
+        return {
+            "cd": "cooldown",
+            "d": "duration", # from API
+            "n": "repeats", # from API
+            "r": "random_chance"
+        }
+
+    @classmethod
+    def tag_to_arg(cls, tag: str) -> Optional[str]:
+        try:
+            return cls.tags_to_arg_dict()[tag]
+        except KeyError:
+            return None
+
+    def is_on_cooldown(self) -> bool:
+        delta = time.time() - self.last_run
+        if self.cooldown:
+            return delta < self.cooldown
+        return False
+
+    def can_run(self) -> bool:
+        if not self.is_running:
+            if not self.is_on_cooldown():
+                return True
+            else:
+                print(f"{self.keys} is on cooldown")
+        else:
+            print(f"{self.keys} is already running")
+        return False
+
+    def run(self) -> bool:
+        if self.can_run():
+            self.last_run = time.time()
+
+            def fn() -> None:
+                self.is_running = True
+                self.fn(self.button, self.duration, int(self.repeats)) # TODO kwargs?
+                self.is_running = False
+
+            Thread(target=fn).start()
+            return True
+
+        return False
+
+Keymap = list[Command]
+
+MOUSE_COMMAND_MAP = {
     "lmb": "left",
     "mmb": "middle",
-    "rmb": "right"
+    "rmb": "right",
+    "move": "move"
 }
 
-MOUSE_IDENTITY = {
+MOUSE_IDENTITY_MATRIX = {
     "right":    (1,  0),
     "left":     (-1, 0),
     "up":       (0,  -1),
     "down":     (0,  1),
 }
 
+def split_csv(keys: str, delimiter: str = ',') -> list[str]:
+    return [s.strip() for s in keys.split(delimiter)]
+
+#press_release_routine(button: str, duration: float = 0.01, repeats: int = 1, coords: tuple[int, int] = None)
+
 def make_mouse_keymap(config: ConfigParser) -> Keymap:
-    ret = {}
+    ret = []
 
     for k, v in config['mouse.chat.commands'].items():
-        args = v.split()
+        commands, actions = (split_csv(k, ','), split_csv(v, ','))
 
-        if args[0] in MOUSE_COMMANDS.keys():
-            ret[k] = (MouseOutputs.press_button_for, (MOUSE_COMMANDS[args[0]],))
-        elif "spin" in k:
-            routine_args = tuple(x * int(args[1]) for x in MOUSE_IDENTITY[args[0]])
-            routine_args = *routine_args, float(args[2])
-            ret[k] = (MouseOutputs.move_routine, routine_args)
-        elif args[0] in MOUSE_IDENTITY.keys():
-            ret[k] = (MouseOutputs.move, tuple(x * int(args[1]) for x in MOUSE_IDENTITY[args[0]]))
-        else:
-            logging.error(f"Unknown mouse command config {k}: {v}")
-            raise ValueError
+        actions_splitted = actions[0].split()
+        actions[0] = [MOUSE_COMMAND_MAP[actions_splitted[0]]] + actions_splitted[1:]
+        button = actions[0]
+        args = actions[1:]
+
+        kwargs = {}
+        for arg in args:
+            kwarg_key, kwarg_value = arg.split(':')
+            command_key = Command.tag_to_arg(kwarg_key)
+            if command_key:
+                kwargs[command_key] = float(kwarg_value) # FIXME sanitise this cast
+
+        ret.append(Command(commands,
+                            MouseOutputs.press_release_routine,
+                            button,
+                            **kwargs)
+        )
 
     return ret
 
 def make_keyboard_keymap(config: ConfigParser) -> Keymap:
-    ret = {}
+    ret = []
 
     for k, v in config['keyboard.chat.commands'].items():
-        args = v.split()
+        commands, actions = (split_csv(k, ','), split_csv(v, ','))
 
-        match len(args):
-            case 1:
-                ret[k] = (KeyboardOutputs.press_key, tuple(args))
-            case 2:
-                ret[k] = (KeyboardOutputs.press_key_for, (args[0], float(args[1]))) # TODO this arg parse is a bit shit
-            case 3:
-                ret[k] = (KeyboardOutputs.press_release_routine, (args[0], int(args[1]), float(args[2]))) # TODO this arg parse is a bit shit
-            case _:
-                logging.error(f"Unknown keyboard command config {k}: {v}")
-                raise ValueError
+        button = actions[0]
+        args = actions[1:]
+        kwargs = {}
+        for arg in args:
+            kwarg_key, kwarg_value = arg.split(':')
+            command_key = Command.tag_to_arg(kwarg_key)
+            if command_key:
+                kwargs[command_key] = float(kwarg_value) # FIXME sanitise this cast
+
+        ret.append(Command(commands,
+                            KeyboardOutputs.press_release_routine,
+                            button,
+                            **kwargs)
+        )
 
     return ret
 
 def make_keymap_entry(config: ConfigParser) -> Keymap:
-    return make_mouse_keymap(config) | make_keyboard_keymap(config)
+    return make_keyboard_keymap(config) + make_mouse_keymap(config)
 
 def log_keymap(keymap: Keymap, to_console = False) -> None:
+    from pprint import pprint
+    pprint(keymap)
+    return
     out_fn = logging.debug
     if to_console:
         out_fn = print
