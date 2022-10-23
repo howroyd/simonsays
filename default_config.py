@@ -36,7 +36,7 @@ def generate_default_config() -> ConfigParser:
         "DebugLevel": "INFO"
     }
     config[ConfigKeys.twitch] = {
-        "TwitchChannelName": "katatouille93"
+        "TwitchChannelName": "DrGreenGiant"
     }
     config[ConfigKeys.broadcaster] = {
         "; Allows you to start and stop the keyboard and mouse outputs of this programme when in game": None,

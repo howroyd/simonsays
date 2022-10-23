@@ -8,6 +8,7 @@ from typing import Callable, Optional
 from configparser import ConfigParser
 from outputs import KeyboardOutputs, MouseOutputs, LogOutputs, PrintOutputs
 from dataclasses import dataclass, field
+import random
 
 @dataclass
 class Command:
@@ -18,9 +19,11 @@ class Command:
     repeats: int = 1
     cooldown: Optional[float] = None
     random_chance: Optional[int] = None # TODO
+    enabled: bool = True
+    is_dev_command: bool = False
 
     last_run: float = 0
-    is_running: bool = False
+    is_running: bool = False # TODO this needs to be a mutex
 
     @staticmethod
     def tags_to_arg_dict() -> dict:
@@ -44,17 +47,27 @@ class Command:
             return delta < self.cooldown
         return False
 
+    def check_random_chance_success(self) -> bool:
+        if self.random_chance:
+            if 0 == self.random_chance:
+                return False
+            return random.randint(0,100) <= self.random_chance
+        return True
+
     def can_run(self) -> bool:
         if not self.is_running:
             if not self.is_on_cooldown():
-                return True
+                if self.check_random_chance_success():
+                    return True
+                else:
+                    print(f"{self.keys} failed random chance of {self.random_chance}%")
             else:
                 print(f"{self.keys} is on cooldown")
         else:
             print(f"{self.keys} is already running")
         return False
 
-    def run(self) -> bool:
+    def get_runner(self) -> Optional[Callable]:
         if self.can_run():
             self.last_run = time.time()
 
@@ -63,10 +76,22 @@ class Command:
                 self.fn(self.button, self.duration, int(self.repeats)) # TODO kwargs?
                 self.is_running = False
 
-            Thread(target=fn).start()
-            return True
+            return fn
+        return None
 
+    def run(self) -> bool:
+        runner = self.get_runner()
+        if runner:
+            Thread(target=runner).start()
+            return True
         return False
+
+def execute_runners(runners: list[Callable]):
+    for runner in runners:
+        thread = Thread(target=runner)
+        thread.start()
+        thread.join()
+        # TODO this will need to lock the commands for the duration of the whole thing
 
 Keymap = list[Command]
 
@@ -87,7 +112,6 @@ MOUSE_IDENTITY_MATRIX = {
 def split_csv(keys: str, delimiter: str = ',') -> list[str]:
     return [s.strip() for s in keys.split(delimiter)]
 
-#press_release_routine(button: str, duration: float = 0.01, repeats: int = 1, coords: tuple[int, int] = None)
 
 def make_mouse_keymap(config: ConfigParser) -> Keymap:
     ret = []
@@ -141,11 +165,14 @@ def make_keyboard_keymap(config: ConfigParser) -> Keymap:
 def make_keymap_entry(config: ConfigParser) -> Keymap:
     return make_keyboard_keymap(config) + make_mouse_keymap(config)
 
-def log_keymap(keymap: Keymap, to_console = False) -> None:
-    from pprint import pprint
-    pprint(keymap)
-    return
-    out_fn = logging.debug
+def log_keymap(keymap: Keymap, to_console = False) -> str:
+    out_fn = logging.debug if not to_console else print
+    rep = ""
+    for command in keymap:
+        rep = rep + f"{command.keys} => button={command.button}, duration={command.duration}, cooldown={command.cooldown or 0}sec, repeats={command.repeats}, random_chance={command.random_chance or 100}%, enabled={command.enabled}\n"
+    out_fn(rep)
+    return rep
+
     if to_console:
         out_fn = print
 
@@ -160,8 +187,8 @@ def log_keymap(keymap: Keymap, to_console = False) -> None:
         for k, v in keymap.items():
             out_fn(f"{k:{key_space}}: ({v[0].__qualname__:{func_space}}, {v[1]})")
     else:
-        for k, v in keymap.items():
-            out_fn(f"{k}: {(v[0].__qualname__, v[1])}")
+        for command in keymap:
+            out_fn(f"{command.keys} => {command.button=}, {command.duration=}, {command.cooldown=}, {command.repeats=}, {command.random_chance=}%, {command.enabled=}")
 
 easter_eggs: Keymap = {
     "!dungeon": (PrintOutputs.printer, ("In the dungeon, the dark cold dungeon, the mods will start a mutiny tonight! Ahhhhh wooooo!",)),

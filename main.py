@@ -69,11 +69,16 @@ def print_preamble(start_key: str, mykeymap: keymap.Keymap) -> None:
 
     print("\n")
 
-def message_filter(message: str, key_to_function_map: keymap.Keymap) -> Optional[keymap.Command]:
+def message_filter(message: tuple[str, str], key_to_function_map: keymap.Keymap, dev_users: list=None) -> Optional[keymap.Command]:
+    username, payload = message
     for command in key_to_function_map:
         for key in command.keys:
-            if message.lower().strip().startswith(key):
-                return command
+            if payload.lower().strip().startswith(key):
+                if not command.is_dev_command:
+                    return command
+                else:
+                    if username.lower() in dev_users:
+                        return command
     return None
 
 def main() -> None:
@@ -84,6 +89,7 @@ def main() -> None:
     channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName'].lower()
     start_key = config[default_config.ConfigKeys.broadcaster]['OutputToggleOnOff']
     log_level = logging.getLevelName(config[default_config.ConfigKeys.logging]['DebugLevel'])
+    dev_users = [user.lower() for user in keymap.split_csv(config['dev.users']['users'])]
 
     setup_logging(log_level)
     mykeymap = keymap.make_keymap_entry(config)
@@ -122,11 +128,11 @@ def main() -> None:
                 channel, message_text = msg.payload_as_tuple()
                 logging.debug(f"From {msg.username} in {channel}: {message_text}")
 
-                action = message_filter(message_text, mykeymap) #TODO re-enable this or quit.... | keymap.easter_eggs)
-                
+                action = message_filter((msg.username, message_text), mykeymap, dev_users=dev_users) #TODO re-enable this or quit.... | keymap.easter_eggs)
+
                 if action:
                     action.run()
-                
+
             sleep(0.01)
 
 if __name__ == "__main__":
