@@ -1,4 +1,4 @@
-VERSION = 0.9
+VERSION = 0.10
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -6,6 +6,9 @@ from logging.handlers import TimedRotatingFileHandler
 from time           import sleep
 from dataclasses    import dataclass
 import pathlib
+import multiprocessing as mp
+from threading import Thread
+from typing import Optional
 
 import pynput.keyboard
 
@@ -66,21 +69,27 @@ def print_preamble(start_key: str, mykeymap: keymap.Keymap) -> None:
 
     print("\n")
 
-def message_filter(message: str, key_to_function_map: keymap.Keymap) -> keymap.FunctionArgTuple:
-    matches = [value for key, value in key_to_function_map.items() if message.startswith(tuple(map(str.strip, key.split(','))))]
-
-    if n_matches := len(matches):
-        if n_matches > 1:
-            logging.warning("Multiple matches to message \"%s\"\n\t%s", message, [(fn.__qualname__, args) for fn, args in matches])
-        return matches[0]
-    return (None, None)
+def message_filter(message: tuple[str, str], key_to_function_map: keymap.Keymap, dev_users: list=None) -> Optional[keymap.Command]:
+    username, payload = message
+    for command in key_to_function_map:
+        for key in command.keys:
+            if payload.lower().strip().startswith(key):
+                if not command.is_dev_command:
+                    return command
+                else:
+                    if username.lower() in dev_users:
+                        return command
+    return None
 
 def main() -> None:
+    #mp.freeze_support()
+
     config = default_config.get_from_file()
 
-    channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName']
+    channel   = config[default_config.ConfigKeys.twitch]['TwitchChannelName'].lower()
     start_key = config[default_config.ConfigKeys.broadcaster]['OutputToggleOnOff']
     log_level = logging.getLevelName(config[default_config.ConfigKeys.logging]['DebugLevel'])
+    dev_users = [user.lower() for user in keymap.split_csv(config['dev.users']['users'])]
 
     setup_logging(log_level)
     mykeymap = keymap.make_keymap_entry(config)
@@ -97,37 +106,34 @@ def main() -> None:
             logging.info("Turned %s" % ("ON" if self.state else "OFF"))
 
     is_active    = OnOffSwitch()
-    #onOffHandler = keyboard.add_hotkey(start_key, lambda is_active=is_active: is_active.toggle())
+
     onOffHandler = pynput.keyboard.HotKey(
         pynput.keyboard.HotKey.parse('<shift>+<backspace>'),
         lambda is_active=is_active: is_active.toggle()
         )
 
-    with twitch.ChannelConnection(channel) as tw:
+    with (twitch.ChannelConnection(channel) as tw,
+            pynput.keyboard.Listener(
+                    on_press=onOffHandler.press,
+                    on_release=onOffHandler.release
+                )):#,
+            #mp.Pool(processes=4) as pool):
         logging.info(f"Connected to #{channel}")
 
-        with pynput.keyboard.Listener(
-                on_press=onOffHandler.press,
-                on_release=onOffHandler.release
-            ) as l:
+        while True:
+            tw.run()
+            msgs = tw.get_chat_messages()
 
-            while True:
-                tw.run()
-                msgs = tw.get_chat_messages()
+            for msg in msgs:
+                channel, message_text = msg.payload_as_tuple()
+                logging.debug(f"From {msg.username} in {channel}: {message_text}")
 
-                for x in msgs:
-                    channel, message = x.payload_as_tuple()
-                    logging.debug(f"From {x.username} in {channel}: {message}")
+                action = message_filter((msg.username, message_text), mykeymap, dev_users=dev_users) #TODO re-enable this or quit.... | keymap.easter_eggs)
 
-                    fn, args = message_filter(message, mykeymap | keymap.easter_eggs)
+                if action:
+                    action.run()
 
-                    if fn:
-                        logging.info(f"{fn.__qualname__} with {(*args,)} by {x.username}: {message}")
-                        if is_active.state:
-                            logging.debug(f"Calling {fn.__name__}")
-                            fn(*args)
-
-                sleep(0.01)
+            sleep(0.01)
 
 if __name__ == "__main__":
     main()

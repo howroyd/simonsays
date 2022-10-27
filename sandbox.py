@@ -1,83 +1,101 @@
+from time import sleep, time
+from tkinter import W
 from typing import Any, Optional, Callable
+import multiprocessing as mp
+import concurrent.futures
+from threading import Thread
+from dataclasses import dataclass, field
+import random
 
-def mouse_click(button: str):
-    print(f"Mouse click {button}")
+from pyparsing import Forward
+@dataclass
+class Command:
+    keys: list[str]
+    fn: Callable
+    args: list = field(default_factory=list)
+    last_run: float = 0
+    is_running: bool = False
+    random_chance: int = 50
+    cooldown: float = 3.0
 
-def key_press(key: str):
-    print(f"Key press {key}")
+    def can_run(self) -> bool:
+        delta = time() - self.last_run
+        if not self.is_running:
+            if delta > self.cooldown:
+                return True
+            else:
+                print(f"{self.keys} is on cooldown")
+        else:
+            print(f"{self.keys} is already running")
+        return False
 
-def key_press_hold(key: str, duration: str):
-    t = float(duration)
-    print(f"Key hold {key} for {t}")
+    def run(self) -> bool:
+        if self.can_run():
+            self.last_run = time()
 
-config = {
-    "commands" : {
-        "click" : "lmb",
-        "forward, forwards" : "w 3",
-        "back, backward, backwards" : "s 3",
-        "strafe right" : "d 3",
-        "nudge forward" : "w",
-    }
-}
+            def fn() -> None:
+                self.is_running = True
+                self.fn(*self.args) # TODO kwargs?
+                self.is_running = False
 
-mouse_commands = {
-    "lmb": "left",
-    "mmb": "middle",
-    "rmb": "right"
-}
+            Thread(target=fn).start()
+            return True
 
-Command = tuple[str, ...]
-Action = tuple[Callable, tuple[str, ...]]
-CommandAction = tuple[Command, Action]
+        return False
 
-def split_command_action(config_command: tuple[str, str]) -> CommandAction:
-    command = tuple([x.lstrip().rstrip() for x in config_command[0].split(',')])
-    action  = tuple(config_command[1].split())
+def my_fn() -> None:
+    sleep(0.5)
+    print("SUCCESS")
 
-    if any(action[0].startswith(key) for key in mouse_commands.keys()):
-        return (command, (mouse_click, *action))
+def press_key_for(key: str, duration: float = 0) -> None:
+    print(f"Pressing \"{key}\"")
+    if duration:
+        sleep(duration)
+        print(f"Releasing \"{key}\"")
 
-    if len(action) > 1:
-        return (command, (key_press_hold, *action))
+def press_key(key: str) -> None:
+    press_key_for(key)
 
-    return (command, (key_press, *action))
 
-command_actions = []
+keys_forwards = "forward, leeroy jenkins"
+keys_backwards = "backward, stop hammertime"
+keys_left = "left, strafe left, walk left"
 
-for kv in config["commands"].items():
-    command_actions.append(split_command_action(kv))
+def split_csv(keys: str, delimiter: str = ',') -> list[str]:
+    return [s.strip() for s in keys.split(delimiter)]
 
-#for x in command_actions:
-#    print(x)
-
-chat_messages = [
-    "nudge forward",
-    "hello",
-    "forwards",
-    "hello",
-    "back",
-    "backwards",
-    "click",
-    "hello",
-    "strafe",
-    "hello",
-    "strafe right",
-    "hello",
+KeyboardControl = [
+    Command(keys_forwards,  press_key_for, ['w', 1]),
+    Command(keys_backwards, press_key_for, ['s', 1]),
+    Command(keys_left,      press_key_for, ['a', 1])
 ]
 
-def find_command_action(msg: str) -> Optional[CommandAction]:
-    if not msg:
-        return None
+chat_commands = [
+    "forward",
+    "stop hammertime",
+    "walk left"
+]
 
-    for command_action in command_actions:
-        if any(msg.startswith(s) for s in command_action[0]):
-            return command_action
+if __name__ == '__main__':
+    flipflop = True
 
-    return None
+    for _ in range(10):
+        if flipflop:
+            sleep(1.1)
+            flipflop = False
+        else:
+            sleep(0.1)
+            flipflop = True
 
-for msg in chat_messages:
-    command_action = find_command_action(msg)
-    #print(f"{msg}: {command_action}")
-    if command_action:
-        command, action = command_action
-        action[0](*action[1:])
+        chat_message = random.choice(chat_commands)
+
+        found = False
+        for command in KeyboardControl:
+            keys = keys_to_list(command.keys)
+            for key in keys:
+                if chat_message.lower().strip().startswith(key):
+                    command.run()
+                    found = True
+                    break
+        if not found:
+            print(f"Command not found: {chat_message}")
