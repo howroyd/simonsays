@@ -1,4 +1,4 @@
-VERSION = 0.10
+VERSION = 0.11
 
 import logging
 from logging.handlers import TimedRotatingFileHandler

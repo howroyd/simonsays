@@ -15,8 +15,8 @@ def build() -> None:
         '--hidden-import', 'pynput.keyboard._win32',
         '--hidden-import', 'pynput.mouse._win32',
         '--add-data', f'{DIRPATH}\\README.md;.',
-        '--add-data', f'{DIRPATH}\\katatoRIOT.png;img',
-        '-i', 'katatoRIOT.png',
+        '--add-data', f'{DIRPATH}\\florence.jpg;img',
+        '-i', 'florence.jpg',
         #'-n %CurrDirName%',
     ])
 

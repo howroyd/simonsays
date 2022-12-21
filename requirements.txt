@@ -1,3 +1,6 @@
-wheel
+Pillow
+PyInstaller
 pytest
 pytest-cov
+wheel
+./pynput_local
