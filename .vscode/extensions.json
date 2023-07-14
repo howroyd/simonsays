@@ -1,14 +1,16 @@
 {
     "recommendations": [
         "aaron-bond.better-comments",
-        "alefragnani.bookmarks",
-        "donjayamanne.githistory",
-        "github.vscode-pull-request-github",
-        "eamodio.gitlens",
-        "ms-python.python",
-        "donjayamanne.python-extension-pack",
-        "kevinrose.vsc-python-indent",
+        "davidanson.vscode-markdownlint",
+        "donjayamanne.python-environment-manager",
         "gruntfuggly.todo-tree",
-        "shardulm94.trailing-spaces"
+        "ms-azuretools.vscode-docker",
+        "ms-python.autopep8",
+        "ms-python.flake8",
+        "ms-python.isort",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "shardulm94.trailing-spaces",
+        "tamasfe.even-better-toml"
     ]
 }

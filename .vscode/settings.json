@@ -1,0 +1,23 @@
+{
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "autopep8",
+    "python.formatting.autopep8Args": [
+        "--max-line-length",
+        "160",
+    ],
+    "python.linting.flake8Args": [
+        "--config",
+        ".flake8"
+    ],
+    "python.linting.flake8Path": "/home/user/venv/bin/flake8",
+    "python.linting.banditPath": "/home/user/venv/bin/bandit",
+    "python.linting.banditEnabled": true,
+    "python.linting.banditArgs": [
+        "--ini",
+        ".bandit",
+        "-r"
+    ],
+    "python.formatting.autopep8Path": "/home/user/venv/bin/autopep8",
+    "python.linting.mypyEnabled": false,
+    "python.linting.mypyPath": "/home/user/venv/bin/mypy",
+}

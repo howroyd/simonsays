@@ -2,7 +2,7 @@
 import dataclasses
 import time
 from typing import Protocol
-
+import random
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Action(Protocol):
@@ -12,6 +12,17 @@ class Action(Protocol):
         '''Run the action'''
         ...
 
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ActionRepeat:
+    '''An action to run, repeated a number of times'''
+    action: Action
+    times: int
+
+    def run(self) -> None:
+        '''Run the action'''
+        for _ in range(self.times):
+            self.action.run()
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionSequence:
@@ -25,6 +36,18 @@ class ActionSequence:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class ActionSequenceRepeat:
+    '''A sequence of actions to run, repeated a number of times'''
+    action_sequence: ActionSequence
+    times: int
+
+    def run(self) -> None:
+        '''Run the sequence of actions'''
+        for _ in range(self.times):
+            self.action_sequence.run()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class Wait:
     '''Wait for a number of seconds'''
     seconds: float
@@ -32,6 +55,45 @@ class Wait:
     def run(self) -> None:
         print(f"Waiting {self.seconds} seconds")
         time.sleep(self.seconds)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class WaitRandom:
+    '''Wait for a random number of seconds'''
+    min_seconds: float
+    max_seconds: float
+
+    def run(self) -> None:
+        seconds = random.uniform(self.min_seconds, self.max_seconds)
+        print(f"Waiting {seconds} seconds")
+        time.sleep(seconds)
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ActionRepeatWithWait:
+    '''An action to run, repeated a number of times, with a wait in between'''
+    action: Action
+    times: int
+    wait: float
+
+    def run(self) -> None:
+        '''Run the action'''
+        for _ in range(self.times):
+            self.action.run()
+            time.sleep(self.wait)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ActionSequenceRepeatWithWait:
+    '''A sequence of actions to run, repeated a number of times, with a wait in between'''
+    action_sequence: ActionSequence
+    times: int
+    wait: float
+
+    def run(self) -> None:
+        '''Run the sequence of actions'''
+        for _ in range(self.times):
+            self.action_sequence.run()
+            time.sleep(self.wait)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
