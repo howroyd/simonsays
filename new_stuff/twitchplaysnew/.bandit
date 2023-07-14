@@ -1,0 +1,13 @@
+[bandit]
+skips = B101
+exclude =
+    __pycache__,
+    .devcontainer,
+    .git,
+    .vscode,
+    *.pyc,
+    assets,
+    build,
+    fpga,
+    script,
+    tools,
