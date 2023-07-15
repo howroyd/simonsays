@@ -4,13 +4,17 @@ import random
 import time
 from typing import Protocol
 
+DEBUG = False
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Action(Protocol):
     '''Protocol for actions that can be run'''
+
     def run(self) -> None:
         '''Run the action'''
         ...
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionRepeat:
@@ -23,6 +27,7 @@ class ActionRepeat:
         for _ in range(self.times):
             self.action.run()
 
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionSequence:
     '''Run actions in sequence'''
@@ -33,6 +38,7 @@ class ActionSequence:
         for action in self.actions:
             action.run()
 
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class Wait:
     '''Wait for a duration'''
@@ -40,8 +46,10 @@ class Wait:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Waiting for {self.duration} seconds")
+        if DEBUG:
+            print(f"Waiting for {self.duration} seconds")
         time.sleep(self.duration)
+
 
 @dataclasses.dataclass(slots=True)
 class WaitRandom:
@@ -60,8 +68,10 @@ class WaitRandom:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Waiting for {self.wait_time:.2f} seconds")
+        if DEBUG:
+            print(f"Waiting for {self.wait_time:.2f} seconds")
         time.sleep(self.wait_time)
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionRepeatWithWait:
@@ -82,7 +92,6 @@ class ActionRepeatWithWait:
 ###############################################
 
 
-
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressButton:
     '''Press a button'''
@@ -90,7 +99,9 @@ class PressButton:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Pressing button: {self.button}")
+        if DEBUG:
+            print(f"Pressing button: {self.button}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ReleaseButton:
@@ -99,7 +110,9 @@ class ReleaseButton:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Releasing button: {self.button}")
+        if DEBUG:
+            print(f"Releasing button: {self.button}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressReleaseButton:
@@ -113,6 +126,7 @@ class PressReleaseButton:
         Wait(self.delay).run()
         ReleaseButton(self.button).run()
 
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class MoveMouse:
     '''Move the mouse'''
@@ -121,7 +135,9 @@ class MoveMouse:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Moving mouse to: {self.x}, {self.y}")
+        if DEBUG:
+            print(f"Moving mouse to: {self.x}, {self.y}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class MoveMouseRelative:
@@ -131,7 +147,9 @@ class MoveMouseRelative:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Moving mouse relative: {self.x}, {self.y}")
+        if DEBUG:
+            print(f"Moving mouse relative: {self.x}, {self.y}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressKey:
@@ -140,7 +158,9 @@ class PressKey:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Pressing key: {self.key}")
+        if DEBUG:
+            print(f"Pressing key: {self.key}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ReleaseKey:
@@ -149,7 +169,9 @@ class ReleaseKey:
 
     def run(self) -> None:
         '''Run the action'''
-        print(f"Releasing key: {self.key}")
+        if DEBUG:
+            print(f"Releasing key: {self.key}")
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressReleaseKey:
@@ -164,6 +186,21 @@ class PressReleaseKey:
         ReleaseKey(self.key).run()
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class CommandAction:
+    '''A command action'''
+    command: str | list[str]
+    action: Action
+
+    def check_command(self, command: str) -> bool:
+        '''Check if the command matches'''
+        if isinstance(self.command, str):
+            return command == self.command
+        elif isinstance(self.command, list):
+            return command in self.command
+        else:
+            return False
+
 
 if __name__ == "__main__":
     print("Hello World!")
@@ -171,4 +208,3 @@ if __name__ == "__main__":
     ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=False).run()
     print()
     ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=True).run()
-

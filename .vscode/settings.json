@@ -9,15 +9,15 @@
         "--config",
         ".flake8"
     ],
-    "python.linting.flake8Path": "${WORKSPACE_DIR}/.venv/bin/flake8",
-    "python.linting.banditPath": "${WORKSPACE_DIR}/.venv/bin/bandit",
+    "python.linting.flake8Path": "${workspaceFolder}/.venv/bin/flake8",
+    "python.linting.banditPath": "${workspaceFolder}/.venv/bin/bandit",
     "python.linting.banditEnabled": true,
     "python.linting.banditArgs": [
         "--ini",
         ".bandit",
         "-r"
     ],
-    "python.formatting.autopep8Path": "${WORKSPACE_DIR}/.venv/bin/autopep8",
+    "python.formatting.autopep8Path": "${workspaceFolder}/.venv/bin/autopep8",
     "python.linting.mypyEnabled": false,
-    "python.linting.mypyPath": "${WORKSPACE_DIR}/.venv/bin/mypy",
+    "python.linting.mypyPath": "${workspaceFolder}/.venv/bin/mypy",
 }
