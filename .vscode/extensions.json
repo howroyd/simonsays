@@ -8,9 +8,15 @@
         "ms-python.autopep8",
         "ms-python.flake8",
         "ms-python.isort",
-        "ms-python.python",
         "ms-python.vscode-pylance",
         "shardulm94.trailing-spaces",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "alefragnani.bookmarks",
+        "waderyan.gitblame",
+        "donjayamanne.githistory",
+        "github.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "donjayamanne.python-extension-pack",
+        "kevinrose.vsc-python-indent"
     ]
 }
