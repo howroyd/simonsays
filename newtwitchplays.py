@@ -5,7 +5,7 @@ import pprint
 
 import phasmoactions as pa
 import twitchactions as ta
-
+import twitchirc
 
 def done_callback(future, command):
     print(f"Done: {command.tag=}")
@@ -24,14 +24,20 @@ if __name__ == "__main__":
 
     print()
 
-    with cf.ThreadPoolExecutor(max_workers=1) as executor:
+    with (cf.ThreadPoolExecutor(max_workers=1) as executor,
+            twitchirc.TwitchIrc("drgreengiant") as irc):
 
         while True:
-            command = input("Enter a command: ").lower()
+            msg = twitchirc.TwitchMessage.from_irc_message(irc.queue.get())
+
+            if not msg:
+                continue
+
+            command = msg.payload.lower()
 
             action = ta.find_command(phasmoActions, command)
 
-            print(f"{command=}: {action.__class__=}\n")
+            #print(f"{command=}: {action.__class__=}\n")
 
             if action is not None:
                 future = executor.submit(action.run)
