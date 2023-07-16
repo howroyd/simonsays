@@ -1,10 +1,13 @@
 import logging
-
-import socket, re, random, time
-
+import random
+import re
+import socket
+import time
 from dataclasses import dataclass
-from enum        import Enum, auto, unique
-from typing      import Tuple
+from enum import Enum, auto, unique
+
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 @dataclass(slots=True)
 class MessageBuilder:
@@ -24,6 +27,7 @@ class MessageBuilder:
         self.clear()
         return ret
 
+
 def MessageBuilderDefault() -> MessageBuilder:
     """Default message builder and regex pattern match from the orignal author
 
@@ -32,27 +36,29 @@ def MessageBuilderDefault() -> MessageBuilder:
     """
     return MessageBuilder(re.compile(b'^(?::(?:([^ !\r\n]+)![^ \r\n]*|[^ \r\n]*) )?([^ \r\n]+)(?: ([^:\r\n]*))?(?: :([^\r\n]*))?\r\n', re.MULTILINE))
 
+
 @unique
 class TwitchMessageEnum(Enum):
     '''Message types defined by Twitch IRC server'''
     '''Ref: https://dev.twitch.tv/docs/irc/example-parser'''
-    JOIN            = auto()
-    PART            = auto()
-    NOTICE          = auto()
-    CLEARCHAT       = auto()
-    HOSTTARGET      = auto()
-    PRIVMSG         = auto()
-    PING            = auto()
-    CAP             = auto()
+    JOIN = auto()
+    PART = auto()
+    NOTICE = auto()
+    CLEARCHAT = auto()
+    HOSTTARGET = auto()
+    PRIVMSG = auto()
+    PING = auto()
+    CAP = auto()
     GLOBALUSERSTATE = auto()
-    USERSTATE       = auto()
-    ROOMSTATE       = auto()
-    RECONNECT       = auto()
-    NUMERIC         = auto() # All numerics lumped in here.  Extend if required
+    USERSTATE = auto()
+    ROOMSTATE = auto()
+    RECONNECT = auto()
+    NUMERIC = auto()  # All numerics lumped in here.  Extend if required
+
 
 class TwitchIrc:
     '''Definition of the Twitch IRC server'''
-    url:  str = "irc.chat.twitch.tv"
+    url: str = "irc.chat.twitch.tv"
     port: int = 6667
 
     @classmethod
@@ -129,9 +135,9 @@ class TwitchIrc:
     @dataclass(slots=True)
     class Message:
         '''Container for a Twitch IRC message'''
-        username:   str
-        id:         TwitchMessageEnum
-        payload:    str
+        username: str
+        id: TwitchMessageEnum
+        payload: str
 
         @classmethod
         def from_bytes(cls, data: bytes):
@@ -141,14 +147,15 @@ class TwitchIrc:
             channel, message = self.payload.split(':', maxsplit=1)
             return (channel.rstrip().lstrip('#'), message.lstrip().rstrip())
 
+
 @dataclass(slots=True)
 class TwitchConnection:
     """Create a connection to Twith IRC and login"""
-    username:     str           = "justinfan%i" % random.randint(10000, 99999)
-    sock:         socket.socket = None
-    last_attempt: float         = None # time.time()
-    timeout:      float         = 1.0 #1.0 / 60.0
-    twitchIrc                   = TwitchIrc()
+    username: str = "justinfan%i" % random.randint(10000, 99999)
+    sock: socket.socket = None
+    last_attempt: float = None  # time.time()
+    timeout: float = 1.0  # 1.0 / 60.0
+    twitchIrc = TwitchIrc()
 
     def is_connected(self) -> bool:
         return True if self.sock else False
@@ -211,7 +218,7 @@ class TwitchConnection:
         self.disconnect()
         return self.connect()
 
-    def __del__(self): # todo convert to enter and exit dunders so compatible with "with"
+    def __del__(self):  # todo convert to enter and exit dunders so compatible with "with"
         self.disconnect()
 
     def __enter__(self):
@@ -222,32 +229,39 @@ class TwitchConnection:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
+
 class SockHandler:
     '''Wrapper to create the socket and login to twitch on construction'''
+
     def __init__(self) -> None:
         logging.debug("Init SockHandler")
         self.sock = TwitchConnection()
         if not self.sock.connect():
             raise socket.timeout
+
     def __del__(self) -> None:
         logging.debug("Deinit SockHandler")
 
+
 class MessageSplitter:
     '''Just to find the start and end of a message and return it'''
-    def __call__(self, data: bytes) -> tuple[list[bytes], bytes]: # TODO this is probably redundant??
+
+    def __call__(self, data: bytes) -> tuple[list[bytes], bytes]:  # TODO this is probably redundant??
         packets = data.split(b"\r\n")
         if data.endswith(b"\r\n"):
             return (packets, None)
         else:
             return (packets[:-1], packets[-1])
 
+
 class BufferedSocket:
     """Container around a Twitch connection, a buffer and a message splitter
     """
     # todo I feel the twitch login should be after this layer, not before
+
     def __init__(self, splitter: MessageSplitter = None) -> None:
-        self.sock     = SockHandler()
-        self.buffer   = MessageBuilderDefault()
+        self.sock = SockHandler()
+        self.buffer = MessageBuilderDefault()
         self.splitter = splitter if splitter else MessageSplitter()
 
     def receive(self) -> list[bytes]:
@@ -262,6 +276,7 @@ class BufferedSocket:
     def send(self, data: bytes) -> None:
         self.sock.sock.send(data)
 
+
 class IrcParser:
     def parse(self, packets: list[bytes]) -> list[TwitchIrc.Message]:
         """Take a list of complete packets and parse them into a list of IRC message containers
@@ -275,9 +290,11 @@ class IrcParser:
         parsed = [TwitchIrc.Message.from_bytes(x) for x in packets if len(x)]
         return [x for x in parsed if x.id is not None]
 
+
 class IrcConnection:
     """Queue of messages with interface to get more from the socket
     """
+
     def __init__(self, parser: IrcParser = None, incomingSocket: BufferedSocket = None):
         self.parser = parser if parser else IrcParser()
         self.incomingSocket = incomingSocket if incomingSocket else BufferedSocket()
@@ -355,18 +372,20 @@ class IrcConnection:
     def _get_all(self) -> None:
         self.buf += self.parser.parse(self.incomingSocket.receive())
         if len(self.buf) > self.n_max_messages:
-            self.buf = self.buf[:-self.n_max_messages] # TODO janky delete the old ones
+            self.buf = self.buf[:-self.n_max_messages]  # TODO janky delete the old ones
             logging.debug(self.buf)
+
 
 class ChannelConnection(IrcConnection):
     """Connection to a Twitch channel's chat
 
     Note; call the run() method periodically so that pingpongs get returned so Twitch doesn't kick us
     """
+
     def __init__(self, channel: str, parser: IrcParser = None, incomingSocket: BufferedSocket = None):
         super().__init__(parser, incomingSocket)
         self.channel = channel
-        self.connected = False;
+        self.connected = False
 
     def get_chat_messages(self) -> list[TwitchIrc.Message]:
         return self.get(TwitchMessageEnum.PRIVMSG)
@@ -393,3 +412,14 @@ class ChannelConnection(IrcConnection):
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
+
+
+if __name__ == "__main__":
+    print("Hello World!")
+    with ChannelConnection("DrGreenGiant".lower()) as tw:
+        while True:
+            tw.run()
+            msgs = tw.get_chat_messages()
+            for msg in msgs:
+                print(msg)
+            time.sleep(0.01)
