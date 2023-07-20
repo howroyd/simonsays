@@ -4,6 +4,7 @@ import functools
 import pprint as pp
 import queue
 import tkinter as tk
+import tomlkit
 
 import phasmoactions as pa
 import twitchactions as ta
@@ -14,39 +15,48 @@ CHANNEL = "drgreengiant"
 
 
 def done_callback(future, command):
+    '''Callback for when a command is done'''
     print(f"Done: {command.tag=}")
 
 
-def test_callback(tag: str):
-    print(f"Test callback: {tag=}")
-
 def print_runtime_cb(runtime_dict: ta.TwitchRuntimeDict, selection: tk.StringVar):
-    pprint.pprint(runtime_dict[selection.get()])
+    '''Print the runtime data for the selected action'''
+    pp.pprint(runtime_dict[selection.get()])
+
 
 def set_enabled_cb(runtime_dict: ta.TwitchRuntimeDict, selection: tk.StringVar, enabled: tk.BooleanVar):
+    '''Set the enabled state for the selected action'''
     tag = selection.get()
     state = enabled.get()
     print(f"Set enabled: {state=} for {tag}")
     runtime_dict[tag].enabled = state
 
+
 def set_cooldown_cb(runtime_dict: ta.TwitchRuntimeDict, selection: tk.StringVar, cooldown: tk.DoubleVar, value: str):
+    '''Set the cooldown for the selected action'''
     tag = selection.get()
     val = float(value)
     print(f"Set cooldown: {val=} for {tag}")
     runtime_dict[tag].cooldown = val
 
+
 def set_random_chance_cb(runtime_dict: ta.TwitchRuntimeDict, selection: tk.StringVar, random_chance: tk.IntVar, value: str):
+    '''Set the random chance for the selected action'''
     tag = selection.get()
     val = int(value)
     print(f"Set random_chance: {val=} for {tag}")
     runtime_dict[tag].random_chance = val
 
+
 def populate_frame(runtime_dict: ta.TwitchRuntimeDict, selection: tk.StringVar, enabled: tk.BooleanVar, cooldown: tk.DoubleVar, random_chance: tk.IntVar, var, index, mode):
+    '''Populate the frame with the selected action'''
     enabled.set(runtime_dict[selection.get()].enabled)
     cooldown.set(runtime_dict[selection.get()].cooldown)
     random_chance.set(runtime_dict[selection.get()].random_chance)
 
+
 def make_gui(channel: str, action_list: ta.TwitchActionList, runtime_dict: ta.TwitchRuntimeDict) -> tk.Tk:
+    '''Make the GUI'''
     N_COLUMNS = 4
 
     window = tk.Tk()
@@ -134,6 +144,11 @@ if __name__ == "__main__":
         print(f"TwitchIrc initialized to channel {CHANNEL}")
 
         gui = make_gui(CHANNEL, phasmoActions, phasmoRuntime)
+        
+        with open("runtime.toml", "w") as f:
+            asdict = {k: v.to_dict() for k, v in phasmoRuntime.items()}
+            s = tomlkit.dumps(asdict)
+            f.write(s)
 
         while True:
             msg: twitchirc.TwitchMessage | None = None

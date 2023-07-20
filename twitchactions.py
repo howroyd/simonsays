@@ -76,6 +76,10 @@ class RuntimeData:
     def can_use(self) -> bool:
         return self.is_enabled and self.is_ready and self.check_random_chance
 
+    def to_dict(self) -> dict[str, float | int | bool]:
+        '''Convert to a dict'''
+        return dataclasses.asdict(self)
+
 
 TwitchRuntimeDict = dict[str, RuntimeData]
 

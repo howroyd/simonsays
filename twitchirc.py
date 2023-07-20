@@ -1,10 +1,12 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-from typing import Self
 import multiprocessing as mp
-import bufferedsocket
 import pprint
+from typing import Self
+
+import bufferedsocket
+
 
 @dataclasses.dataclass(slots=True)
 class IrcSocket:
@@ -44,7 +46,7 @@ class IrcSocketManaged(IrcSocket):
         self.close()
 
 
-def _twitch_irc_thread(address: str, port: int, timeout: float, username: str, oauth: str, channel: str,queue: mp.Queue):
+def _twitch_irc_thread(address: str, port: int, timeout: float, username: str, oauth: str, channel: str, queue: mp.Queue):
     '''Thread for reading from Twitch IRC server'''
     with IrcSocketManaged(address, port, timeout) as irc:
         irc.write(f'PASS {oauth}\r\n')
