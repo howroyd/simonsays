@@ -51,6 +51,7 @@ class RuntimeData:
     cooldown: float = 10.0
     random_chance: int = 100
     last_used: float = 0.0
+    keybind: str | None = None
 
     def use_now(self) -> None:
         '''Use the command now'''
@@ -76,7 +77,7 @@ class RuntimeData:
     def can_use(self) -> bool:
         return self.is_enabled and self.is_ready and self.check_random_chance
 
-    def to_dict(self) -> dict[str, float | int | bool]:
+    def to_dict(self) -> dict[str, float | int | bool | str | None]:
         '''Convert to a dict'''
         return dataclasses.asdict(self)
 
@@ -84,6 +85,6 @@ class RuntimeData:
 TwitchRuntimeDict = dict[str, RuntimeData]
 
 
-def make_runtime_dict(action_list: TwitchActionList) -> TwitchRuntimeDict:
+def make_runtime_dict(action_list: TwitchActionList, keybinds: dict[str, str] | None = None) -> TwitchRuntimeDict:
     '''Make a runtime dict from a twitch action list'''
     return {twitchAction.tag: RuntimeData() for twitchAction in action_list}

@@ -9,8 +9,8 @@ import twitchactions
 
 class Defaults:
     '''Default values'''
-    look_distance: float = 500
-    peek_distance: float = 250
+    look_distance: int = 500
+    peek_distance: int = 250
     toggle_duration: float = 0.1
     walk_duration: float = 3
     talk_duration: float = 10
@@ -45,8 +45,8 @@ def get_default_keybind(action: str) -> str:
 class Config:
     '''Configuration for Phasmophobia'''
     keybinds: dict[str, str] = dataclasses.field(default_factory=lambda: make_default_keybinds())
-    look_distance: float = Defaults.look_distance
-    peek_distance: float = Defaults.peek_distance
+    look_distance: int = Defaults.look_distance
+    peek_distance: int = Defaults.peek_distance
     toggle_duration: float = Defaults.toggle_duration
 
 
@@ -65,6 +65,7 @@ class WalkForward:
     duration: float = Defaults.walk_duration
     tag: str = "walk_forward"
     command: str | list[str] = "forward"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -82,6 +83,7 @@ class WalkBackward:
     duration: float = Defaults.walk_duration
     tag: str = "walk_backward"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["back", "backward"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -99,6 +101,7 @@ class WalkLeft:
     duration: float = Defaults.walk_duration
     tag: str = "walk_left"
     command: str | list[str] = "left"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -116,6 +119,7 @@ class WalkRight:
     duration: float = Defaults.walk_duration
     tag: str = "walk_right"
     command: str | list[str] = "right"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -132,6 +136,7 @@ class CrouchToggle:
     key: str | None = None
     tag: str = "crouch"
     command: str | list[str] = "crouch"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -148,6 +153,7 @@ class JournalToggle:
     key: str | None = None
     tag: str = "journal"
     command: str | list[str] = "journal"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -164,6 +170,7 @@ class Place:
     key: str | None = None
     tag: str = "place"
     command: str | list[str] = "place"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -180,6 +187,7 @@ class Pickup:
     key: str | None = None
     tag: str = "pickup"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["pickup", "grab"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -196,6 +204,7 @@ class Drop:
     key: str | None = None
     tag: str = "drop"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["drop", "throw"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -212,6 +221,7 @@ class SwitchItem:
     key: str | None = None
     tag: str = "switch"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["switch", "swap"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -228,6 +238,7 @@ class TorchToggle:
     key: str | None = None
     tag: str = "torch"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["torch", "light", "flashlight"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -245,6 +256,7 @@ class Talk:
     duration: float = Defaults.talk_duration
     tag: str = "talk"
     command: str | list[str] = dataclasses.field(default_factory=lambda: ["talk", "speak"])
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self)
@@ -258,9 +270,10 @@ class Talk:
 class LookUp:
     '''Look up'''
     config: Config
-    distance: float = Defaults.look_distance
+    distance: int = Defaults.look_distance
     tag: str = "look_up"
     command: str | list[str] = "look up"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -271,9 +284,10 @@ class LookUp:
 class LookDown:
     '''Look down'''
     config: Config
-    distance: float = Defaults.look_distance
+    distance: int = Defaults.look_distance
     tag: str = "look_down"
     command: str | list[str] = "look down"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -284,9 +298,10 @@ class LookDown:
 class LookLeft:
     '''Look left'''
     config: Config
-    distance: float = Defaults.look_distance
+    distance: int = Defaults.look_distance
     tag: str = "look_left"
     command: str | list[str] = "look left"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -297,9 +312,10 @@ class LookLeft:
 class LookRight:
     '''Look right'''
     config: Config
-    distance: float = Defaults.look_distance
+    distance: int = Defaults.look_distance
     tag: str = "look_right"
     command: str | list[str] = "look right"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -310,9 +326,10 @@ class LookRight:
 class PeekUp:
     '''Peek up'''
     config: Config
-    distance: float = Defaults.peek_distance
+    distance: int = Defaults.peek_distance
     tag: str = "peek_up"
     command: str | list[str] = "peek up"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -323,9 +340,10 @@ class PeekUp:
 class PeekDown:
     '''Peek down'''
     config: Config
-    distance: float = Defaults.peek_distance
+    distance: int = Defaults.peek_distance
     tag: str = "peek_down"
     command: str | list[str] = "peek down"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -336,9 +354,10 @@ class PeekDown:
 class PeekLeft:
     '''Peek left'''
     config: Config
-    distance: float = Defaults.peek_distance
+    distance: int = Defaults.peek_distance
     tag: str = "peek_left"
     command: str | list[str] = "peek left"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -349,9 +368,10 @@ class PeekLeft:
 class PeekRight:
     '''Peek right'''
     config: Config
-    distance: float = Defaults.peek_distance
+    distance: int = Defaults.peek_distance
     tag: str = "peek_right"
     command: str | list[str] = "peek right"
+    chained: bool = False
 
     def run(self) -> None:
         '''Run the action'''
@@ -365,6 +385,7 @@ class UseItem:
     button: str | None = None
     tag: str = "use"
     command: str | list[str] = "use"
+    chained: bool = False
 
     def __post_init__(self) -> None:
         _set_key(self, member="button")
@@ -383,6 +404,7 @@ class Teabag:
     repeats: int | None = None
     tag: str = "teabag"
     command: str | list[str] = "teabag"
+    chained: bool = True
 
     def __post_init__(self) -> None:
         _set_key(self, "crouch")
@@ -402,6 +424,7 @@ class Disco:
     repeats: int | None = None
     tag: str = "disco"
     command: str | list[str] = "disco"
+    chained: bool = True
 
     def __post_init__(self) -> None:
         _set_key(self, "torch")
@@ -421,6 +444,7 @@ class CycleItems:
     repeats: int | None = None
     tag: str = "cycle_items"
     command: str | list[str] = "cycle"
+    chained: bool = True
 
     def __post_init__(self) -> None:
         _set_key(self, "switch")
@@ -441,6 +465,7 @@ class CycleItemsAndUse:
     repeats: int = 3
     tag: str = "cycle_items_and_use"
     command: str | list[str] = "chaos"
+    chained: bool = True
 
     def __post_init__(self) -> None:
         _set_key(self, "switch", "key_switch")
@@ -462,6 +487,7 @@ class DropAllItems:
     repeats: int = 3
     tag: str = "drop_all_items"
     command: str | list[str] = "yeet"
+    chained: bool = True
 
     def __post_init__(self) -> None:
         _set_key(self, "switch", "key_switch")
@@ -478,17 +504,17 @@ class DropAllItems:
 class Spin:
     '''Spin'''
     config: Config
-    distance: float | None = None
     direction: str | None = None
     pause: float = 0.05
     repeats: int | None = None
-    distance: float = Defaults.look_distance * 0.1 * random.uniform(0.5, 1.5)
+    distance: int = int(Defaults.look_distance * 0.1)
     tag: str = "spin"
     command: str | list[str] = "spin"
+    chained: bool = True
 
     def run(self) -> None:
         '''Run the action'''
-        distance = self.distance or self.look_distance * 0.1 * random.uniform(0.5, 1.5)  # Resolution
+        distance = self.distance or self.look_distance * 0.1  # Resolution
         direction = self.direction or random.choice(["left", "right"])
         repeats = self.repeats or random.randint(50, 100)  # TODO: calibrate this
         if direction == "left":
@@ -501,11 +527,12 @@ class Spin:
 class Headbang:
     '''Headbang'''
     config: Config
-    distance: float = Defaults.look_distance
+    distance: int = Defaults.look_distance
     pause: float = 0.4
     repeats: int | None = None
     tag: str = "headbang"
     command: str | list[str] = "headbang"
+    chained: bool = True
 
     def run(self) -> None:
         '''Run the action'''
