@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import pprint as pp
 import tkinter as tk
+from typing import Any, Callable
 
 import config as configsaver
 
@@ -74,16 +75,27 @@ def get_command_text(runtime: configsaver.Runtime, tag: str) -> str:
     return command_text
 
 
+def set_enabled_state(tk_obj, tk_var, predicate: Callable[Any, [bool]]) -> None:
+    '''Set the state of a Tk object based on a Tk variable and predicate'''
+    tk_obj.configure(state=tk.NORMAL if predicate(tk_var.get()) else tk.DISABLED)
+
+
 def populate_frame(runtime: configsaver.Runtime,
                    selection: tk.StringVar,
                    enabled: tk.BooleanVar,
                    key: tk.StringVar,
                    cooldown: tk.DoubleVar,
                    random_chance: tk.IntVar,
-                   command: tk.StringVar):
+                   command: tk.StringVar,
+                   key_entry: tk.Entry) -> None:
     '''Populate the frame with the selected action'''
     enabled.set(runtime.runtime_dict[selection.get()].enabled)
-    key.set(get_key(runtime, selection.get()))
+
+    key_in_ram = get_key(runtime, selection.get())
+    key.set(key_in_ram)
+
+    set_enabled_state(key_entry, key, lambda x: x != KEY_IGNORED_STR)
+
     cooldown.set(runtime.runtime_dict[selection.get()].cooldown)
     random_chance.set(runtime.runtime_dict[selection.get()].random_chance)
     command.set(get_command_text(runtime, selection.get()))
@@ -91,59 +103,84 @@ def populate_frame(runtime: configsaver.Runtime,
 
 def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
     '''Make the GUI'''
-    N_COLUMNS = 4
+    N_COLUMNS = 3
+    WIDTH = 640
+    HEIGHT = 640
 
     window = tk.Tk()
     window.title(f"Twitch Plays v{runtime.version} by DrGreenGiant")
+    window.geometry(f"{WIDTH}x{HEIGHT}")
+    # window.state("zoomed")  # Maximised
+    # window.configure(bg="blue")
+
+    canvas = tk.Canvas(window, height=HEIGHT, width=WIDTH)
+    canvas.grid(column=0, row=0, rowspan=6, columnspan=N_COLUMNS)
+
+    bg = tk.PhotoImage(file="assets/Green_tato_640.png")
+    bg_label = canvas.create_image((0, 0), image=bg, anchor=tk.N + tk.W)
+    canvas.image = bg
+    canvas.create_text((5, 5), text=f"Connected to:\n#{runtime.channel}", anchor=tk.N + tk.W)
+    canvas.create_text((WIDTH - 5, 5), text=f"Version: {runtime.version}", anchor=tk.N + tk.E)
 
     column = 0
     row = 0
-
-    tk.Label(window, text=F"Connected to #{runtime.channel}", padx=5, pady=5).grid(column=column, row=row, columnspan=N_COLUMNS, padx=5, pady=5)
-    row += 1
 
     selection = tk.StringVar(window)
     selection.set(runtime.action_list[0].tag)
 
     action_frame = tk.Frame(window, borderwidth=1, relief=tk.RAISED)
-    action_frame.grid(column=column, row=row, columnspan=N_COLUMNS, padx=5, pady=5)
+    action_frame.grid(column=1, row=row, rowspan=3)
     row += 1
 
-    enabled = tk.BooleanVar(action_frame)
+    enabled_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
+    tk.Label(enabled_frame, text="Enabled", width=20, padx=5, pady=5).grid(row=0, column=0)
+    enabled = tk.BooleanVar(enabled_frame)
     enabled.set(runtime.runtime_dict[selection.get()].enabled)
     cb = functools.partial(set_enabled_cb, runtime, selection, enabled)
-    tk.Label(action_frame, text="Enabled", padx=5, pady=5).pack()
-    tk.Checkbutton(action_frame, text="Enabled", padx=5, pady=5, onvalue=True, offvalue=False, variable=enabled, command=cb).pack()
+    tk.Checkbutton(enabled_frame, text="Enabled", padx=5, pady=5, width=20, onvalue=True, offvalue=False, variable=enabled, command=cb).grid(row=0, column=1)
+    enabled_frame.pack()
 
-    key = tk.StringVar(action_frame)
-    key.set(get_key(runtime, selection.get()))
+    key_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
+    key = tk.StringVar(key_frame)
+    key_in_ram = get_key(runtime, selection.get())
+    key.set(key_in_ram)
     cb = functools.partial(set_key_cb, runtime, selection, key)
     key.trace_add("write", cb)
-    tk.Label(action_frame, text="Keybind/Button", padx=5, pady=5).pack()
-    # tk.Entry(action_frame, textvariable=key, validate="focusout", validatecommand=cb).pack()
-    tk.Entry(action_frame, textvariable=key).pack()
+    tk.Label(key_frame, text="Keybind/Button", width=20, padx=5, pady=5).grid(row=0, column=0)
+    key_entry = tk.Entry(key_frame, width=20, textvariable=key)
+    set_enabled_state(key_entry, key, lambda x: x != KEY_IGNORED_STR)
+    key_entry.grid(row=0, column=1)
+    key_frame.pack()
 
-    cooldown = tk.DoubleVar(action_frame)
+    cooldown_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
+    cooldown = tk.DoubleVar(cooldown_frame)
     cooldown.set(runtime.runtime_dict[selection.get()].cooldown)
     cb = functools.partial(set_cooldown_cb, runtime, selection, cooldown)
-    tk.Label(action_frame, text="Cooldown", padx=5, pady=5).pack()
-    tk.Scale(action_frame, from_=0.0, to=60.0, resolution=0.1, orient=tk.HORIZONTAL, variable=cooldown, command=cb).pack()
+    tk.Label(cooldown_frame, text="Cooldown", width=20, padx=5, pady=5).grid(row=0, column=0)
+    tk.Scale(cooldown_frame, from_=0, to=60, resolution=1, width=20, orient=tk.HORIZONTAL, variable=cooldown, command=cb).grid(row=0, column=1)
+    cooldown_frame.pack()
 
-    random_chance = tk.IntVar(action_frame)
+    random_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
+    random_chance = tk.IntVar(random_frame)
     random_chance.set(runtime.runtime_dict[selection.get()].random_chance)
     cb = functools.partial(set_random_chance_cb, runtime, selection, random_chance)
-    tk.Label(action_frame, text="Random chance", padx=5, pady=5).pack()
-    tk.Scale(action_frame, from_=0, to=100, orient=tk.HORIZONTAL, variable=random_chance, command=cb).pack()
+    tk.Label(random_frame, text="Random chance", width=20, padx=5, pady=5).grid(row=0, column=0)
+    tk.Scale(random_frame, from_=0, to=100, width=20, orient=tk.HORIZONTAL, variable=random_chance, command=cb).grid(row=0, column=1)
+    random_frame.pack()
 
-    command = tk.StringVar(action_frame)
+    command_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
+    command = tk.StringVar(command_frame)
     command.set(get_command_text(runtime, selection.get()))
-    tk.Label(action_frame, text="Chat command", padx=5, pady=5).pack()
-    tk.Entry(action_frame, textvariable=command).pack()
+    tk.Label(command_frame, text="Chat command", width=20, padx=5, pady=5).grid(row=0, column=0)
+    tk.Entry(command_frame, width=20, textvariable=command).grid(row=0, column=1)
+    command_frame.pack()
 
+    print_frame = tk.Frame(action_frame)
     cb = functools.partial(print_runtime_cb, runtime, selection)
-    tk.Button(action_frame, text="Print runtime", padx=5, pady=5, command=cb).pack()
+    tk.Button(print_frame, text="Print runtime", padx=5, pady=5, command=cb).pack()
+    print_frame.pack()
 
-    tk.OptionMenu(window, selection, *[item.tag for item in runtime.action_list]).grid(column=column, row=row, columnspan=N_COLUMNS, padx=5, pady=5)
+    tk.OptionMenu(window, selection, *[item.tag for item in runtime.action_list]).grid(column=2, row=5)
     row += 1
     cb = functools.partial(populate_frame,
                            runtime,
@@ -152,7 +189,8 @@ def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
                            key,
                            cooldown,
                            random_chance,
-                           command)
+                           command,
+                           key_entry)
     selection.trace_add("write", lambda var, index, mode: cb())
 
     window.update()
