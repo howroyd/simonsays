@@ -2,3 +2,4 @@ wheel
 pytest
 pytest-cov
 tomlkit
+Pillow

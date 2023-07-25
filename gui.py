@@ -75,7 +75,7 @@ def get_command_text(runtime: configsaver.Runtime, tag: str) -> str:
     return command_text
 
 
-def set_enabled_state(tk_obj, tk_var, predicate: Callable[Any, [bool]]) -> None:
+def set_enabled_state(tk_obj, tk_var, predicate: Callable[[Any], bool]) -> None:
     '''Set the state of a Tk object based on a Tk variable and predicate'''
     tk_obj.configure(state=tk.NORMAL if predicate(tk_var.get()) else tk.DISABLED)
 
@@ -101,26 +101,132 @@ def populate_frame(runtime: configsaver.Runtime,
     command.set(get_command_text(runtime, selection.get()))
 
 
-def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
-    '''Make the GUI'''
-    N_COLUMNS = 3
-    WIDTH = 640
-    HEIGHT = 640
-
+def make_window(runtime: configsaver.Runtime, width_px: int, height_px: int) -> tk.Tk:
+    '''Make the window'''
     window = tk.Tk()
     window.title(f"Twitch Plays v{runtime.version} by DrGreenGiant")
-    window.geometry(f"{WIDTH}x{HEIGHT}")
-    # window.state("zoomed")  # Maximised
-    # window.configure(bg="blue")
+    window.geometry(f"{width_px}x{height_px}")
+    return window
 
-    canvas = tk.Canvas(window, height=HEIGHT, width=WIDTH)
-    canvas.grid(column=0, row=0, rowspan=6, columnspan=N_COLUMNS)
 
-    bg = tk.PhotoImage(file="assets/Green_tato_640.png")
-    bg_label = canvas.create_image((0, 0), image=bg, anchor=tk.N + tk.W)
-    canvas.image = bg
+def make_canvas(runtime: configsaver.Runtime, image_path: str, *, window: tk.Tk | None = None) -> tk.Canvas:
+    '''Make the canvas with a background image'''
+    # img = tk.PhotoImage(file=image_path)
+    from PIL import Image
+    width, height = Image.open(image_path).size
+
+    window = window or make_window(runtime, width, height)
+    img = tk.PhotoImage(file=image_path)
+
+    canvas = tk.Canvas(window, width=img.width(), height=img.height())
+    canvas.pack(expand=True, fill=tk.BOTH)
+
+    canvas.create_image((0, 0), image=img, anchor=tk.N + tk.W)
+    canvas.image = img  # Keep a reference to the image to prevent garbage collection
     canvas.create_text((5, 5), text=f"Connected to:\n#{runtime.channel}", anchor=tk.N + tk.W)
-    canvas.create_text((WIDTH - 5, 5), text=f"Version: {runtime.version}", anchor=tk.N + tk.E)
+    canvas.create_text((img.width() - 5, 5), text=f"Version: {runtime.version}", anchor=tk.N + tk.E)
+
+    window.update()
+
+    return canvas
+
+
+def make_selection_frame(where, runtime: configsaver.Runtime) -> tuple[tk.Frame, tk.StringVar]:
+    '''Make the selection frame'''
+    frame = tk.Frame(where, width=320, height=50, relief='raised', borderwidth=5)
+
+    selection = tk.StringVar(where)
+    selection.set(runtime.action_list[0].tag)
+
+    tk.Label(frame, text="Select action:").pack(side=tk.LEFT, anchor=tk.W, padx=10)
+    tk.OptionMenu(frame, selection, *[item.tag for item in runtime.action_list]).pack(side=tk.RIGHT, anchor=tk.E, padx=10)
+
+    return frame, selection
+
+
+def pack_lhs(thing: tk.Frame) -> None:
+    '''Pack to the left'''
+    thing.pack(side=tk.LEFT, anchor=tk.W, padx=2)
+
+
+def pack_rhs(thing: tk.Frame) -> None:
+    '''Pack to the right'''
+    thing.pack(side=tk.RIGHT, anchor=tk.E, padx=2)
+
+
+def make_enabled_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, text_width: int, input_width: int) -> tuple[tk.Frame, tk.BooleanVar]:
+    '''Make the enabled frame'''
+    total_width = text_width + input_width
+    frame = tk.Frame(where, width=text_width + input_width, height=50)
+
+    enabled = tk.BooleanVar(frame)
+    enabled.set(runtime.runtime_dict[selection.get()].enabled)
+
+    label = tk.Label(frame, text="Enabled", width=int(100 * text_width / total_width), justify=tk.LEFT)
+
+    cb = functools.partial(set_enabled_cb, runtime, selection, enabled)
+    button = tk.Checkbutton(frame, text="Enabled", width=input_width, onvalue=True, offvalue=False, variable=enabled, command=cb)
+
+    pack_lhs(label)
+    pack_rhs(button)
+
+    return frame, enabled
+
+
+def make_command_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, text_width: int, input_width: int) -> tuple[tk.Frame, tk.StringVar]:
+    '''Make the command frame'''
+    total_width = text_width + input_width
+    frame = tk.Frame(where, width=text_width + input_width, height=50)
+
+    command = tk.StringVar(frame)
+    command.set(get_command_text(runtime, selection.get()))
+
+    label = tk.Label(frame, text="Chat command", width=int(100 * text_width / total_width), justify=tk.LEFT)
+    entry = tk.Entry(frame, width=input_width, textvariable=command)
+
+    pack_lhs(label)
+    pack_rhs(entry)
+
+    return frame, command
+
+
+def make_option_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar) -> tuple[tk.Frame, dict]:
+    '''Make the option frame'''
+    TEXT_WIDTH = 15
+    INPUT_WIDTH = 17
+
+    frame = tk.Frame(where, relief='raised', borderwidth=5)
+    vars = {}
+
+    enabled_frame, enabled = make_enabled_frame(frame, runtime, selection, TEXT_WIDTH, INPUT_WIDTH)
+    enabled_frame.pack()
+    vars['enabled'] = enabled
+
+    command_frame, command = make_command_frame(frame, runtime, selection, TEXT_WIDTH, INPUT_WIDTH)
+    command_frame.pack()
+    vars['command'] = command
+
+    return frame, vars
+
+
+def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
+    '''Make the GUI'''
+    canvas = make_canvas(runtime, "assets/Green_tato_640.png")
+    window = canvas.winfo_toplevel()
+
+    vars = {}
+
+    selection_frame, selection = make_selection_frame(canvas, runtime)
+    selection_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
+    # selection_frame.pack_propagate(0)
+
+    option_frame, newvars = make_option_frame(canvas, runtime, selection)
+    option_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
+    # option_frame.pack_propagate(0)
+    vars = vars | newvars
+
+    window.update()
+    return window
 
     column = 0
     row = 0
