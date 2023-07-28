@@ -10,50 +10,62 @@ import config as configsaver
 KEY_IGNORED_STR = 'ignored'
 
 
-def print_runtime_cb(runtime: configsaver.Runtime, selection: tk.StringVar):
-    '''Print the runtime data for the selected action'''
-    print(selection.get(), end=": ")
-    pp.pprint(configsaver.merge_interesting_data(runtime)[selection.get()])
+class Callbacks:
+    @staticmethod
+    def print_runtime_cb(runtime: configsaver.Runtime, selection: tk.StringVar):
+        '''Print the runtime data for the selected action'''
+        print(selection.get(), end=": ")
+        pp.pprint(configsaver.merge_interesting_data(runtime)[selection.get()])
+        
+    @staticmethod
+    def set_var_cb(runtime: configsaver.Runtime, setter: Callable, selection: tk.StringVar, statevar, *args) -> None:
+        '''Set the enabled state for the selected action'''
+        tag = selection.get()
+        state = statevar.get()
+        print(f"Set: {state=} for {tag}")
+        setter(state)
 
+        configsaver.save_config(runtime)
 
-def set_enabled_cb(runtime: configsaver.Runtime, selection: tk.StringVar, enabled: tk.BooleanVar):
-    '''Set the enabled state for the selected action'''
-    tag = selection.get()
-    state = enabled.get()
-    print(f"Set enabled: {state=} for {tag}")
-    runtime.runtime_dict[tag].enabled = state
+    @staticmethod
+    def set_checkbox_cb(runtime: configsaver.Runtime, setter: Callable[[bool], None], selection: tk.StringVar, statevar: tk.BooleanVar) -> None:
+        '''Set the enabled state for the selected action'''
+        tag = selection.get()
+        state = statevar.get()
+        print(f"Set enabled: {state=} for {tag}")
+        setter(state)
 
-    configsaver.save_config(runtime)
+        configsaver.save_config(runtime)
 
+    @staticmethod
+    def set_key_cb(runtime: configsaver.Runtime, setter: Callable[[str], None], selection: tk.StringVar, key: tk.StringVar, *args) -> None:
+        '''Set the enabled state for the selected action'''
+        tag = selection.get()
+        keybind = key.get()
+        print(f"Set keybind: {keybind=} for {tag}")
+        setter(keybind)
 
-def set_key_cb(runtime: configsaver.Runtime, selection: tk.StringVar, key: tk.StringVar, name, index, mode):
-    '''Set the enabled state for the selected action'''
-    tag = selection.get()
-    keybind = key.get()
-    print(f"Set keybind: {keybind=} for {tag}")
-    runtime.runtime_dict[tag].key = keybind
+        configsaver.save_config(runtime)
 
-    configsaver.save_config(runtime)
+    @staticmethod
+    def set_cooldown_cb(runtime: configsaver.Runtime, selection: tk.StringVar, cooldown: tk.DoubleVar, value: str):
+        '''Set the cooldown for the selected action'''
+        tag = selection.get()
+        val = float(value)
+        print(f"Set cooldown: {val=} for {tag}")
+        runtime.runtime_dict[tag].cooldown = val
 
+        configsaver.save_config(runtime)
 
-def set_cooldown_cb(runtime: configsaver.Runtime, selection: tk.StringVar, cooldown: tk.DoubleVar, value: str):
-    '''Set the cooldown for the selected action'''
-    tag = selection.get()
-    val = float(value)
-    print(f"Set cooldown: {val=} for {tag}")
-    runtime.runtime_dict[tag].cooldown = val
+    @staticmethod
+    def set_random_chance_cb(runtime: configsaver.Runtime, selection: tk.StringVar, random_chance: tk.IntVar, value: str):
+        '''Set the random chance for the selected action'''
+        tag = selection.get()
+        val = int(value)
+        print(f"Set random_chance: {val=} for {tag}")
+        runtime.runtime_dict[tag].random_chance = val
 
-    configsaver.save_config(runtime)
-
-
-def set_random_chance_cb(runtime: configsaver.Runtime, selection: tk.StringVar, random_chance: tk.IntVar, value: str):
-    '''Set the random chance for the selected action'''
-    tag = selection.get()
-    val = int(value)
-    print(f"Set random_chance: {val=} for {tag}")
-    runtime.runtime_dict[tag].random_chance = val
-
-    configsaver.save_config(runtime)
+        configsaver.save_config(runtime)
 
 
 def get_key(runtime: configsaver.Runtime, tag: str) -> str:
@@ -73,6 +85,11 @@ def get_command_text(runtime: configsaver.Runtime, tag: str) -> str:
     if isinstance(command_text, list):
         command_text = ", ".join(command_text)
     return command_text
+
+
+def set_command_text(runtime: configsaver.Runtime, tag: str, command_text: str) -> None:
+    action = next((x for x in runtime.action_list if x.tag == tag), None)
+    action.command = command_text
 
 
 def set_enabled_state(tk_obj, tk_var, predicate: Callable[[Any], bool]) -> None:
@@ -146,65 +163,145 @@ def make_selection_frame(where, runtime: configsaver.Runtime) -> tuple[tk.Frame,
 
 def pack_lhs(thing: tk.Frame) -> None:
     '''Pack to the left'''
-    thing.pack(side=tk.LEFT, anchor=tk.W, padx=2)
+    thing.pack(side=tk.LEFT, anchor=tk.W)
+    # thing.pack_propagate(0)
 
 
 def pack_rhs(thing: tk.Frame) -> None:
     '''Pack to the right'''
-    thing.pack(side=tk.RIGHT, anchor=tk.E, padx=2)
+    thing.pack(side=tk.RIGHT, anchor=tk.E)
+    # thing.pack_propagate(0)
 
 
-def make_enabled_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, text_width: int, input_width: int) -> tuple[tk.Frame, tk.BooleanVar]:
-    '''Make the enabled frame'''
-    total_width = text_width + input_width
-    frame = tk.Frame(where, width=text_width + input_width, height=50)
+@dataclasses.dataclass(frozen=True, slots=True)
+class RuntimeFrames:
+    root: tk.Tk
+    runtime: configsaver.Runtime
+    selection: tk.StringVar
+    frame_width: int
 
-    enabled = tk.BooleanVar(frame)
-    enabled.set(runtime.runtime_dict[selection.get()].enabled)
+    def make_labelled_checkbox_frame(self, name: str, initial_value: bool, setter: Callable[[bool], None]) -> tuple[tk.Frame, tk.BooleanVar]:
+        '''Make a labelled checkbox frame'''
+        frame = tk.Frame(self.root, width=self.frame_width, height=50)
 
-    label = tk.Label(frame, text="Enabled", width=int(100 * text_width / total_width), justify=tk.LEFT)
+        enabled = tk.BooleanVar(frame)
+        enabled.set(initial_value)
 
-    cb = functools.partial(set_enabled_cb, runtime, selection, enabled)
-    button = tk.Checkbutton(frame, text="Enabled", width=input_width, onvalue=True, offvalue=False, variable=enabled, command=cb)
+        label = tk.Label(frame, text=name, width=25, anchor=tk.E)
+
+        cb = functools.partial(Callbacks.set_var_cb,
+                               self.runtime,
+                               setter,
+                               self.selection,
+                               enabled)
+        button = tk.Checkbutton(frame, width=25, onvalue=True, offvalue=False, variable=enabled, command=cb, anchor=tk.W)
+
+        pack_lhs(label)
+        pack_rhs(button)
+
+        return frame, enabled
+
+    def make_labelled_text_frame(self, name: str, initial_value: str, setter: Callable[[str], None]) -> tuple[tk.Frame, tk.StringVar]:
+        '''Make the command frame'''
+        frame = tk.Frame(self.root, width=self.frame_width, height=50)
+
+        command = tk.StringVar(frame)
+        command.set(initial_value)
+
+        cb = functools.partial(Callbacks.set_key_cb,
+                               self.runtime,
+                               setter,
+                               self.selection,
+                               command)
+        command.trace_add("write", cb)
+
+        label = tk.Label(frame, text=name, width=25, anchor=tk.E)
+
+        entry = tk.Entry(frame, width=25, textvariable=command)
+
+        pack_lhs(label)
+        pack_rhs(entry)
+
+        return frame, command
+
+
+def make_cooldown_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, frame_width: int) -> tuple[tk.Frame, tk.IntVar]:
+    '''Make the cooldown frame'''
+    frame = tk.Frame(where, width=frame_width, height=50)
+
+    cooldown = tk.IntVar(frame)
+    cooldown.set(runtime.runtime_dict[selection.get()].cooldown)
+
+    cb = functools.partial(Callbacks.set_cooldown_cb, runtime, selection, cooldown)
+
+    label = tk.Label(frame, text="Cooldown", width=25, anchor=tk.E)
+    # scale = tk.Label(frame, text="Cooldown", width=25, anchor=tk.W)
+    scale = tk.Scale(frame, length=200, from_=0, to=60, resolution=1, orient=tk.HORIZONTAL, variable=cooldown, command=cb)
 
     pack_lhs(label)
-    pack_rhs(button)
+    pack_rhs(scale)
 
-    return frame, enabled
+    return frame, cooldown
 
 
-def make_command_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, text_width: int, input_width: int) -> tuple[tk.Frame, tk.StringVar]:
-    '''Make the command frame'''
-    total_width = text_width + input_width
-    frame = tk.Frame(where, width=text_width + input_width, height=50)
+def make_random_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, frame_width: int) -> tuple[tk.Frame, tk.IntVar]:
+    '''Make the random frame'''
+    frame = tk.Frame(where, width=frame_width, height=50)
 
-    command = tk.StringVar(frame)
-    command.set(get_command_text(runtime, selection.get()))
+    random_chance = tk.IntVar(frame)
+    random_chance.set(runtime.runtime_dict[selection.get()].random_chance)
 
-    label = tk.Label(frame, text="Chat command", width=int(100 * text_width / total_width), justify=tk.LEFT)
-    entry = tk.Entry(frame, width=input_width, textvariable=command)
+    cb = functools.partial(Callbacks.set_random_chance_cb, runtime, selection, random_chance)
+
+    label = tk.Label(frame, text="Random chance", width=25, anchor=tk.E)
+    scale = tk.Scale(frame, length=200, from_=0, to=100, resolution=1, orient=tk.HORIZONTAL, variable=random_chance, command=cb)
 
     pack_lhs(label)
-    pack_rhs(entry)
+    pack_rhs(scale)
 
-    return frame, command
+    return frame, random_chance
 
 
 def make_option_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar) -> tuple[tk.Frame, dict]:
     '''Make the option frame'''
-    TEXT_WIDTH = 15
-    INPUT_WIDTH = 17
+    FRAME_WIDTH = 400
 
-    frame = tk.Frame(where, relief='raised', borderwidth=5)
+    frame = tk.Frame(where, width=FRAME_WIDTH, height=200)
+    runtimeframes = RuntimeFrames(frame, runtime, selection, FRAME_WIDTH)
+
     vars = {}
-
-    enabled_frame, enabled = make_enabled_frame(frame, runtime, selection, TEXT_WIDTH, INPUT_WIDTH)
+    name = "Enabled"
+    enabled_frame, var = runtimeframes.make_labelled_checkbox_frame(name,
+                                                                    runtime.runtime_dict[selection.get()].enabled,
+                                                                    lambda state, runtime=runtime, selection=selection:
+                                                                    runtime.runtime_dict[selection.get()].set_enabled(state))
     enabled_frame.pack()
-    vars['enabled'] = enabled
+    vars[name.lower()] = var
 
-    command_frame, command = make_command_frame(frame, runtime, selection, TEXT_WIDTH, INPUT_WIDTH)
-    command_frame.pack()
-    vars['command'] = command
+    # name = "Command"
+    # command_frame, var = runtimeframes.make_labelled_text_frame(name,
+    #                                                             get_command_text(runtime, selection.get()),
+    #                                                             lambda state, runtime=runtime, selection=selection:
+    #                                                             set_command_text(runtime, selection.get(), state))
+    # command_frame.pack()
+    # vars[name.lower()] = var
+
+    # name = "Keybind"
+    # keybind_frame, var = runtimeframes.make_labelled_text_frame(name,
+    #                                                             get_command_text(runtime, selection.get()),
+    #                                                             lambda state, runtime=runtime, selection=selection:
+    #                                                             set_command_text(runtime, selection.get(), state))
+    # keybind_frame.pack()
+    # vars[name.lower()] = var
+
+
+    # cooldown_frame, cooldown = make_cooldown_frame(frame, runtime, selection, FRAME_WIDTH)
+    # cooldown_frame.pack()
+    # vars['cooldown'] = cooldown
+
+    # random_chance_frame, random_chance = make_random_frame(frame, runtime, selection, FRAME_WIDTH)
+    # random_chance_frame.pack()
+    # vars['random_chance'] = random_chance
 
     return frame, vars
 
@@ -220,9 +317,12 @@ def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
     selection_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
     # selection_frame.pack_propagate(0)
 
+    # frame = tk.Frame(canvas, width=400, height=50, relief='raised', borderwidth=5)
+    # frame.pack(side=tk.TOP, anchor=tk.N)
+    # frame.pack_propagate(0)
     option_frame, newvars = make_option_frame(canvas, runtime, selection)
     option_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
-    # option_frame.pack_propagate(0)
+    option_frame.pack_propagate(0)
     vars = vars | newvars
 
     window.update()
@@ -237,42 +337,6 @@ def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
     action_frame = tk.Frame(window, borderwidth=1, relief=tk.RAISED)
     action_frame.grid(column=1, row=row, rowspan=3)
     row += 1
-
-    enabled_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
-    tk.Label(enabled_frame, text="Enabled", width=20, padx=5, pady=5).grid(row=0, column=0)
-    enabled = tk.BooleanVar(enabled_frame)
-    enabled.set(runtime.runtime_dict[selection.get()].enabled)
-    cb = functools.partial(set_enabled_cb, runtime, selection, enabled)
-    tk.Checkbutton(enabled_frame, text="Enabled", padx=5, pady=5, width=20, onvalue=True, offvalue=False, variable=enabled, command=cb).grid(row=0, column=1)
-    enabled_frame.pack()
-
-    key_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
-    key = tk.StringVar(key_frame)
-    key_in_ram = get_key(runtime, selection.get())
-    key.set(key_in_ram)
-    cb = functools.partial(set_key_cb, runtime, selection, key)
-    key.trace_add("write", cb)
-    tk.Label(key_frame, text="Keybind/Button", width=20, padx=5, pady=5).grid(row=0, column=0)
-    key_entry = tk.Entry(key_frame, width=20, textvariable=key)
-    set_enabled_state(key_entry, key, lambda x: x != KEY_IGNORED_STR)
-    key_entry.grid(row=0, column=1)
-    key_frame.pack()
-
-    cooldown_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
-    cooldown = tk.DoubleVar(cooldown_frame)
-    cooldown.set(runtime.runtime_dict[selection.get()].cooldown)
-    cb = functools.partial(set_cooldown_cb, runtime, selection, cooldown)
-    tk.Label(cooldown_frame, text="Cooldown", width=20, padx=5, pady=5).grid(row=0, column=0)
-    tk.Scale(cooldown_frame, from_=0, to=60, resolution=1, width=20, orient=tk.HORIZONTAL, variable=cooldown, command=cb).grid(row=0, column=1)
-    cooldown_frame.pack()
-
-    random_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
-    random_chance = tk.IntVar(random_frame)
-    random_chance.set(runtime.runtime_dict[selection.get()].random_chance)
-    cb = functools.partial(set_random_chance_cb, runtime, selection, random_chance)
-    tk.Label(random_frame, text="Random chance", width=20, padx=5, pady=5).grid(row=0, column=0)
-    tk.Scale(random_frame, from_=0, to=100, width=20, orient=tk.HORIZONTAL, variable=random_chance, command=cb).grid(row=0, column=1)
-    random_frame.pack()
 
     command_frame = tk.Frame(action_frame, relief=tk.RAISED, borderwidth=10)
     command = tk.StringVar(command_frame)

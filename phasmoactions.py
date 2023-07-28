@@ -57,7 +57,7 @@ def _set_key(obj, tag: str | None = None, member: str | None = None):
                        object.__getattribute__(obj, member or "key") or obj.config.keybinds.get(obj.tag, get_default_keybind(tag or obj.tag)))
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class WalkForward:
     '''Walk forward'''
     config: Config
@@ -75,7 +75,7 @@ class WalkForward:
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class WalkBackward:
     '''Walk backward'''
     config: Config
@@ -93,7 +93,7 @@ class WalkBackward:
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class WalkLeft:
     '''Walk left'''
     config: Config
@@ -111,7 +111,7 @@ class WalkLeft:
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class WalkRight:
     '''Walk right'''
     config: Config
@@ -129,7 +129,7 @@ class WalkRight:
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class CrouchToggle:
     '''Toggle crouch'''
     config: Config
@@ -146,7 +146,7 @@ class CrouchToggle:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class JournalToggle:
     '''Toggle journal'''
     config: Config
@@ -163,7 +163,7 @@ class JournalToggle:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Place:
     '''Place'''
     config: Config
@@ -180,7 +180,7 @@ class Place:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Pickup:
     '''Pickup'''
     config: Config
@@ -197,7 +197,7 @@ class Pickup:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Drop:
     '''Drop'''
     config: Config
@@ -214,7 +214,7 @@ class Drop:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class SwitchItem:
     '''Switch item'''
     config: Config
@@ -231,7 +231,7 @@ class SwitchItem:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class TorchToggle:
     '''Toggle torch'''
     config: Config
@@ -248,7 +248,7 @@ class TorchToggle:
         actions.PressReleaseKey(self.key).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Talk:
     '''Talk'''
     config: Config
@@ -266,7 +266,7 @@ class Talk:
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class LookUp:
     '''Look up'''
     config: Config
@@ -280,7 +280,7 @@ class LookUp:
         actions.MoveMouseRelative(0, -self.distance).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class LookDown:
     '''Look down'''
     config: Config
@@ -294,7 +294,7 @@ class LookDown:
         actions.MoveMouseRelative(0, self.distance).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class LookLeft:
     '''Look left'''
     config: Config
@@ -308,7 +308,7 @@ class LookLeft:
         actions.MoveMouseRelative(-self.distance, 0).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class LookRight:
     '''Look right'''
     config: Config
@@ -322,7 +322,7 @@ class LookRight:
         actions.MoveMouseRelative(self.distance, 0).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class PeekUp:
     '''Peek up'''
     config: Config
@@ -336,7 +336,7 @@ class PeekUp:
         actions.MoveMouseRelative(0, -self.distance).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class PeekDown:
     '''Peek down'''
     config: Config
@@ -350,7 +350,7 @@ class PeekDown:
         actions.MoveMouseRelative(0, self.distance).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class PeekLeft:
     '''Peek left'''
     config: Config
@@ -364,7 +364,7 @@ class PeekLeft:
         actions.MoveMouseRelative(-self.distance, 0).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class PeekRight:
     '''Peek right'''
     config: Config
@@ -378,7 +378,7 @@ class PeekRight:
         actions.MoveMouseRelative(self.distance, 0).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class UseItem:
     '''Use item'''
     config: Config
@@ -395,7 +395,7 @@ class UseItem:
         actions.PressReleaseButton(self.button).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Teabag:
     '''Teabag'''
     config: Config
@@ -415,7 +415,7 @@ class Teabag:
         actions.ActionRepeatWithWait(CrouchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Disco:
     '''Disco'''
     config: Config
@@ -435,7 +435,7 @@ class Disco:
         actions.ActionRepeatWithWait(TorchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class CycleItems:
     '''Cycle items'''
     config: Config
@@ -455,7 +455,7 @@ class CycleItems:
         actions.ActionRepeatWithWait(SwitchItem(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class CycleItemsAndUse:
     '''Cycle items and use'''
     config: Config
@@ -477,7 +477,7 @@ class CycleItemsAndUse:
         actions.ActionRepeatWithWait(sequence, self.repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class DropAllItems:
     '''Drop all items'''
     config: Config
@@ -500,7 +500,7 @@ class DropAllItems:
         actions.ActionRepeatWithWait(action, repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Spin:
     '''Spin'''
     config: Config
@@ -523,7 +523,7 @@ class Spin:
             actions.ActionRepeatWithWait(LookRight(self.config, distance=distance), repeats, actions.Wait(self.pause)).run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Headbang:
     '''Headbang'''
     config: Config

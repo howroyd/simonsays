@@ -48,10 +48,22 @@ def find_command(twitchActions: TwitchActionList, command: str) -> TwitchAction:
 @dataclasses.dataclass
 class RuntimeData:
     enabled: bool = True
-    cooldown: float = 10.0
+    cooldown: int = 10.0
     random_chance: int = 100
     last_used: float = 0.0
     keybind: str | None = None
+
+    def set_enabled(self, value: bool) -> None:
+        self.enabled = value
+
+    def set_cooldown(self, value: int) -> None:
+        self.cooldown = value
+
+    def set_random_chance(self, value: int) -> None:
+        self.random_chance = value
+
+    def set_keybind(self, value: str) -> None:
+        self.keybind = value
 
     def use_now(self) -> None:
         '''Use the command now'''
