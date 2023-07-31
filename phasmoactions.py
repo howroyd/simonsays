@@ -4,7 +4,14 @@ import pprint
 import random
 
 import actions
+import hidactions
 import twitchactions
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class PhasmoAction(twitchactions.TwitchAction):
+    tag: str
+    chained: bool = False
 
 
 class Defaults:
@@ -56,6 +63,21 @@ def _set_key(obj, tag: str | None = None, member: str | None = None):
                        member or "key",
                        object.__getattribute__(obj, member or "key") or obj.config.keybinds.get(obj.tag, get_default_keybind(tag or obj.tag)))
 
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class WalkForwardNEW(actions.Action):
+    action: PhasmoAction
+    duration: float = Defaults.walk_duration
+
+    def run(self) -> None:
+        '''Run the action'''
+        actions.PressReleaseKey(self.key, self.duration).run()
+
+x = WalkForwardNEW(PhasmoAction("walk_forward",
+                                command=["forward", "walk"],
+                                action=hidactions.HidAction(HidType.KEYBOARD,
+                                                            cooldown=5,
+                                                            keybind="w")))
 
 @dataclasses.dataclass(slots=True)
 class WalkForward:

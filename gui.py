@@ -16,7 +16,7 @@ class Callbacks:
         '''Print the runtime data for the selected action'''
         print(selection.get(), end=": ")
         pp.pprint(configsaver.merge_interesting_data(runtime)[selection.get()])
-        
+
     @staticmethod
     def set_var_cb(runtime: configsaver.Runtime, setter: Callable, selection: tk.StringVar, statevar, *args) -> None:
         '''Set the enabled state for the selected action'''
@@ -217,7 +217,7 @@ class RuntimeFrames:
 
         label = tk.Label(frame, text=name, width=25, anchor=tk.E)
 
-        entry = tk.Entry(frame, width=25, textvariable=command)
+        entry = tk.Entry(frame, width=33, textvariable=command)
 
         pack_lhs(label)
         pack_rhs(entry)
@@ -278,30 +278,29 @@ def make_option_frame(where, runtime: configsaver.Runtime, selection: tk.StringV
     enabled_frame.pack()
     vars[name.lower()] = var
 
-    # name = "Command"
-    # command_frame, var = runtimeframes.make_labelled_text_frame(name,
-    #                                                             get_command_text(runtime, selection.get()),
-    #                                                             lambda state, runtime=runtime, selection=selection:
-    #                                                             set_command_text(runtime, selection.get(), state))
-    # command_frame.pack()
-    # vars[name.lower()] = var
+    name = "Command"
+    command_frame, var = runtimeframes.make_labelled_text_frame(name,
+                                                                get_command_text(runtime, selection.get()),
+                                                                lambda state, runtime=runtime, selection=selection:
+                                                                set_command_text(runtime, selection.get(), state))
+    command_frame.pack()
+    vars[name.lower()] = var
 
-    # name = "Keybind"
-    # keybind_frame, var = runtimeframes.make_labelled_text_frame(name,
-    #                                                             get_command_text(runtime, selection.get()),
-    #                                                             lambda state, runtime=runtime, selection=selection:
-    #                                                             set_command_text(runtime, selection.get(), state))
-    # keybind_frame.pack()
-    # vars[name.lower()] = var
+    name = "Keybind"
+    keybind_frame, var = runtimeframes.make_labelled_text_frame(name,
+                                                                get_command_text(runtime, selection.get()),
+                                                                lambda state, runtime=runtime, selection=selection:
+                                                                set_command_text(runtime, selection.get(), state))
+    keybind_frame.pack()
+    vars[name.lower()] = var
 
+    cooldown_frame, cooldown = make_cooldown_frame(frame, runtime, selection, FRAME_WIDTH)
+    cooldown_frame.pack()
+    vars['cooldown'] = cooldown
 
-    # cooldown_frame, cooldown = make_cooldown_frame(frame, runtime, selection, FRAME_WIDTH)
-    # cooldown_frame.pack()
-    # vars['cooldown'] = cooldown
-
-    # random_chance_frame, random_chance = make_random_frame(frame, runtime, selection, FRAME_WIDTH)
-    # random_chance_frame.pack()
-    # vars['random_chance'] = random_chance
+    random_chance_frame, random_chance = make_random_frame(frame, runtime, selection, FRAME_WIDTH)
+    random_chance_frame.pack()
+    vars['random_chance'] = random_chance
 
     return frame, vars
 
