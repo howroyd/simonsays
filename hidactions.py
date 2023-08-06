@@ -4,8 +4,16 @@ import enum
 from typing import Any, Protocol
 
 import actions
+import errorcodes
 
 DEBUG = False
+
+
+def dummy_run(message: str) -> errorcodes.ErrorSet:
+    """Dummy run"""
+    if DEBUG:
+        print(message)
+    return errorcodes.errorset((errorcodes.ErrorCode.OK,))
 
 
 @enum.unique
@@ -80,10 +88,9 @@ class PressButton:
     """Press a mouse button"""
     config: MouseButtonActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Pressing button: {self.config.button}")
+        return dummy_run(f"Pressing button: {self.config.button}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -91,10 +98,9 @@ class ReleaseButton:
     """Release a mouse button"""
     config: MouseButtonActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Releasing button: {self.config.button}")
+        return dummy_run(f"Releasing button: {self.config.button}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -103,11 +109,13 @@ class PressReleaseButton:
     config: MouseButtonActionConfig
     delay: float = 0.1
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        PressButton(self.config.keybind).run()
-        actions.Wait(self.delay).run()
-        ReleaseButton(self.config.keybind).run()
+        return frozenset(
+            PressButton(self.config.keybind).run(),
+            actions.Wait(self.delay).run(),
+            ReleaseButton(self.config.keybind).run()
+        )
 
 
 @dataclasses.dataclass(slots=True)
@@ -115,10 +123,9 @@ class MoveMouse:
     """Move the mouse"""
     config: MouseMoveCartesianActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Moving mouse to: {self.config.x}, {self.config.y}")
+        return dummy_run(f"Moving mouse to: {self.config.x}, {self.config.y}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -126,10 +133,9 @@ class MoveMouseRelative:
     """Move the mouse relative to its current position"""
     config: MouseMoveCartesianActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Moving mouse (relative) by: {self.config.x}, {self.config.y}")
+        return dummy_run(f"Moving mouse (relative) by: {self.config.x}, {self.config.y}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -137,10 +143,9 @@ class MoveMouseRelativeDirection:
     """Move the mouse relative to its current position in a direction"""
     config: MouseMoveDirectionActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Moving mouse (relative direction) by: {self.config.distance} in direction {self.config.direction.value}")
+        return dummy_run(f"Moving mouse (relative direction) by: {self.config.distance} in direction {self.config.direction.value}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -148,10 +153,9 @@ class PressKey:
     """Press a key"""
     config: KeyboardActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Pressing key: {self.config.key}")
+        return dummy_run(f"Pressing key: {self.config.key}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -159,10 +163,9 @@ class ReleaseKey:
     """Release a key"""
     config: KeyboardActionConfig
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        if DEBUG:
-            print(f"Releasing key: {self.config.key}")
+        return dummy_run(f"Releasing key: {self.config.key}")
 
 
 @dataclasses.dataclass(slots=True)
@@ -171,8 +174,10 @@ class PressReleaseKey:
     config: KeyboardActionConfig
     delay: float = 0.1
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        PressKey(self.config.key).run()
-        actions.Wait(self.delay).run()
-        ReleaseKey(self.config.key).run()
+        return frozenset(
+            PressKey(self.config.key).run(),
+            actions.Wait(self.delay).run(),
+            ReleaseKey(self.config.key).run()
+        )

@@ -5,6 +5,7 @@ import time
 from typing import Callable
 
 import actions
+import errorcodes
 import phasmoactions
 
 DEBUG = True
@@ -18,6 +19,22 @@ class TwitchActionConfig:
     cooldown: int | None = None
     random_chance: int | None = None
 
+    def check_command(self, command: str) -> bool:
+        """Check if the command matches"""
+        command = command.lower().lstrip().rstrip()
+
+        if isinstance(self.command, str):
+            return command.startswith(self.command)
+
+        for command_ in self.command:
+            if command.startswith(command_):
+                return True
+
+        return False
+
+
+ConfigDict = dict[str, TwitchActionConfig]
+
 
 @dataclasses.dataclass(slots=True)
 class Config:
@@ -28,11 +45,21 @@ class Config:
         """Look up an action config"""
         return self.config.get(name, None)
 
+    def find_by_command(self, command: str) -> TwitchActionConfig | None:
+        """Find by Twitch command"""
+        for key, item in self.config.items():
+            if item.check_command(command):
+                return key
+        return None
+
+
+ConfigFn = Callable[[], Config]
+
 
 @dataclasses.dataclass(slots=True)
 class GenericTwitchAction:
     """Generic Twitch action base class"""
-    config_fn: Callable[[], Config]
+    config_fn: ConfigFn
 
     @property
     def config(self) -> TwitchActionConfig | None:
@@ -42,36 +69,35 @@ class GenericTwitchAction:
 
 @dataclasses.dataclass(slots=True)
 class TwitchAction(GenericTwitchAction, actions.Action):
+    """A Twitch action"""
     name: str
     action: actions.Action
     last_used: float = 0.0
 
-    """A Twitch action"""
-
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: TwitchActionConfig = self.config
 
         if not actionconfig.enabled:
             if DEBUG:
                 print(f"Action {self.name} is disabled")
-            return
+            return errorcodes.ErrorCode.DISABLED
         if self.on_cooldown:
             if DEBUG:
                 print(f"Action {self.name} is on cooldown")
-            return
+            return errorcodes.ErrorCode.ON_COOLDOWN
         if actionconfig.random_chance is not None and random.randint(0, 100) > actionconfig.random_chance:
             if DEBUG:
                 print(f"Action {self.name} failed random chance")
             self.reset_cooldown()
-            return
+            return errorcodes.ErrorCode.RANDOM_CHANCE
 
         self.reset_cooldown()
 
         if DEBUG:
             print(f"Running action {self.name}")
 
-        self.action.run()
+        return self.action.run()
 
     def check_command(self, command: str) -> bool:
         """Check if the command matches"""
@@ -99,6 +125,9 @@ class TwitchAction(GenericTwitchAction, actions.Action):
     def reset_cooldown(self) -> None:
         """Reset the cooldown"""
         self.last_used = time.time()
+
+
+ActionDict = dict[str, TwitchAction]
 
 
 if __name__ == "__main__":

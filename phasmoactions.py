@@ -4,6 +4,7 @@ import enum
 from typing import Any, Callable, Protocol
 
 import actions
+import errorcodes
 import hidactions
 
 DEBUG = True
@@ -35,6 +36,9 @@ class PhasmoActionConfig(Protocol):
         ...
 
 
+ConfigDict = dict[str, PhasmoActionConfig]
+
+
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for all Phasmophobia actions"""
@@ -53,10 +57,13 @@ class Config:
         return self.config.get(name, None)
 
 
+ConfigFn = Callable[[], Config]
+
+
 @dataclasses.dataclass(slots=True, kw_only=True)
 class PhasmoAction(hidactions.HidAction, Protocol):
     """Base class for Phasmophobia actions"""
-    config_fn: Callable[[], Config]
+    config_fn: ConfigFn
     name: str
     chained: bool
 
@@ -66,10 +73,13 @@ class PhasmoAction(hidactions.HidAction, Protocol):
         ...
 
 
+ActionDict = dict[str, PhasmoAction]
+
+
 @dataclasses.dataclass(slots=True)
 class GenericPhasmoActionBase:
     """Generic Phasmophobia action base class"""
-    config_fn: Callable[[], Config]
+    config_fn: ConfigFn
 
     @property
     def config(self) -> PhasmoActionConfig | None:
@@ -81,20 +91,20 @@ class GenericPhasmoActionBase:
 class GenericPhasmoAction(GenericPhasmoActionBase):
     """Generic Phasmophobia action"""
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
 
         if isinstance(actionconfig.hidconfig, hidactions.KeyboardActionConfig):
-            hidactions.PressReleaseKey(actionconfig.hidconfig).run()
+            return hidactions.PressReleaseKey(actionconfig.hidconfig).run()
         elif isinstance(actionconfig.hidconfig, hidactions.MouseButtonActionConfig):
-            hidactions.PressReleaseButton(actionconfig.hidconfig).run()
+            return hidactions.PressReleaseButton(actionconfig.hidconfig).run()
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveCartesianActionConfig):
-            hidactions.MoveMouseRelative(actionconfig.hidconfig).run()
+            return hidactions.MoveMouseRelative(actionconfig.hidconfig).run()
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionActionConfig):
-            hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run()
+            return hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run()
         else:
-            raise NotImplementedError(f"Unknown action config: {actionconfig}")
+            return errorcodes.ErrorSet(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 
 
 #####################################################################
@@ -300,10 +310,10 @@ class Teabag(GenericPhasmoActionBase):
     name: str = "teabag"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -314,10 +324,10 @@ class Disco(GenericPhasmoActionBase):
     name: str = "disco"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -328,10 +338,10 @@ class CycleItems(GenericPhasmoActionBase):
     name: str = "cycle"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -342,11 +352,11 @@ class CycleItemsAndUse(GenericPhasmoActionBase):
     name: str = "cycle_items_and_use"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Use(self.config_fn)])
-        actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -357,11 +367,11 @@ class DropAllItems(GenericPhasmoActionBase):
     name: str = "drop_all_items"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)])
-        actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -372,7 +382,7 @@ class Spin(GenericPhasmoActionBase):
     name: str = "spin"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
 
@@ -380,7 +390,7 @@ class Spin(GenericPhasmoActionBase):
         distance = actionconfig.distance or LookRight().config.hidconfig.distance
 
         look_action = hidactions.MoveMouseRelativeDirection(distance, direction)
-        actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 #####################################################################
 
@@ -391,7 +401,7 @@ class Headbang(GenericPhasmoActionBase):
     name: str = "headbang"
     chained: bool = True
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         repeats = actionconfig.repeats
@@ -401,12 +411,12 @@ class Headbang(GenericPhasmoActionBase):
             print(f"Headbang: repeats={repeats}, pause={pause}")
 
         once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
-        actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
+        return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
 
 #####################################################################
 
 
-def all_actions(config_fn: Callable[[], Config]) -> list[PhasmoAction]:
+def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
     """Get all actions"""
     return [
         WalkForward(config_fn),
@@ -445,7 +455,7 @@ def get_default_action_names() -> list[str]:
     return [action.name for action in all_actions(Config())]
 
 
-def all_actions_dict(config_fn: Callable[[], Config]) -> dict[str, PhasmoAction]:
+def all_actions_dict(config_fn: ConfigFn) -> ActionDict:
     """Get all actions as a dict"""
     return {action.name: action for action in all_actions(config_fn)}
 

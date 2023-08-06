@@ -4,6 +4,8 @@ import random
 import time
 from typing import Protocol
 
+import errorcodes
+
 DEBUG = False
 
 
@@ -11,7 +13,7 @@ DEBUG = False
 class Action(Protocol):
     """Protocol for actions that can be run"""
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         ...
 
@@ -22,10 +24,10 @@ class ActionRepeat:
     action: Action
     times: int
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        for _ in range(self.times):
-            self.action.run()
+        ret = (self.action.run() for _ in range(self.times))
+        return errorcodes.errorset(ret)
 
 
 @dataclasses.dataclass(slots=True)
@@ -33,10 +35,10 @@ class ActionSequence:
     """Run actions in sequence"""
     actions: list[Action]
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        for action in self.actions:
-            action.run()
+        ret = ((action.run() for action in self.actions))
+        return errorcodes.errorset(ret)
 
 
 @dataclasses.dataclass(slots=True)
@@ -44,11 +46,12 @@ class Wait:
     """Wait for a duration"""
     duration: float
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         if DEBUG:
             print(f"Waiting for {self.duration} seconds")
         time.sleep(self.duration)
+        return errorcodes.errorset((errorcodes.ErrorCode.OK,))
 
 
 @dataclasses.dataclass(slots=True)
@@ -66,11 +69,12 @@ class WaitRandom:
         """Post init"""
         self.recalculate_wait_time()
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         if DEBUG:
             print(f"Waiting for {self.wait_time:.2f} seconds")
         time.sleep(self.wait_time)
+        return errorcodes.errorset((errorcodes.ErrorCode.OK,))
 
 
 @dataclasses.dataclass(slots=True)
@@ -81,13 +85,15 @@ class ActionRepeatWithWait:
     wait: Wait | WaitRandom
     recalculate_wait: bool = False  # Recalculate the wait time each time if random
 
-    def run(self) -> None:
+    def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        ret = []
         for _ in range(self.times):
-            self.action.run()
+            ret.append(self.action.run())
             if self.recalculate_wait:
                 self.wait.recalculate_wait_time()
-            self.wait.run()
+            ret.append(self.wait.run())
+        return errorcodes.errorset(ret)
 
 
 @dataclasses.dataclass(slots=True)
