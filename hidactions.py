@@ -1,7 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-from typing import Protocol
+from typing import Any, Protocol
 
 import actions
 
@@ -31,14 +31,40 @@ class MouseButtonActionConfig:
 
 
 @dataclasses.dataclass(slots=True)
-class MouseMoveActionConfig:
-    """An action to move the mouse"""
+class MouseMoveCartesianActionConfig:
+    """An action to move the mouse in cartesian coordinates"""
     x: int
     y: int
     device: HidType = HidType.MOUSE_MOVE
 
 
-Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveActionConfig
+class MouseMoveDirectionUnknown(Exception):
+    """Unknown mouse move direction"""
+    pass
+
+
+@enum.unique
+class MouseMoveDirection(enum.Enum):
+    """Mouse move direction"""
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
+
+    def _missing_(self, value: Any) -> Any:
+        """Handle missing values"""
+        raise self.MouseMoveDirectionUnknown(f"Unknown mouse move direction: {value}")
+
+
+@dataclasses.dataclass(slots=True)
+class MouseMoveDirectionActionConfig:
+    """An action to move the mouse in a direction"""
+    distance: int
+    direction: MouseMoveDirection
+    device: HidType = HidType.MOUSE_MOVE
+
+
+Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveCartesianActionConfig | MouseMoveDirectionActionConfig
 
 #####################################################################
 
@@ -87,7 +113,7 @@ class PressReleaseButton:
 @dataclasses.dataclass(slots=True)
 class MoveMouse:
     """Move the mouse"""
-    config: MouseMoveActionConfig
+    config: MouseMoveCartesianActionConfig
 
     def run(self) -> None:
         """Run the action"""
@@ -98,12 +124,23 @@ class MoveMouse:
 @dataclasses.dataclass(slots=True)
 class MoveMouseRelative:
     """Move the mouse relative to its current position"""
-    config: MouseMoveActionConfig
+    config: MouseMoveCartesianActionConfig
 
     def run(self) -> None:
         """Run the action"""
         if DEBUG:
             print(f"Moving mouse (relative) by: {self.config.x}, {self.config.y}")
+
+
+@dataclasses.dataclass(slots=True)
+class MoveMouseRelativeDirection:
+    """Move the mouse relative to its current position in a direction"""
+    config: MouseMoveDirectionActionConfig
+
+    def run(self) -> None:
+        """Run the action"""
+        if DEBUG:
+            print(f"Moving mouse (relative direction) by: {self.config.distance} in direction {self.config.direction.value}")
 
 
 @dataclasses.dataclass(slots=True)

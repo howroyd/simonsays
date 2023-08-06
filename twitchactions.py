@@ -1,13 +1,15 @@
 #!./.venv/bin/python3
 import dataclasses
+import random
+import time
 
 import actions
 
 
 @dataclasses.dataclass(slots=True)
 class TwitchAction(actions.Action):
-    command: str | list[str]
     action: actions.Action
+    command: str | list[str]
     enabled: bool = True
     cooldown: int | None = None
     last_used: float = 0.0
@@ -52,43 +54,3 @@ class TwitchAction(actions.Action):
     def reset_cooldown(self) -> None:
         """Reset the cooldown"""
         self.last_used = time.time()
-
-    def run(self) -> None:
-        """Run the action"""
-        self.action.run()
-
-    @property
-    def enabled(self) -> bool:
-        return self.action.enabled
-
-    @enabled.setter
-    def enabled(self, enabled: bool) -> None:
-        self.action.enabled = enabled
-
-    @property
-    def on_cooldown(self) -> bool:
-        return self.action.on_cooldown
-
-    @property
-    def cooldown(self) -> int | None:
-        return self.action.cooldown
-
-    @cooldown.setter
-    def cooldown(self, cooldown: int | None) -> None:
-        self.action.cooldown = cooldown
-
-    @property
-    def keybind(self) -> str | None:
-        return self.action.keybind
-
-    @keybind.setter
-    def keybind(self, keybind: str | None) -> None:
-        self.action.keybind = keybind
-
-    @property
-    def random_chance(self) -> int | None:
-        return self.action.random_chance
-
-    @random_chance.setter
-    def random_chance(self, random_chance: int | None) -> None:
-        self.action.random_chance = random_chance

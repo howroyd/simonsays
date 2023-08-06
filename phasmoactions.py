@@ -1,17 +1,43 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-import pprint
-import random
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 import actions
 import hidactions
 
+DEBUG = True
+
+
+@dataclasses.dataclass(slots=True)
+class PhasmoActionConfig(Protocol):
+    """A config to a Phasmophobia action"""
+    hidconfig: hidactions.Config
+
+    @property
+    def duration(self) -> float | None:
+        """Get the duration"""
+        ...
+
+    @property
+    def pause(self) -> float | None:
+        """Get the pause"""
+        ...
+
+    @property
+    def repeats(self) -> int | None:
+        """Get the repeats"""
+        ...
+
+    @property
+    def mousemovedirection(self) -> hidactions.MouseMoveDirection | None:
+        """Get the mouse move direction"""
+        ...
+
 
 @dataclasses.dataclass(slots=True)
 class Config:
-    config: dict[str, hidactions.Config] = dataclasses.field(default_factory=dict)
+    config: dict[str, PhasmoActionConfig] = dataclasses.field(default_factory=dict)
 
     class Defaults:
         """Default values"""
@@ -24,11 +50,12 @@ class Config:
     class ConfigLookupFailure(Exception):
         pass
 
-    def get_config(self, name: str) -> hidactions.Config | None:
+    def get_config(self, name: str) -> PhasmoActionConfig | None:
         """Look up an action config"""
         return self.config.get(name, None)
 
-    def __getitem__(self, name: str) -> Any:
+    def __getitem__(self, name: str) -> PhasmoActionConfig:
+        """Look up an action config"""
         try:
             return self.config[name]
         except KeyError:
@@ -38,636 +65,445 @@ class Config:
 @dataclasses.dataclass(slots=True, kw_only=True)
 class PhasmoAction(hidactions.HidAction, Protocol):
     """Base class for Phasmophobia actions"""
+    config_fn: Callable[[], Config]
     name: str
-    config: Config
     chained: bool
 
+    @property
+    def config(self) -> PhasmoActionConfig | None:
+        """Get the config for this action"""
+        ...
+
+
+@dataclasses.dataclass(slots=True)
+class GenericPhasmoActionBase:
+    """Generic Phasmophobia action base class"""
+    config_fn: Callable[[], Config]
+
+    @property
+    def config(self) -> PhasmoActionConfig | None:
+        """Get the config for this action"""
+        return self.config_fn().get_config(self.name)  # TODO: think about relying on self.name existing in child class
+
+
+@dataclasses.dataclass(slots=True)
+class GenericPhasmoAction(GenericPhasmoActionBase):
+    """Generic Phasmophobia action"""
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+
+        if isinstance(actionconfig.hidconfig, hidactions.KeyboardActionConfig):
+            hidactions.PressReleaseKey(actionconfig.hidconfig).run()
+        elif isinstance(actionconfig.hidconfig, hidactions.MouseButtonActionConfig):
+            hidactions.PressReleaseButton(actionconfig.hidconfig).run()
+        elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveCartesianActionConfig):
+            hidactions.MoveMouseRelative(actionconfig.hidconfig).run()
+        elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionActionConfig):
+            hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run()
+        else:
+            raise NotImplementedError(f"Unknown action config: {actionconfig}")
+
+
 #####################################################################
+
+
+class WalkDirectionUnknown(Exception):
+    """Unknown walk direction"""
+    pass
 
 
 @enum.unique
 class WalkDirection(enum.Enum):
     """Walk direction"""
-    FORWARD = enum.auto()
-    BACKWARD = enum.auto()
-    LEFT = enum.auto()
-    RIGHT = enum.auto()
+    FORWARD = "forward"
+    BACKWARD = "backward"
+    LEFT = "left"
+    RIGHT = "right"
 
-    class WalkDirectionUnknown(Exception):
-        pass
+    def _missing_(self, value: Any) -> Any:
+        """Handle missing values"""
+        raise self.WalkDirectionUnknown(f"Unknown walk direction: {value}")
+
 
 @dataclasses.dataclass(slots=True)
-class Walk:
-    config: Config
+class Walk(GenericPhasmoAction):
+    """Walk in a direction"""
     direction: WalkDirection
     name: str = dataclasses.field(init=False)
     chained: bool = False
 
     def __post_init__(self) -> None:
-        if WalkDirection.FORWARD == self.direction:
-            self.name = "walk_forward"
-        elif WalkDirection.BACKWARD == self.direction:
-            self.name = "walk_backward"
-        elif WalkDirection.LEFT == self.direction:
-            self.name = "walk_left"
-        elif WalkDirection.RIGHT == self.direction:
-            self.name = "walk_right"
-        raise WalkDirection.WalkDirectionUnknown(f"Unknown walk direction: {self.direction}")
+        self.name = self.direction.value
 
 
 @dataclasses.dataclass(slots=True)
 class WalkForward(Walk):
+    """Walk forward"""
     direction: WalkDirection = WalkDirection.FORWARD
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.config[self.name].key, self.duration).run()  # NOTE: get config at runtime in case the config changes
-
-
-
-x = WalkForwardNEW(PhasmoAction("walk_forward",
-                                command=["forward", "walk"],
-                                action=hidactions.HidAction(HidType.KEYBOARD,
-                                                            cooldown=5,
-                                                            keybind="w")))
-
-
-def make_default_keybinds() -> dict[str, str]:
-    """Make the default keybinds for Phasmophobia"""
-    return {
-        "walk_forward": "w",
-        "walk_backward": "s",
-        "walk_left": "a",
-        "walk_right": "d",
-        "sprint": "shift",
-        "crouch": "c",
-        "journal": "j",
-        "place": "f",
-        "pickup": "e",
-        "drop": "g",
-        "switch": "q",
-        "torch": "t",
-        "talk": "v",
-        "use": "rmb",
-    }
-
-
-def get_default_keybind(action: str) -> str:
-    """Get the default keybind for a Phasmophobia action"""
-    return make_default_keybinds().get(action, None)
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class Config:
-    """Configuration for Phasmophobia"""
-    keybinds: dict[str, str] = dataclasses.field(default_factory=lambda: make_default_keybinds())
-    look_distance: int = Defaults.look_distance
-    peek_distance: int = Defaults.peek_distance
-    toggle_duration: float = Defaults.toggle_duration
-
-
-def _set_key(obj, tag: str | None = None, member: str | None = None):
-    """Set the key for a frozen dataclass object.  This is a bit nasty."""
-    object.__setattr__(obj,
-                       member or "key",
-                       object.__getattribute__(obj, member or "key") or obj.config.keybinds.get(obj.tag, get_default_keybind(tag or obj.tag)))
-
 
 @dataclasses.dataclass(slots=True)
-class WalkForward:
-    """Walk forward"""
-    config: Config
-    key: str | None = None
-    duration: float = Defaults.walk_duration
-    tag: str = "walk_forward"
-    command: str | list[str] = "forward"
-    chained: bool = False
-
-    def __post_init__(self) -> None:
-        _set_key(self)
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key, self.duration).run()
-
-
-@dataclasses.dataclass(slots=True)
-class WalkBackward:
+class WalkBackward(Walk):
     """Walk backward"""
-    config: Config
-    key: str | None = None
-    duration: float = Defaults.walk_duration
-    tag: str = "walk_backward"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["back", "backward"])
-    chained: bool = False
-
-    def __post_init__(self) -> None:
-        _set_key(self)
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key, self.duration).run()
+    direction: WalkDirection = WalkDirection.BACKWARD
 
 
 @dataclasses.dataclass(slots=True)
-class WalkLeft:
+class WalkLeft(Walk):
     """Walk left"""
-    config: Config
-    key: str | None = None
-    duration: float = Defaults.walk_duration
-    tag: str = "walk_left"
-    command: str | list[str] = "left"
-    chained: bool = False
-
-    def __post_init__(self) -> None:
-        _set_key(self)
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key, self.duration).run()
+    direction: WalkDirection = WalkDirection.LEFT
 
 
 @dataclasses.dataclass(slots=True)
-class WalkRight:
+class WalkRight(Walk):
     """Walk right"""
-    config: Config
-    key: str | None = None
-    duration: float = Defaults.walk_duration
-    tag: str = "walk_right"
-    command: str | list[str] = "right"
-    chained: bool = False
+    direction: WalkDirection = WalkDirection.RIGHT
 
-    def __post_init__(self) -> None:
-        _set_key(self)
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key, self.duration).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class CrouchToggle:
+class CrouchToggle(GenericPhasmoAction):
     """Toggle crouch"""
-    config: Config
-    key: str | None = None
-    tag: str = "crouch"
-    command: str | list[str] = "crouch"
+    name: str = "crouch"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class JournalToggle:
-    """Toggle journal"""
-    config: Config
-    key: str | None = None
-    tag: str = "journal"
-    command: str | list[str] = "journal"
+class JournalToggle(GenericPhasmoAction):
+    """Toggle the journal"""
+    name: str = "journal"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class Place:
-    """Place"""
-    config: Config
-    key: str | None = None
-    tag: str = "place"
-    command: str | list[str] = "place"
+class Place(GenericPhasmoAction):
+    """Place an item"""
+    name: str = "place"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class Pickup:
-    """Pickup"""
-    config: Config
-    key: str | None = None
-    tag: str = "pickup"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["pickup", "grab"])
+class Pickup(GenericPhasmoAction):
+    """Pickup an item"""
+    name: str = "pickup"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class Drop:
-    """Drop"""
-    config: Config
-    key: str | None = None
-    tag: str = "drop"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["drop", "throw"])
+class Drop(GenericPhasmoAction):
+    """Drop an item"""
+    name: str = "Drop"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class SwitchItem:
-    """Switch item"""
-    config: Config
-    key: str | None = None
-    tag: str = "switch"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["switch", "swap"])
+class Switch(GenericPhasmoAction):
+    """Switch to next inventory item"""
+    name: str = "switch"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class TorchToggle:
-    """Toggle torch"""
-    config: Config
-    key: str | None = None
-    tag: str = "torch"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["torch", "light", "flashlight"])
+class TorchToggle(GenericPhasmoAction):
+    """Toggle the torch"""
+    name: str = "torch"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class Talk:
-    """Talk"""
-    config: Config
-    key: str | None = None
-    duration: float = Defaults.talk_duration
-    tag: str = "talk"
-    command: str | list[str] = dataclasses.field(default_factory=lambda: ["talk", "speak"])
+class Talk(GenericPhasmoAction):
+    """Toggle push to talk for a period of time"""
+    name: str = "talk"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self)
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseKey(self.key, self.duration).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class LookUp:
+class LookUp(GenericPhasmoAction):
     """Look up"""
-    config: Config
-    distance: int = Defaults.look_distance
-    tag: str = "look_up"
-    command: str | list[str] = "look up"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(0, -self.distance).run()
+    name: str = "look_up"
 
 
 @dataclasses.dataclass(slots=True)
-class LookDown:
+class LookDown(GenericPhasmoAction):
     """Look down"""
-    config: Config
-    distance: int = Defaults.look_distance
-    tag: str = "look_down"
-    command: str | list[str] = "look down"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(0, self.distance).run()
+    name: str = "look_down"
 
 
 @dataclasses.dataclass(slots=True)
-class LookLeft:
+class LookLeft(GenericPhasmoAction):
     """Look left"""
-    config: Config
-    distance: int = Defaults.look_distance
-    tag: str = "look_left"
-    command: str | list[str] = "look left"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(-self.distance, 0).run()
+    name: str = "look_left"
 
 
 @dataclasses.dataclass(slots=True)
-class LookRight:
+class LookRight(GenericPhasmoAction):
     """Look right"""
-    config: Config
-    distance: int = Defaults.look_distance
-    tag: str = "look_right"
-    command: str | list[str] = "look right"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(self.distance, 0).run()
+    name: str = "look_right"
 
 
 @dataclasses.dataclass(slots=True)
-class PeekUp:
+class PeekUp(GenericPhasmoAction):
     """Peek up"""
-    config: Config
-    distance: int = Defaults.peek_distance
-    tag: str = "peek_up"
-    command: str | list[str] = "peek up"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(0, -self.distance).run()
+    name: str = "peek_up"
 
 
 @dataclasses.dataclass(slots=True)
-class PeekDown:
+class PeekDown(GenericPhasmoAction):
     """Peek down"""
-    config: Config
-    distance: int = Defaults.peek_distance
-    tag: str = "peek_down"
-    command: str | list[str] = "peek down"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(0, self.distance).run()
+    name: str = "peek_down"
 
 
 @dataclasses.dataclass(slots=True)
-class PeekLeft:
+class PeekLeft(GenericPhasmoAction):
     """Peek left"""
-    config: Config
-    distance: int = Defaults.peek_distance
-    tag: str = "peek_left"
-    command: str | list[str] = "peek left"
-    chained: bool = False
-
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(-self.distance, 0).run()
+    name: str = "peek_left"
 
 
 @dataclasses.dataclass(slots=True)
-class PeekRight:
+class PeekRight(GenericPhasmoAction):
     """Peek right"""
-    config: Config
-    distance: int = Defaults.peek_distance
-    tag: str = "peek_right"
-    command: str | list[str] = "peek right"
-    chained: bool = False
+    name: str = "peek_right"
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.MoveMouseRelative(self.distance, 0).run()
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class UseItem:
+class Use(GenericPhasmoAction):
     """Use item"""
-    config: Config
-    button: str | None = None
-    tag: str = "use"
-    command: str | list[str] = "use"
+    name: str = "use"
     chained: bool = False
 
-    def __post_init__(self) -> None:
-        _set_key(self, member="button")
 
-    def run(self) -> None:
-        """Run the action"""
-        actions.PressReleaseButton(self.button).run()
-
+#####################################################################
 
 @dataclasses.dataclass(slots=True)
-class Teabag:
-    """Teabag"""
-    config: Config
-    key: str | None = None
-    pause: float = 0.4
-    repeats: int | None = None
-    tag: str = "teabag"
-    command: str | list[str] = "teabag"
-    chained: bool = True
-
-    def __post_init__(self) -> None:
-        _set_key(self, "crouch")
-
-    def run(self) -> None:
-        """Run the action"""
-        repeats = self.repeats or random.randint(5, 10)
-        actions.ActionRepeatWithWait(CrouchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
-
-
-@dataclasses.dataclass(slots=True)
-class Disco:
-    """Disco"""
-    config: Config
-    key: str | None = None
-    pause: float = 0.4
-    repeats: int | None = None
-    tag: str = "disco"
-    command: str | list[str] = "disco"
-    chained: bool = True
-
-    def __post_init__(self) -> None:
-        _set_key(self, "torch")
-
-    def run(self) -> None:
-        """Run the action"""
-        repeats = self.repeats or random.randint(5, 10)
-        actions.ActionRepeatWithWait(TorchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
-
-
-@dataclasses.dataclass(slots=True)
-class CycleItems:
-    """Cycle items"""
-    config: Config
-    key: str | None = None
-    pause: float = 0.4
-    repeats: int | None = None
-    tag: str = "cycle_items"
-    command: str | list[str] = "cycle"
-    chained: bool = True
-
-    def __post_init__(self) -> None:
-        _set_key(self, "switch")
-
-    def run(self) -> None:
-        """Run the action"""
-        repeats = self.repeats or random.randint(5, 10)
-        actions.ActionRepeatWithWait(SwitchItem(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
-
-
-@dataclasses.dataclass(slots=True)
-class CycleItemsAndUse:
-    """Cycle items and use"""
-    config: Config
-    key_switch: str | None = None
-    button_use: str | None = None
-    pause: float = 0.4
-    repeats: int = 3
-    tag: str = "cycle_items_and_use"
-    command: str | list[str] = "chaos"
-    chained: bool = True
-
-    def __post_init__(self) -> None:
-        _set_key(self, "switch", "key_switch")
-        _set_key(self, "use", "button_use")
-
-    def run(self) -> None:
-        """Run the action"""
-        sequence = actions.ActionSequence([SwitchItem(self.config, key=self.key_switch), actions.Wait(self.pause), UseItem(self.config, button=self.button_use)])
-        actions.ActionRepeatWithWait(sequence, self.repeats, actions.Wait(self.pause)).run()
-
-
-@dataclasses.dataclass(slots=True)
-class DropAllItems:
-    """Drop all items"""
-    config: Config
-    key_switch: str | None = None
-    key_drop: str | None = None
-    pause: float = 0.4
-    repeats: int = 3
-    tag: str = "drop_all_items"
-    command: str | list[str] = "yeet"
-    chained: bool = True
-
-    def __post_init__(self) -> None:
-        _set_key(self, "switch", "key_switch")
-        _set_key(self, "drop", "key_drop")
-
-    def run(self) -> None:
-        """Run the action"""
-        repeats = self.repeats or 3
-        action = actions.ActionSequence([SwitchItem(self.config, key=self.key_switch), actions.Wait(self.pause), Drop(self.config, key=self.key_drop)])
-        actions.ActionRepeatWithWait(action, repeats, actions.Wait(self.pause)).run()
-
-
-@dataclasses.dataclass(slots=True)
-class Spin:
-    """Spin"""
-    config: Config
-    direction: str | None = None
-    pause: float = 0.05
-    repeats: int | None = None
-    distance: int = int(Defaults.look_distance * 0.1)
-    tag: str = "spin"
-    command: str | list[str] = "spin"
+class Teabag(GenericPhasmoActionBase):
+    """Crouch repeatedly"""
+    name: str = "teabag"
     chained: bool = True
 
     def run(self) -> None:
         """Run the action"""
-        distance = self.distance or self.look_distance * 0.1  # Resolution
-        direction = self.direction or random.choice(["left", "right"])
-        repeats = self.repeats or random.randint(50, 100)  # TODO: calibrate this
-        if direction == "left":
-            actions.ActionRepeatWithWait(LookLeft(self.config, distance=distance), repeats, actions.Wait(self.pause)).run()
-        else:
-            actions.ActionRepeatWithWait(LookRight(self.config, distance=distance), repeats, actions.Wait(self.pause)).run()
+        actionconfig: PhasmoActionConfig = self.config
+        actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
-class Headbang:
-    """Headbang"""
-    config: Config
-    distance: int = Defaults.look_distance
-    pause: float = 0.4
-    repeats: int | None = None
-    tag: str = "headbang"
-    command: str | list[str] = "headbang"
+class Disco(GenericPhasmoActionBase):
+    """Turn the torch on and off repeatedly"""
+    name: str = "disco"
     chained: bool = True
 
     def run(self) -> None:
         """Run the action"""
-        repeats = self.repeats or random.randint(5, 10)
-        action = actions.ActionSequence([LookUp(self.config, distance=self.distance), actions.Wait(self.pause), LookDown(self.config, distance=self.distance)])
-        actions.ActionRepeatWithWait(action, repeats, actions.Wait(self.pause)).run()
+        actionconfig: PhasmoActionConfig = self.config
+        actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
 
 
-def make_action_list(config: Config) -> twitchactions.TwitchActionList:
-    """Make a dictionary of tags and actions"""
+@dataclasses.dataclass(slots=True)
+class CycleItems(GenericPhasmoActionBase):
+    """Cycle through the inventory repeatedly"""
+    name: str = "cycle"
+    chained: bool = True
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+        actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class CycleItemsAndUse(GenericPhasmoActionBase):
+    """Cycle through the inventory and use the item, repeatedly"""
+    name: str = "cycle_items_and_use"
+    chained: bool = True
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+        sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Use(self.config_fn)])
+        actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class DropAllItems(GenericPhasmoActionBase):
+    """Cycle through the inventory and drop each item"""
+    name: str = "drop_all_items"
+    chained: bool = True
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+        sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)])
+        actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Spin(GenericPhasmoActionBase):
+    """Cycle through the inventory and drop each item"""
+    name: str = "spin"
+    chained: bool = True
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+
+        direction = actionconfig.mousemovedirection or hidactions.MouseMoveDirection.RIGHT
+        distance = actionconfig.distance or LookRight().config.hidconfig.distance
+
+        look_action = hidactions.MoveMouseRelativeDirection(distance, direction)
+        actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Headbang(GenericPhasmoActionBase):
+    """Look up and down repeatedly"""
+    name: str = "headbang"
+    chained: bool = True
+
+    def run(self) -> None:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+        repeats = actionconfig.repeats
+        pause = actionconfig.pause
+
+        if DEBUG:
+            print(f"Headbang: repeats={repeats}, pause={pause}")
+
+        once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
+        actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
+
+#####################################################################
+
+
+def all_actions(config_fn: Callable[[], Config]) -> list[PhasmoAction]:
+    """Get all actions"""
     return [
-        WalkForward(config),
-        WalkBackward(config),
-        WalkLeft(config),
-        WalkRight(config),
-        CrouchToggle(config),
-        JournalToggle(config),
-        Place(config),
-        Pickup(config),
-        Drop(config),
-        SwitchItem(config),
-        TorchToggle(config),
-        Talk(config),
-        UseItem(config),
-        LookUp(config),
-        LookDown(config),
-        LookLeft(config),
-        LookRight(config),
-        PeekUp(config),
-        PeekDown(config),
-        PeekLeft(config),
-        PeekRight(config),
-        Teabag(config),
-        Disco(config),
-        CycleItems(config),
-        CycleItemsAndUse(config),
-        DropAllItems(config),
-        Spin(config),
-        Headbang(config),
+        WalkForward(config_fn),
+        WalkBackward(config_fn),
+        WalkLeft(config_fn),
+        WalkRight(config_fn),
+        CrouchToggle(config_fn),
+        JournalToggle(config_fn),
+        Place(config_fn),
+        Pickup(config_fn),
+        Drop(config_fn),
+        Switch(config_fn),
+        TorchToggle(config_fn),
+        Talk(config_fn),
+        LookUp(config_fn),
+        LookDown(config_fn),
+        LookLeft(config_fn),
+        LookRight(config_fn),
+        PeekUp(config_fn),
+        PeekDown(config_fn),
+        PeekLeft(config_fn),
+        PeekRight(config_fn),
+        Use(config_fn),
+        Teabag(config_fn),
+        Disco(config_fn),
+        CycleItems(config_fn),
+        CycleItemsAndUse(config_fn),
+        DropAllItems(config_fn),
+        Spin(config_fn),
+        Headbang(config_fn),
     ]
 
 
+def get_default_action_names() -> list[str]:
+    """Get the default action names"""
+    return [action.name for action in all_actions(Config())]
+
+
+def all_actions_dict(config_fn: Callable[[], Config]) -> dict[str, PhasmoAction]:
+    """Get all actions as a dict"""
+    return {action.name: action for action in all_actions(config_fn)}
+
+
 if __name__ == "__main__":
-    print("Hello World!")
+    import pprint as pp
+    import random
+    pp.pprint(get_default_action_names())
+    pp.pprint(all_actions_dict(Config()))
 
-    config = Config()
-    config.keybinds["crouch"] = "ctrl"
+    @dataclasses.dataclass(slots=True)
+    class LookActionConfig:
+        hidconfig: hidactions.Config
 
-    phasmoActions = make_action_list(config)
-    pprint.pprint(twitchactions.command_dict(phasmoActions))
+    look_up_hidconfig = hidactions.MouseMoveDirectionActionConfig(500, hidactions.MouseMoveDirection.UP)
+    look_up_config = LookActionConfig(hidconfig=look_up_hidconfig)
+    look_down_hidconfig = hidactions.MouseMoveDirectionActionConfig(250, hidactions.MouseMoveDirection.DOWN)
+    look_down_config = LookActionConfig(hidconfig=look_down_hidconfig)
 
-    print()
+    config = Config(config={
+        "look_up": look_up_config,
+        "look_down": look_down_config,
+    })
 
-    commands = ["yeet", "throw", "look up", "crouch", "bullshit"]
+    pp.pprint(all_actions_dict(lambda: config))
 
-    for command in commands:
-        action = twitchactions.find_command(phasmoActions, command)
+    look_up = LookUp(lambda: config)
+    look_up.run()
+    look_down = LookDown(lambda: config)
+    look_down.run()
 
-        print(f"{command=}: {action.__class__=}\n")
+    @dataclasses.dataclass(slots=True)
+    class HeadbangActionConfig:
+        hidconfig: hidactions.Config = None
+        _pause: float = 0.1
+        _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (3, 10))
 
-        if action is not None:
-            action.run()
+        @property
+        def pause(self) -> float | None:
+            """Get the pause"""
+            return self._pause
+
+        @property
+        def repeats(self) -> int | None:
+            """Get the repeats"""
+            return random.randint(*self._repeats)
+
+    config.config["headbang"] = HeadbangActionConfig()
+    headbang = Headbang(lambda: config)
+    headbang.run()
+    headbang.run()
+    headbang.run()

@@ -7,7 +7,7 @@ from typing import Protocol
 DEBUG = False
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Action(Protocol):
     """Protocol for actions that can be run"""
 
@@ -16,7 +16,7 @@ class Action(Protocol):
         ...
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class ActionRepeat:
     """Repeat an action"""
     action: Action
@@ -28,7 +28,7 @@ class ActionRepeat:
             self.action.run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class ActionSequence:
     """Run actions in sequence"""
     actions: list[Action]
@@ -39,7 +39,7 @@ class ActionSequence:
             action.run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class Wait:
     """Wait for a duration"""
     duration: float
@@ -73,7 +73,7 @@ class WaitRandom:
         time.sleep(self.wait_time)
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class ActionRepeatWithWait:
     """Repeat an action with a wait between each repeat"""
     action: Action
@@ -90,7 +90,7 @@ class ActionRepeatWithWait:
             self.wait.run()
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class CommandAction:
     """A command action"""
     command: str | list[str]
