@@ -14,12 +14,12 @@ CHANNEL = "drgreengiant"
 
 
 def done_callback(future, command):
-    '''Callback for when a command is done'''
+    """Callback for when a command is done"""
     print(f"Done: {command.tag=}")
 
 
 def make_runtime() -> configsaver.Runtime:
-    '''Make the runtime data'''
+    """Make the runtime data"""
     keybinds = pa.make_default_keybinds()
     keybinds["walk_forward"] = "up"
     keybinds["crouch"] = "ctrl"

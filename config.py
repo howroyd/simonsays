@@ -13,7 +13,7 @@ IGNORE_MEMBERS = ['tag', 'config', 'last_used', 'chained']
 
 @dataclasses.dataclass
 class Runtime:
-    '''Runtime data container'''
+    """Runtime data container"""
     version: str
     channel: str
     action_list: ta.TwitchActionList
@@ -22,7 +22,7 @@ class Runtime:
 
 
 def merge_interesting_data(runtime: Runtime) -> dict:
-    '''Merge the interesting runtime data into a dict'''
+    """Merge the interesting runtime data into a dict"""
     asdict = {}
     for k, v in runtime.runtime_dict.items():
         asdict[k] = dataclasses.asdict(v)
@@ -49,7 +49,7 @@ def merge_interesting_data(runtime: Runtime) -> dict:
 
 
 def save_config(runtime: Runtime) -> None:
-    '''Save the config to file'''
+    """Save the config to file"""
     towrite = merge_interesting_data(runtime)
 
     with open(FILENAME, "w") as f:

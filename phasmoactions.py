@@ -1,30 +1,99 @@
 #!./.venv/bin/python3
 import dataclasses
+import enum
 import pprint
 import random
+from typing import Any, Protocol
 
 import actions
 import hidactions
-import twitchactions
+
+
+@dataclasses.dataclass(slots=True)
+class Config:
+    config: dict[str, hidactions.Config] = dataclasses.field(default_factory=dict)
+
+    class Defaults:
+        """Default values"""
+        look_distance: int = 500
+        peek_distance: int = 250
+        toggle_duration: float = 0.1
+        walk_duration: float = 3
+        talk_duration: float = 10
+
+    class ConfigLookupFailure(Exception):
+        pass
+
+    def get_config(self, name: str) -> hidactions.Config | None:
+        """Look up an action config"""
+        return self.config.get(name, None)
+
+    def __getitem__(self, name: str) -> Any:
+        try:
+            return self.config[name]
+        except KeyError:
+            raise self.ConfigLookupFailure(f"Config {name} not found")
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
-class PhasmoAction(twitchactions.TwitchAction):
-    tag: str
+class PhasmoAction(hidactions.HidAction, Protocol):
+    """Base class for Phasmophobia actions"""
+    name: str
+    config: Config
+    chained: bool
+
+#####################################################################
+
+
+@enum.unique
+class WalkDirection(enum.Enum):
+    """Walk direction"""
+    FORWARD = enum.auto()
+    BACKWARD = enum.auto()
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
+
+    class WalkDirectionUnknown(Exception):
+        pass
+
+@dataclasses.dataclass(slots=True)
+class Walk:
+    config: Config
+    direction: WalkDirection
+    name: str = dataclasses.field(init=False)
     chained: bool = False
 
+    def __post_init__(self) -> None:
+        if WalkDirection.FORWARD == self.direction:
+            self.name = "walk_forward"
+        elif WalkDirection.BACKWARD == self.direction:
+            self.name = "walk_backward"
+        elif WalkDirection.LEFT == self.direction:
+            self.name = "walk_left"
+        elif WalkDirection.RIGHT == self.direction:
+            self.name = "walk_right"
+        raise WalkDirection.WalkDirectionUnknown(f"Unknown walk direction: {self.direction}")
 
-class Defaults:
-    '''Default values'''
-    look_distance: int = 500
-    peek_distance: int = 250
-    toggle_duration: float = 0.1
-    walk_duration: float = 3
-    talk_duration: float = 10
+
+@dataclasses.dataclass(slots=True)
+class WalkForward(Walk):
+    direction: WalkDirection = WalkDirection.FORWARD
+
+    def run(self) -> None:
+        """Run the action"""
+        actions.PressReleaseKey(self.config[self.name].key, self.duration).run()  # NOTE: get config at runtime in case the config changes
+
+
+
+x = WalkForwardNEW(PhasmoAction("walk_forward",
+                                command=["forward", "walk"],
+                                action=hidactions.HidAction(HidType.KEYBOARD,
+                                                            cooldown=5,
+                                                            keybind="w")))
 
 
 def make_default_keybinds() -> dict[str, str]:
-    '''Make the default keybinds for Phasmophobia'''
+    """Make the default keybinds for Phasmophobia"""
     return {
         "walk_forward": "w",
         "walk_backward": "s",
@@ -44,13 +113,13 @@ def make_default_keybinds() -> dict[str, str]:
 
 
 def get_default_keybind(action: str) -> str:
-    '''Get the default keybind for a Phasmophobia action'''
+    """Get the default keybind for a Phasmophobia action"""
     return make_default_keybinds().get(action, None)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Config:
-    '''Configuration for Phasmophobia'''
+    """Configuration for Phasmophobia"""
     keybinds: dict[str, str] = dataclasses.field(default_factory=lambda: make_default_keybinds())
     look_distance: int = Defaults.look_distance
     peek_distance: int = Defaults.peek_distance
@@ -58,30 +127,15 @@ class Config:
 
 
 def _set_key(obj, tag: str | None = None, member: str | None = None):
-    '''Set the key for a frozen dataclass object.  This is a bit nasty.'''
+    """Set the key for a frozen dataclass object.  This is a bit nasty."""
     object.__setattr__(obj,
                        member or "key",
                        object.__getattribute__(obj, member or "key") or obj.config.keybinds.get(obj.tag, get_default_keybind(tag or obj.tag)))
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
-class WalkForwardNEW(actions.Action):
-    action: PhasmoAction
-    duration: float = Defaults.walk_duration
-
-    def run(self) -> None:
-        '''Run the action'''
-        actions.PressReleaseKey(self.key, self.duration).run()
-
-x = WalkForwardNEW(PhasmoAction("walk_forward",
-                                command=["forward", "walk"],
-                                action=hidactions.HidAction(HidType.KEYBOARD,
-                                                            cooldown=5,
-                                                            keybind="w")))
-
 @dataclasses.dataclass(slots=True)
 class WalkForward:
-    '''Walk forward'''
+    """Walk forward"""
     config: Config
     key: str | None = None
     duration: float = Defaults.walk_duration
@@ -93,13 +147,13 @@ class WalkForward:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
 @dataclasses.dataclass(slots=True)
 class WalkBackward:
-    '''Walk backward'''
+    """Walk backward"""
     config: Config
     key: str | None = None
     duration: float = Defaults.walk_duration
@@ -111,13 +165,13 @@ class WalkBackward:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
 @dataclasses.dataclass(slots=True)
 class WalkLeft:
-    '''Walk left'''
+    """Walk left"""
     config: Config
     key: str | None = None
     duration: float = Defaults.walk_duration
@@ -129,13 +183,13 @@ class WalkLeft:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
 @dataclasses.dataclass(slots=True)
 class WalkRight:
-    '''Walk right'''
+    """Walk right"""
     config: Config
     key: str | None = None
     duration: float = Defaults.walk_duration
@@ -147,13 +201,13 @@ class WalkRight:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
 @dataclasses.dataclass(slots=True)
 class CrouchToggle:
-    '''Toggle crouch'''
+    """Toggle crouch"""
     config: Config
     key: str | None = None
     tag: str = "crouch"
@@ -164,13 +218,13 @@ class CrouchToggle:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class JournalToggle:
-    '''Toggle journal'''
+    """Toggle journal"""
     config: Config
     key: str | None = None
     tag: str = "journal"
@@ -181,13 +235,13 @@ class JournalToggle:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Place:
-    '''Place'''
+    """Place"""
     config: Config
     key: str | None = None
     tag: str = "place"
@@ -198,13 +252,13 @@ class Place:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Pickup:
-    '''Pickup'''
+    """Pickup"""
     config: Config
     key: str | None = None
     tag: str = "pickup"
@@ -215,13 +269,13 @@ class Pickup:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Drop:
-    '''Drop'''
+    """Drop"""
     config: Config
     key: str | None = None
     tag: str = "drop"
@@ -232,13 +286,13 @@ class Drop:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class SwitchItem:
-    '''Switch item'''
+    """Switch item"""
     config: Config
     key: str | None = None
     tag: str = "switch"
@@ -249,13 +303,13 @@ class SwitchItem:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class TorchToggle:
-    '''Toggle torch'''
+    """Toggle torch"""
     config: Config
     key: str | None = None
     tag: str = "torch"
@@ -266,13 +320,13 @@ class TorchToggle:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Talk:
-    '''Talk'''
+    """Talk"""
     config: Config
     key: str | None = None
     duration: float = Defaults.talk_duration
@@ -284,13 +338,13 @@ class Talk:
         _set_key(self)
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseKey(self.key, self.duration).run()
 
 
 @dataclasses.dataclass(slots=True)
 class LookUp:
-    '''Look up'''
+    """Look up"""
     config: Config
     distance: int = Defaults.look_distance
     tag: str = "look_up"
@@ -298,13 +352,13 @@ class LookUp:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(0, -self.distance).run()
 
 
 @dataclasses.dataclass(slots=True)
 class LookDown:
-    '''Look down'''
+    """Look down"""
     config: Config
     distance: int = Defaults.look_distance
     tag: str = "look_down"
@@ -312,13 +366,13 @@ class LookDown:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(0, self.distance).run()
 
 
 @dataclasses.dataclass(slots=True)
 class LookLeft:
-    '''Look left'''
+    """Look left"""
     config: Config
     distance: int = Defaults.look_distance
     tag: str = "look_left"
@@ -326,13 +380,13 @@ class LookLeft:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(-self.distance, 0).run()
 
 
 @dataclasses.dataclass(slots=True)
 class LookRight:
-    '''Look right'''
+    """Look right"""
     config: Config
     distance: int = Defaults.look_distance
     tag: str = "look_right"
@@ -340,13 +394,13 @@ class LookRight:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(self.distance, 0).run()
 
 
 @dataclasses.dataclass(slots=True)
 class PeekUp:
-    '''Peek up'''
+    """Peek up"""
     config: Config
     distance: int = Defaults.peek_distance
     tag: str = "peek_up"
@@ -354,13 +408,13 @@ class PeekUp:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(0, -self.distance).run()
 
 
 @dataclasses.dataclass(slots=True)
 class PeekDown:
-    '''Peek down'''
+    """Peek down"""
     config: Config
     distance: int = Defaults.peek_distance
     tag: str = "peek_down"
@@ -368,13 +422,13 @@ class PeekDown:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(0, self.distance).run()
 
 
 @dataclasses.dataclass(slots=True)
 class PeekLeft:
-    '''Peek left'''
+    """Peek left"""
     config: Config
     distance: int = Defaults.peek_distance
     tag: str = "peek_left"
@@ -382,13 +436,13 @@ class PeekLeft:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(-self.distance, 0).run()
 
 
 @dataclasses.dataclass(slots=True)
 class PeekRight:
-    '''Peek right'''
+    """Peek right"""
     config: Config
     distance: int = Defaults.peek_distance
     tag: str = "peek_right"
@@ -396,13 +450,13 @@ class PeekRight:
     chained: bool = False
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.MoveMouseRelative(self.distance, 0).run()
 
 
 @dataclasses.dataclass(slots=True)
 class UseItem:
-    '''Use item'''
+    """Use item"""
     config: Config
     button: str | None = None
     tag: str = "use"
@@ -413,13 +467,13 @@ class UseItem:
         _set_key(self, member="button")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         actions.PressReleaseButton(self.button).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Teabag:
-    '''Teabag'''
+    """Teabag"""
     config: Config
     key: str | None = None
     pause: float = 0.4
@@ -432,14 +486,14 @@ class Teabag:
         _set_key(self, "crouch")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         repeats = self.repeats or random.randint(5, 10)
         actions.ActionRepeatWithWait(CrouchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
 @dataclasses.dataclass(slots=True)
 class Disco:
-    '''Disco'''
+    """Disco"""
     config: Config
     key: str | None = None
     pause: float = 0.4
@@ -452,14 +506,14 @@ class Disco:
         _set_key(self, "torch")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         repeats = self.repeats or random.randint(5, 10)
         actions.ActionRepeatWithWait(TorchToggle(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
 @dataclasses.dataclass(slots=True)
 class CycleItems:
-    '''Cycle items'''
+    """Cycle items"""
     config: Config
     key: str | None = None
     pause: float = 0.4
@@ -472,14 +526,14 @@ class CycleItems:
         _set_key(self, "switch")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         repeats = self.repeats or random.randint(5, 10)
         actions.ActionRepeatWithWait(SwitchItem(self.config, key=self.key), repeats, actions.Wait(self.pause)).run()
 
 
 @dataclasses.dataclass(slots=True)
 class CycleItemsAndUse:
-    '''Cycle items and use'''
+    """Cycle items and use"""
     config: Config
     key_switch: str | None = None
     button_use: str | None = None
@@ -494,14 +548,14 @@ class CycleItemsAndUse:
         _set_key(self, "use", "button_use")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         sequence = actions.ActionSequence([SwitchItem(self.config, key=self.key_switch), actions.Wait(self.pause), UseItem(self.config, button=self.button_use)])
         actions.ActionRepeatWithWait(sequence, self.repeats, actions.Wait(self.pause)).run()
 
 
 @dataclasses.dataclass(slots=True)
 class DropAllItems:
-    '''Drop all items'''
+    """Drop all items"""
     config: Config
     key_switch: str | None = None
     key_drop: str | None = None
@@ -516,7 +570,7 @@ class DropAllItems:
         _set_key(self, "drop", "key_drop")
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         repeats = self.repeats or 3
         action = actions.ActionSequence([SwitchItem(self.config, key=self.key_switch), actions.Wait(self.pause), Drop(self.config, key=self.key_drop)])
         actions.ActionRepeatWithWait(action, repeats, actions.Wait(self.pause)).run()
@@ -524,7 +578,7 @@ class DropAllItems:
 
 @dataclasses.dataclass(slots=True)
 class Spin:
-    '''Spin'''
+    """Spin"""
     config: Config
     direction: str | None = None
     pause: float = 0.05
@@ -535,7 +589,7 @@ class Spin:
     chained: bool = True
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         distance = self.distance or self.look_distance * 0.1  # Resolution
         direction = self.direction or random.choice(["left", "right"])
         repeats = self.repeats or random.randint(50, 100)  # TODO: calibrate this
@@ -547,7 +601,7 @@ class Spin:
 
 @dataclasses.dataclass(slots=True)
 class Headbang:
-    '''Headbang'''
+    """Headbang"""
     config: Config
     distance: int = Defaults.look_distance
     pause: float = 0.4
@@ -557,14 +611,14 @@ class Headbang:
     chained: bool = True
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         repeats = self.repeats or random.randint(5, 10)
         action = actions.ActionSequence([LookUp(self.config, distance=self.distance), actions.Wait(self.pause), LookDown(self.config, distance=self.distance)])
         actions.ActionRepeatWithWait(action, repeats, actions.Wait(self.pause)).run()
 
 
 def make_action_list(config: Config) -> twitchactions.TwitchActionList:
-    '''Make a dictionary of tags and actions'''
+    """Make a dictionary of tags and actions"""
     return [
         WalkForward(config),
         WalkBackward(config),

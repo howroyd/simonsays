@@ -11,8 +11,8 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 @dataclass(slots=True)
 class MessageBuilder:
-    '''Dataclass to hold a raw incoming bytes and output complete packets defined by the regex pattern'''
-    '''Basically a way of assembling partial packets incrementally and knowing when a complete packet has been assembled'''
+    """Dataclass to hold a raw incoming bytes and output complete packets defined by the regex pattern"""
+    """Basically a way of assembling partial packets incrementally and knowing when a complete packet has been assembled"""
     parser: re.Pattern[bytes]
     buffer: bytes = b''
 
@@ -39,8 +39,8 @@ def MessageBuilderDefault() -> MessageBuilder:
 
 @unique
 class TwitchMessageEnum(Enum):
-    '''Message types defined by Twitch IRC server'''
-    '''Ref: https://dev.twitch.tv/docs/irc/example-parser'''
+    """Message types defined by Twitch IRC server"""
+    """Ref: https://dev.twitch.tv/docs/irc/example-parser"""
     JOIN = auto()
     PART = auto()
     NOTICE = auto()
@@ -57,7 +57,7 @@ class TwitchMessageEnum(Enum):
 
 
 class TwitchIrc:
-    '''Definition of the Twitch IRC server'''
+    """Definition of the Twitch IRC server"""
     url: str = "irc.chat.twitch.tv"
     port: int = 6667
 
@@ -134,7 +134,7 @@ class TwitchIrc:
 
     @dataclass(slots=True)
     class Message:
-        '''Container for a Twitch IRC message'''
+        """Container for a Twitch IRC message"""
         username: str
         id: TwitchMessageEnum
         payload: str
@@ -231,7 +231,7 @@ class TwitchConnection:
 
 
 class SockHandler:
-    '''Wrapper to create the socket and login to twitch on construction'''
+    """Wrapper to create the socket and login to twitch on construction"""
 
     def __init__(self) -> None:
         logging.debug("Init SockHandler")
@@ -244,7 +244,7 @@ class SockHandler:
 
 
 class MessageSplitter:
-    '''Just to find the start and end of a message and return it'''
+    """Just to find the start and end of a message and return it"""
 
     def __call__(self, data: bytes) -> tuple[list[bytes], bytes]:  # TODO this is probably redundant??
         packets = data.split(b"\r\n")

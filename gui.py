@@ -13,13 +13,13 @@ KEY_IGNORED_STR = 'ignored'
 class Callbacks:
     @staticmethod
     def print_runtime_cb(runtime: configsaver.Runtime, selection: tk.StringVar):
-        '''Print the runtime data for the selected action'''
+        """Print the runtime data for the selected action"""
         print(selection.get(), end=": ")
         pp.pprint(configsaver.merge_interesting_data(runtime)[selection.get()])
 
     @staticmethod
     def set_var_cb(runtime: configsaver.Runtime, setter: Callable, selection: tk.StringVar, statevar, *args) -> None:
-        '''Set the enabled state for the selected action'''
+        """Set the enabled state for the selected action"""
         tag = selection.get()
         state = statevar.get()
         print(f"Set: {state=} for {tag}")
@@ -29,7 +29,7 @@ class Callbacks:
 
     @staticmethod
     def set_checkbox_cb(runtime: configsaver.Runtime, setter: Callable[[bool], None], selection: tk.StringVar, statevar: tk.BooleanVar) -> None:
-        '''Set the enabled state for the selected action'''
+        """Set the enabled state for the selected action"""
         tag = selection.get()
         state = statevar.get()
         print(f"Set enabled: {state=} for {tag}")
@@ -39,7 +39,7 @@ class Callbacks:
 
     @staticmethod
     def set_key_cb(runtime: configsaver.Runtime, setter: Callable[[str], None], selection: tk.StringVar, key: tk.StringVar, *args) -> None:
-        '''Set the enabled state for the selected action'''
+        """Set the enabled state for the selected action"""
         tag = selection.get()
         keybind = key.get()
         print(f"Set keybind: {keybind=} for {tag}")
@@ -49,7 +49,7 @@ class Callbacks:
 
     @staticmethod
     def set_cooldown_cb(runtime: configsaver.Runtime, selection: tk.StringVar, cooldown: tk.DoubleVar, value: str):
-        '''Set the cooldown for the selected action'''
+        """Set the cooldown for the selected action"""
         tag = selection.get()
         val = float(value)
         print(f"Set cooldown: {val=} for {tag}")
@@ -59,7 +59,7 @@ class Callbacks:
 
     @staticmethod
     def set_random_chance_cb(runtime: configsaver.Runtime, selection: tk.StringVar, random_chance: tk.IntVar, value: str):
-        '''Set the random chance for the selected action'''
+        """Set the random chance for the selected action"""
         tag = selection.get()
         val = int(value)
         print(f"Set random_chance: {val=} for {tag}")
@@ -69,7 +69,7 @@ class Callbacks:
 
 
 def get_key(runtime: configsaver.Runtime, tag: str) -> str:
-    '''Get the key (or button) for the action'''
+    """Get the key (or button) for the action"""
     action = dataclasses.asdict(next((x for x in runtime.action_list if x.tag == tag), None))
 
     if action['chained']:
@@ -79,7 +79,7 @@ def get_key(runtime: configsaver.Runtime, tag: str) -> str:
 
 
 def get_command_text(runtime: configsaver.Runtime, tag: str) -> str:
-    '''Get the command text for the action'''
+    """Get the command text for the action"""
     action = next((x for x in runtime.action_list if x.tag == tag), None)
     command_text = action.command
     if isinstance(command_text, list):
@@ -93,7 +93,7 @@ def set_command_text(runtime: configsaver.Runtime, tag: str, command_text: str) 
 
 
 def set_enabled_state(tk_obj, tk_var, predicate: Callable[[Any], bool]) -> None:
-    '''Set the state of a Tk object based on a Tk variable and predicate'''
+    """Set the state of a Tk object based on a Tk variable and predicate"""
     tk_obj.configure(state=tk.NORMAL if predicate(tk_var.get()) else tk.DISABLED)
 
 
@@ -105,7 +105,7 @@ def populate_frame(runtime: configsaver.Runtime,
                    random_chance: tk.IntVar,
                    command: tk.StringVar,
                    key_entry: tk.Entry) -> None:
-    '''Populate the frame with the selected action'''
+    """Populate the frame with the selected action"""
     enabled.set(runtime.runtime_dict[selection.get()].enabled)
 
     key_in_ram = get_key(runtime, selection.get())
@@ -119,7 +119,7 @@ def populate_frame(runtime: configsaver.Runtime,
 
 
 def make_window(runtime: configsaver.Runtime, width_px: int, height_px: int) -> tk.Tk:
-    '''Make the window'''
+    """Make the window"""
     window = tk.Tk()
     window.title(f"Twitch Plays v{runtime.version} by DrGreenGiant")
     window.geometry(f"{width_px}x{height_px}")
@@ -127,7 +127,7 @@ def make_window(runtime: configsaver.Runtime, width_px: int, height_px: int) -> 
 
 
 def make_canvas(runtime: configsaver.Runtime, image_path: str, *, window: tk.Tk | None = None) -> tk.Canvas:
-    '''Make the canvas with a background image'''
+    """Make the canvas with a background image"""
     # img = tk.PhotoImage(file=image_path)
     from PIL import Image
     width, height = Image.open(image_path).size
@@ -149,7 +149,7 @@ def make_canvas(runtime: configsaver.Runtime, image_path: str, *, window: tk.Tk 
 
 
 def make_selection_frame(where, runtime: configsaver.Runtime) -> tuple[tk.Frame, tk.StringVar]:
-    '''Make the selection frame'''
+    """Make the selection frame"""
     frame = tk.Frame(where, width=320, height=50, relief='raised', borderwidth=5)
 
     selection = tk.StringVar(where)
@@ -162,13 +162,13 @@ def make_selection_frame(where, runtime: configsaver.Runtime) -> tuple[tk.Frame,
 
 
 def pack_lhs(thing: tk.Frame) -> None:
-    '''Pack to the left'''
+    """Pack to the left"""
     thing.pack(side=tk.LEFT, anchor=tk.W)
     # thing.pack_propagate(0)
 
 
 def pack_rhs(thing: tk.Frame) -> None:
-    '''Pack to the right'''
+    """Pack to the right"""
     thing.pack(side=tk.RIGHT, anchor=tk.E)
     # thing.pack_propagate(0)
 
@@ -181,7 +181,7 @@ class RuntimeFrames:
     frame_width: int
 
     def make_labelled_checkbox_frame(self, name: str, initial_value: bool, setter: Callable[[bool], None]) -> tuple[tk.Frame, tk.BooleanVar]:
-        '''Make a labelled checkbox frame'''
+        """Make a labelled checkbox frame"""
         frame = tk.Frame(self.root, width=self.frame_width, height=50)
 
         enabled = tk.BooleanVar(frame)
@@ -202,7 +202,7 @@ class RuntimeFrames:
         return frame, enabled
 
     def make_labelled_text_frame(self, name: str, initial_value: str, setter: Callable[[str], None]) -> tuple[tk.Frame, tk.StringVar]:
-        '''Make the command frame'''
+        """Make the command frame"""
         frame = tk.Frame(self.root, width=self.frame_width, height=50)
 
         command = tk.StringVar(frame)
@@ -226,7 +226,7 @@ class RuntimeFrames:
 
 
 def make_cooldown_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, frame_width: int) -> tuple[tk.Frame, tk.IntVar]:
-    '''Make the cooldown frame'''
+    """Make the cooldown frame"""
     frame = tk.Frame(where, width=frame_width, height=50)
 
     cooldown = tk.IntVar(frame)
@@ -245,7 +245,7 @@ def make_cooldown_frame(where, runtime: configsaver.Runtime, selection: tk.Strin
 
 
 def make_random_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar, frame_width: int) -> tuple[tk.Frame, tk.IntVar]:
-    '''Make the random frame'''
+    """Make the random frame"""
     frame = tk.Frame(where, width=frame_width, height=50)
 
     random_chance = tk.IntVar(frame)
@@ -263,7 +263,7 @@ def make_random_frame(where, runtime: configsaver.Runtime, selection: tk.StringV
 
 
 def make_option_frame(where, runtime: configsaver.Runtime, selection: tk.StringVar) -> tuple[tk.Frame, dict]:
-    '''Make the option frame'''
+    """Make the option frame"""
     FRAME_WIDTH = 400
 
     frame = tk.Frame(where, width=FRAME_WIDTH, height=200)
@@ -306,7 +306,7 @@ def make_option_frame(where, runtime: configsaver.Runtime, selection: tk.StringV
 
 
 def make_gui(runtime: configsaver.Runtime) -> tk.Tk:
-    '''Make the GUI'''
+    """Make the GUI"""
     canvas = make_canvas(runtime, "assets/Green_tato_640.png")
     window = canvas.winfo_toplevel()
 

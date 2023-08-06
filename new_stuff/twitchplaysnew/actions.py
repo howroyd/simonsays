@@ -6,50 +6,50 @@ import random
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Action(Protocol):
-    '''Protocol for actions that can be run'''
+    """Protocol for actions that can be run"""
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         ...
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionRepeat:
-    '''An action to run, repeated a number of times'''
+    """An action to run, repeated a number of times"""
     action: Action
     times: int
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         for _ in range(self.times):
             self.action.run()
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionSequence:
-    '''A sequence of actions to run'''
+    """A sequence of actions to run"""
     actions: list[Action]
 
     def run(self) -> None:
-        '''Run the sequence of actions'''
+        """Run the sequence of actions"""
         for action in self.actions:
             action.run()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionSequenceRepeat:
-    '''A sequence of actions to run, repeated a number of times'''
+    """A sequence of actions to run, repeated a number of times"""
     action_sequence: ActionSequence
     times: int
 
     def run(self) -> None:
-        '''Run the sequence of actions'''
+        """Run the sequence of actions"""
         for _ in range(self.times):
             self.action_sequence.run()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Wait:
-    '''Wait for a number of seconds'''
+    """Wait for a number of seconds"""
     seconds: float
 
     def run(self) -> None:
@@ -59,7 +59,7 @@ class Wait:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class WaitRandom:
-    '''Wait for a random number of seconds'''
+    """Wait for a random number of seconds"""
     min_seconds: float
     max_seconds: float
 
@@ -70,13 +70,13 @@ class WaitRandom:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionRepeatWithWait:
-    '''An action to run, repeated a number of times, with a wait in between'''
+    """An action to run, repeated a number of times, with a wait in between"""
     action: Action
     times: int
     wait: float
 
     def run(self) -> None:
-        '''Run the action'''
+        """Run the action"""
         for _ in range(self.times):
             self.action.run()
             time.sleep(self.wait)
@@ -84,13 +84,13 @@ class ActionRepeatWithWait:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ActionSequenceRepeatWithWait:
-    '''A sequence of actions to run, repeated a number of times, with a wait in between'''
+    """A sequence of actions to run, repeated a number of times, with a wait in between"""
     action_sequence: ActionSequence
     times: int
     wait: float
 
     def run(self) -> None:
-        '''Run the sequence of actions'''
+        """Run the sequence of actions"""
         for _ in range(self.times):
             self.action_sequence.run()
             time.sleep(self.wait)
@@ -98,7 +98,7 @@ class ActionSequenceRepeatWithWait:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressKey:
-    '''Press a key on the keyboard'''
+    """Press a key on the keyboard"""
     key: str
 
     def run(self) -> None:
@@ -107,7 +107,7 @@ class PressKey:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ReleaseKey:
-    '''Release a key on the keyboard'''
+    """Release a key on the keyboard"""
     key: str
 
     def run(self) -> None:
@@ -116,7 +116,7 @@ class ReleaseKey:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressButton:
-    '''Press a button on the mouse'''
+    """Press a button on the mouse"""
     button: str
 
     def run(self) -> None:
@@ -125,7 +125,7 @@ class PressButton:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ReleaseButton:
-    '''Release a button on the mouse'''
+    """Release a button on the mouse"""
     button: str
 
     def run(self) -> None:
@@ -134,7 +134,7 @@ class ReleaseButton:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class MoveMouse:
-    '''Move the mouse to a position'''
+    """Move the mouse to a position"""
     x: int
     y: int
 
@@ -144,7 +144,7 @@ class MoveMouse:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class MoveMouseRelative:
-    '''Move the mouse relative to the current position'''
+    """Move the mouse relative to the current position"""
     x: int
     y: int
 
@@ -154,7 +154,7 @@ class MoveMouseRelative:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressReleaseKey:
-    '''Press a key, wait (optional), then release the key'''
+    """Press a key, wait (optional), then release the key"""
     key: str
     seconds: float | None = None
 
@@ -166,7 +166,7 @@ class PressReleaseKey:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PressReleaseButton:
-    '''Press a button, wait (optional), then release the button'''
+    """Press a button, wait (optional), then release the button"""
     button: str
     seconds: float | None = None
 

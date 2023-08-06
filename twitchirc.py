@@ -19,22 +19,22 @@ class IrcSocket:
         self.sock = bufferedsocket.create_connection((self.address, self.port), timeout=self.timeout)
 
     def close(self) -> None:
-        '''Closes the connection'''
+        """Closes the connection"""
         self.sock.close()
 
     def read(self) -> str | None:
-        '''Reads a line from the buffer'''
+        """Reads a line from the buffer"""
         b = self.sock.read()
         if b:
             return b.decode('utf-8')
         return None
 
     def readlines(self) -> list[str]:
-        '''Reads all lines from the buffer'''
+        """Reads all lines from the buffer"""
         return [line.decode('utf-8') for line in self.sock.readlines()]
 
     def write(self, string: str) -> None:
-        '''Writes a chunk of data to the buffer'''
+        """Writes a chunk of data to the buffer"""
         self.sock.write(bytes(string, 'utf-8'))
 
 
@@ -47,7 +47,7 @@ class IrcSocketManaged(IrcSocket):
 
 
 def _twitch_irc_thread(address: str, port: int, timeout: float, username: str, oauth: str, channel: str, queue: mp.Queue):
-    '''Thread for reading from Twitch IRC server'''
+    """Thread for reading from Twitch IRC server"""
     with IrcSocketManaged(address, port, timeout) as irc:
         irc.write(f'PASS {oauth}\r\n')
         irc.write(f'NICK {username}\r\n')
@@ -75,16 +75,16 @@ class TwitchIrc:
 
     @property
     def queue(self):
-        '''Returns the queue of messages from the IRC server'''
+        """Returns the queue of messages from the IRC server"""
         return self._queue
 
     def start(self):
-        '''Starts the connection to Twitch IRC server'''
+        """Starts the connection to Twitch IRC server"""
         self._process = mp.Process(target=_twitch_irc_thread, args=(self.address, self.port, self.timeout, self.username, self.oauth, self.channel, self.queue))
         self._process.start()
 
     def stop(self):
-        '''Forcibly terminate the connection.  May deadlock anyone waiting on the queue'''
+        """Forcibly terminate the connection.  May deadlock anyone waiting on the queue"""
         #  FIXME - This is a bit of a hack.  We should probably send a message to the thread to tell it to stop
         self._process.terminate()
 
@@ -98,8 +98,8 @@ class TwitchIrc:
 
 @enum.unique
 class TwitchMessageEnum(enum.Enum):
-    '''Message types defined by Twitch IRC server'''
-    '''Ref: https://dev.twitch.tv/docs/irc/example-parser'''
+    """Message types defined by Twitch IRC server"""
+    """Ref: https://dev.twitch.tv/docs/irc/example-parser"""
     JOIN = enum.auto()
     PART = enum.auto()
     NOTICE = enum.auto()
@@ -116,7 +116,7 @@ class TwitchMessageEnum(enum.Enum):
 
     @classmethod
     def match_message_type(cls, string_to_match: str) -> Self | None:
-        '''Matches the message type to the TwitchMessageEnum'''
+        """Matches the message type to the TwitchMessageEnum"""
         match string_to_match.lstrip().rstrip().upper():
             case "JOIN":
                 return cls.JOIN
@@ -150,7 +150,7 @@ class TwitchMessageEnum(enum.Enum):
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class TwitchMessage:
-    '''Represents a message from Twitch IRC server'''
+    """Represents a message from Twitch IRC server"""
     type: TwitchMessageEnum
     username: str
     payload: str
@@ -161,7 +161,7 @@ class TwitchMessage:
 
     @classmethod
     def from_irc_message(cls, irc_msg: str) -> Self | None:
-        '''Creates a TwitchMessage from an IRC message'''
+        """Creates a TwitchMessage from an IRC message"""
         msg_type = TwitchMessageEnum.match_message_type(irc_msg.split(maxsplit=2)[1])
 
         if msg_type is None or msg_type == TwitchMessageEnum.NUMERIC:  # TODO should we keep numerics?
