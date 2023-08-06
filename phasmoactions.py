@@ -409,6 +409,9 @@ class Headbang(GenericPhasmoActionBase):
         if DEBUG:
             print(f"Headbang: repeats={repeats}, pause={pause}")
 
+        look_up = LookUp(self.config_fn)
+        look_down = LookDown(self.config_fn)
+
         once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
         actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
 
@@ -481,11 +484,6 @@ if __name__ == "__main__":
 
     pp.pprint(all_actions_dict(lambda: config))
 
-    look_up = LookUp(lambda: config)
-    look_up.run()
-    look_down = LookDown(lambda: config)
-    look_down.run()
-
     @dataclasses.dataclass(slots=True)
     class HeadbangActionConfig:
         hidconfig: hidactions.Config = None
@@ -503,7 +501,9 @@ if __name__ == "__main__":
             return random.randint(*self._repeats)
 
     config.config["headbang"] = HeadbangActionConfig()
-    headbang = Headbang(lambda: config)
-    headbang.run()
-    headbang.run()
-    headbang.run()
+
+    myactions = all_actions_dict(lambda: config)
+
+    myactions["look_up"].run()
+    myactions["look_down"].run()
+    myactions["headbang"].run()
