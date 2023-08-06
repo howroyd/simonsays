@@ -2,6 +2,7 @@
 import dataclasses
 import random
 import time
+from typing import Callable
 
 import actions
 import phasmoactions
@@ -10,46 +11,77 @@ DEBUG = True
 
 
 @dataclasses.dataclass(slots=True)
-class TwitchAction(actions.Action):
-    action: actions.Action
+class TwitchActionConfig:
+    """A config for a Twitch action"""
     command: str | list[str]
     enabled: bool = True
     cooldown: int | None = None
-    last_used: float = 0.0
     random_chance: int | None = None
+
+
+@dataclasses.dataclass(slots=True)
+class Config:
+    """The global config for all Twitch actions"""
+    config: dict[str, TwitchActionConfig] = dataclasses.field(default_factory=dict)
+
+    def get_config(self, name: str) -> TwitchActionConfig | None:
+        """Look up an action config"""
+        return self.config.get(name, None)
+
+
+@dataclasses.dataclass(slots=True)
+class GenericTwitchAction:
+    """Generic Twitch action base class"""
+    config_fn: Callable[[], Config]
+
+    @property
+    def config(self) -> TwitchActionConfig | None:
+        """Get the config for this action"""
+        return self.config_fn().get_config(self.name)  # TODO: think about relying on self.name existing in child class
+
+
+@dataclasses.dataclass(slots=True)
+class TwitchAction(GenericTwitchAction, actions.Action):
+    name: str
+    action: actions.Action
+    last_used: float = 0.0
+
+    """A Twitch action"""
 
     def run(self) -> None:
         """Run the action"""
-        if not self.enabled:
+        actionconfig: TwitchActionConfig = self.config
+
+        if not actionconfig.enabled:
             if DEBUG:
-                print(f"Action {self.command} is disabled")
+                print(f"Action {self.name} is disabled")
             return
         if self.on_cooldown:
             if DEBUG:
-                print(f"Action {self.command} is on cooldown")
+                print(f"Action {self.name} is on cooldown")
             return
-        if self.random_chance is not None and random.randint(0, 100) > self.random_chance:
+        if actionconfig.random_chance is not None and random.randint(0, 100) > actionconfig.random_chance:
             if DEBUG:
-                print(f"Action {self.command} failed random chance")
+                print(f"Action {self.name} failed random chance")
             self.reset_cooldown()
             return
-        self._run()
 
-    def _run(self) -> None:
-        """Run the action"""
         self.reset_cooldown()
+
         if DEBUG:
-            print(f"Running action {self.command}")
+            print(f"Running action {self.name}")
+
         self.action.run()
 
     def check_command(self, command: str) -> bool:
         """Check if the command matches"""
         command = command.lower().lstrip().rstrip()
+        actionconfig: TwitchActionConfig = self.config
 
-        if isinstance(self.command, str):
-            return command.startswith(self.command)
+        if isinstance(actionconfig.command, str):
+            return command.startswith(actionconfig.command)
 
-        for command_ in self.command:
+        for command_ in actionconfig.command:
             if command.startswith(command_):
                 return True
 
@@ -58,9 +90,11 @@ class TwitchAction(actions.Action):
     @property
     def on_cooldown(self) -> bool:
         """Whether the action is on cooldown"""
-        if self.cooldown is None:
+        actionconfig: TwitchActionConfig = self.config
+
+        if actionconfig.cooldown is None:
             return False
-        return time.time() - self.last_used < self.cooldown
+        return time.time() - self.last_used < actionconfig.cooldown
 
     def reset_cooldown(self) -> None:
         """Reset the cooldown"""
@@ -71,21 +105,21 @@ if __name__ == "__main__":
     import hidactions
 
     @dataclasses.dataclass(slots=True)
+    class GlobalConfig:
+        phasmoconfig: phasmoactions.Config
+        twitchconfig: Config
+
+    @dataclasses.dataclass(slots=True)
     class LookActionConfig:
         hidconfig: hidactions.Config
 
-    look_up_hidconfig = hidactions.MouseMoveDirectionActionConfig(500, hidactions.MouseMoveDirection.UP)
-    look_up_config = LookActionConfig(hidconfig=look_up_hidconfig)
-    look_down_hidconfig = hidactions.MouseMoveDirectionActionConfig(250, hidactions.MouseMoveDirection.DOWN)
-    look_down_config = LookActionConfig(hidconfig=look_down_hidconfig)
-
-    config = phasmoactions.Config(config={
-        "look_up": look_up_config,
-        "look_down": look_down_config,
-    })
+    phasmo_look_up_hidconfig = hidactions.MouseMoveDirectionActionConfig(500, hidactions.MouseMoveDirection.UP)
+    phasmo_look_up_config = LookActionConfig(hidconfig=phasmo_look_up_hidconfig)
+    phasmo_look_down_hidconfig = hidactions.MouseMoveDirectionActionConfig(250, hidactions.MouseMoveDirection.DOWN)
+    phasmo_look_down_config = LookActionConfig(hidconfig=phasmo_look_down_hidconfig)
 
     @dataclasses.dataclass(slots=True)
-    class HeadbangActionConfig:
+    class PhasmoHeadbangActionConfig:
         hidconfig: hidactions.Config = None
         _pause: float = 0.1
         _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (3, 10))
@@ -100,21 +134,37 @@ if __name__ == "__main__":
             """Get the repeats"""
             return random.randint(*self._repeats)
 
-    config.config["headbang"] = HeadbangActionConfig()
-    headbang = phasmoactions.Headbang(lambda: config)
+    myphasmoconfig = phasmoactions.Config(config={
+        "look_up": phasmo_look_up_config,
+        "look_down": phasmo_look_down_config,
+        "headbang": PhasmoHeadbangActionConfig(),
+    })
 
     ##
 
-    myactions = phasmoactions.all_actions_dict(lambda: config)
+    twitch_look_up_config = TwitchActionConfig("look up", cooldown=0.5)
+    twitch_look_down_config = TwitchActionConfig("look down", cooldown=0.5)
+    twitch_headbang_config = TwitchActionConfig("look up", cooldown=0.5)
 
-    look_up = TwitchAction(myactions["look_up"], "look up", cooldown=0.5)
-    look_down = TwitchAction(myactions["look_down"], "look down", cooldown=0.5)
-    headbang = TwitchAction(myactions["headbang"], "headbang", cooldown=0.5)
+    mytwitchconfig = Config(config={
+        "look_up": twitch_look_up_config,
+        "look_down": twitch_look_down_config,
+        "headbang": twitch_headbang_config,
+    })
 
-    myactions = {key: TwitchAction(value, key, cooldown=0.5) for key, value in myactions.items()}
+    global_config = GlobalConfig(myphasmoconfig, mytwitchconfig)
 
+    def get_phasmo_config() -> phasmoactions.Config:
+        return global_config.phasmoconfig
+
+    def get_twitch_config() -> Config:
+        return global_config.twitchconfig
+
+    myactions = {key: TwitchAction(get_twitch_config, key, value) for key, value in phasmoactions.all_actions_dict(get_phasmo_config).items()}
     myactions["look_up"].run()
     myactions["look_down"].run()
     myactions["look_down"].run()
+    myactions["headbang"].run()
+    myactions["headbang"].run()
     myactions["headbang"].run()
     myactions["look_down"].run()

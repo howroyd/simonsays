@@ -11,7 +11,7 @@ DEBUG = True
 
 @dataclasses.dataclass(slots=True)
 class PhasmoActionConfig(Protocol):
-    """A config to a Phasmophobia action"""
+    """A config for a Phasmophobia action"""
     hidconfig: hidactions.Config
 
     @property
@@ -37,6 +37,7 @@ class PhasmoActionConfig(Protocol):
 
 @dataclasses.dataclass(slots=True)
 class Config:
+    """The global config for all Phasmophobia actions"""
     config: dict[str, PhasmoActionConfig] = dataclasses.field(default_factory=dict)
 
     class Defaults:
@@ -47,19 +48,9 @@ class Config:
         walk_duration: float = 3
         talk_duration: float = 10
 
-    class ConfigLookupFailure(Exception):
-        pass
-
     def get_config(self, name: str) -> PhasmoActionConfig | None:
         """Look up an action config"""
         return self.config.get(name, None)
-
-    def __getitem__(self, name: str) -> PhasmoActionConfig:
-        """Look up an action config"""
-        try:
-            return self.config[name]
-        except KeyError:
-            raise self.ConfigLookupFailure(f"Config {name} not found")
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -408,9 +399,6 @@ class Headbang(GenericPhasmoActionBase):
 
         if DEBUG:
             print(f"Headbang: repeats={repeats}, pause={pause}")
-
-        look_up = LookUp(self.config_fn)
-        look_down = LookDown(self.config_fn)
 
         once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
         actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
