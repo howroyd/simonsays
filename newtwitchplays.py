@@ -1,16 +1,13 @@
 #!./.venv/bin/python3
 import concurrent.futures as cf
-import dataclasses
 import functools
 import queue
-import random
 
+import config
+import errorcodes
 import phasmoactions
 import twitchactions
 import twitchirc
-import hidactions
-import config
-import errorcodes
 
 # import config as configsaver
 # import gui
@@ -51,24 +48,15 @@ def find_tag_by_command_in_actions(twitch_actions: twitchactions.ActionDict, com
 
 
 if __name__ == "__main__":
-    myconfig = config.make_config(version=VERSION, channel=CHANNEL)
+    myconfig = config.Config.load(VERSION)
     myactions = make_twitch_actions(myconfig)
-
-    myconfig.config["cycle_items_and_use"].twitch.command = "chaos"
-    myconfig.config["drop_all_items"].twitch.command = "yeet"
-
-    myconfig.config["headbang"].twitch.cooldown = 10
-
-    myconfig.save()
-    myconfig = config.Config.load()
+    myconfig.save(backup_old=True)
 
     with (cf.ThreadPoolExecutor(max_workers=1) as executor,
             twitchirc.TwitchIrc(CHANNEL) as irc):
         print(f"\nTwitchIrc initialized to channel {CHANNEL}\n")
 
         # mygui = gui.make_gui(runtime)
-
-        # configsaver.save_config(runtime)
 
         while True:
             msg: twitchirc.TwitchMessage | None = None

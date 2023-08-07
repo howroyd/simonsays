@@ -1,14 +1,14 @@
 #!./.venv/bin/python3
-import copy
 import dataclasses
 import enum
+import shutil
 
 import tomlkit
 
 import phasmoactions
 import twitchactions
 
-FILENAME = "config.toml"
+DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNEL = "drgreengiant"
 
 
@@ -28,7 +28,7 @@ class Config:
     config: ConfigDict
     version: str
     channel: str = DEFAULT_CHANNEL
-    filename: str = FILENAME
+    filename: str = DEFAULT_FILENAME
 
     def to_dict(self) -> dict:
         """Convert the config to a dict"""
@@ -64,34 +64,48 @@ class Config:
 
         return tomlkit.dumps(asdict | {"version": self.version, "channel": self.channel})
 
-    def save(self) -> None:
+    def save(self, *, backup_old: bool = False) -> None:
         """Save the config to file"""
+        if backup_old:
+            try:
+                shutil.copyfile(self.filename, f"{self.filename}.bak")
+            except FileNotFoundError as e:
+                print(f"Could not backup old config file: {e}")
+
         towrite = self.to_toml()
 
         with open(self.filename, "w") as f:
             f.write(towrite)
 
     @classmethod
-    def load(cls, filename: str = None) -> dict:
+    def load(cls, version: str, filename: str = None) -> dict:
         """Load the config from file"""
         tomldata: tomlkit.document.TOMLDocument = None
-        filename = filename or FILENAME
+        filename = filename or DEFAULT_FILENAME
 
-        with open(filename, "r") as f:
-            tomldata = tomlkit.loads(f.read())
+        try:
+            with open(filename, "r") as f:
+                tomldata = tomlkit.loads(f.read())
+        except FileNotFoundError:
+            print(f"Config file not found: {filename=}")
+        except tomlkit.exceptions.TOMLKitError as e:
+            print(f"Error loading config file: {filename=}")
+            print(e)
 
-        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel"}
-        phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()}
-        twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()}
+        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel"} if tomldata else {}
+        phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()} if actionstoml else {}
+        twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()} if actionstoml else {}
 
-        twitch = twitchactions.Config({key: twitchactions.TwitchActionConfig(**item) for key, item in twitchtoml.items()})
         phasmo = phasmoactions.from_toml(phasmotoml)
+        twitch = twitchactions.from_toml(twitchtoml, phasmo.config.keys())
 
-        return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key, item in phasmotoml.items()},
-                  version=tomldata["version"],
-                  channel=tomldata["channel"],
-                  filename=filename
-                  )
+        assert all(key in twitch.config for key in phasmo.config.keys())
+
+        return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
+                   version=version,
+                   channel=tomldata.get("channel", DEFAULT_CHANNEL) if tomldata else DEFAULT_CHANNEL,
+                   filename=filename
+                   )
 
 
 def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Config = None, twitch: twitchactions.Config = None, filename: str = None) -> ConfigDict:
@@ -99,10 +113,10 @@ def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Conf
     channel = channel or DEFAULT_CHANNEL
     phasmo = phasmo or phasmoactions.default_config()
     twitch = twitch or twitchactions.Config()
-    filename = filename or FILENAME
+    filename = filename or DEFAULT_FILENAME
 
     for key in phasmo.config.keys():
-        if not key in twitch.config:
+        if key not in twitch.config:
             twitch.config[key] = twitchactions.TwitchActionConfig(key)  # FIXME using the key as the command for now
 
     assert all(key in twitch.config for key in phasmo.config.keys())
@@ -111,3 +125,11 @@ def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Conf
                   version=version,
                   channel=channel,
                   filename=filename)
+
+
+def get_config(*, version: str, channel: str = None, filename: str = None) -> Config:
+    """Get a config"""
+    channel = channel or DEFAULT_CHANNEL
+    filename = filename or DEFAULT_FILENAME
+
+    from_file = Config.load(filename=filename)

@@ -36,6 +36,7 @@ def errorset(errors: Iterable[ErrorCode] | ErrorCode) -> ErrorSet:
     else:
         raise TypeError(f"Expected Iterable[ErrorCode] | ErrorCode, got {type(errors)}")
 
+
 def success(errors: ErrorSet) -> bool:
     """Whether the error set is a success"""
     return ErrorCode.OK in errors and len(errors) == 1

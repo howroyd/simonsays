@@ -41,6 +41,7 @@ class PhasmoActionConfig(Protocol):
         """Get the distance"""
         ...
 
+
 ConfigDict = dict[str, PhasmoActionConfig]
 
 
@@ -476,6 +477,10 @@ class TeabagConfig:
     _pause: float = 0.5
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
 
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
+
     @property
     def pause(self) -> float:
         """Get the pause"""
@@ -508,6 +513,10 @@ class DiscoConfig:
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
 
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
+
     @property
     def pause(self) -> float:
         """Get the pause"""
@@ -539,6 +548,10 @@ class CycleItemsConfig:
     hidconfig: hidactions.Config = None
     _pause: float = 0.5
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
 
     @property
     def pause(self) -> float:
@@ -645,6 +658,10 @@ class SpinConfig:
     _mousemovedirection: hidactions.MouseMoveDirection = None
     _distance: int = Config.Defaults.look_distance
 
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
+
     @property
     def pause(self) -> float:
         """Get the pause"""
@@ -693,6 +710,10 @@ class HeadbangConfig:
     hidconfig: hidactions.Config = None
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
 
     @property
     def pause(self) -> float:
@@ -788,15 +809,22 @@ def default_config() -> Config:
 def from_toml(existing: dict[str, dict[str, Any]]) -> Config:
     """Get a config from an existing config"""
     ret = default_config()
-    for key, value in ret.config.items():
+    for key in ret.config.keys():
         if key in existing:
             to_replace = ret.config[key]
-            using_this = existing[key]
-            to_replace.hidconfig = type(to_replace.hidconfig)(**using_this["hidconfig"]) if to_replace.hidconfig and using_this["hidconfig"] else None
-            if to_replace.hidconfig:
-                to_replace.hidconfig.device = hidactions.HidType[to_replace.hidconfig.device]
-            pass
+            using_this = existing.get(key, None)
+            if using_this:
+                to_replace_hidconfig = to_replace.hidconfig
+                using_this_hidconfig = using_this.get("hidconfig", None)
+                kwargs = {**using_this}
+                if to_replace_hidconfig:
+                    kwargs["hidconfig"] = type(to_replace.hidconfig)(**using_this_hidconfig) if using_this_hidconfig else to_replace.hidconfig
+                    kwargs["hidconfig"].device = hidactions.HidType[kwargs["hidconfig"].device]
+                else:
+                    kwargs["hidconfig"] = None
+                ret.config[key] = type(to_replace)(**kwargs)
     return ret
+
 
 if __name__ == "__main__":
     import pprint as pp

@@ -2,7 +2,8 @@
 import dataclasses
 import random
 import time
-from typing import Callable
+from collections.abc import Iterable
+from typing import Any, Callable
 
 import actions
 import errorcodes
@@ -136,6 +137,23 @@ class TwitchAction(GenericTwitchAction, actions.Action):
 
 
 ActionDict = dict[str, TwitchAction]
+
+
+def default_config(keys: Iterable[str]) -> Config:
+    """Get the default config"""
+    return Config({key: TwitchActionConfig(key) for key in keys})
+
+
+def from_toml(existing: dict[str, dict[str, Any]], keys: Iterable[str]) -> Config:
+    """Get a config from an existing config"""
+    ret = default_config(keys)
+    for key in ret.config.keys():
+        if key in existing:
+            to_replace = ret.config[key]
+            using_this = existing.get(key, None)
+            if using_this:
+                ret.config[key] = type(to_replace)(**using_this)
+    return ret
 
 
 if __name__ == "__main__":
