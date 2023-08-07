@@ -1,57 +1,113 @@
 #!./.venv/bin/python3
 import copy
 import dataclasses
+import enum
 
 import tomlkit
 
-import phasmoactions as pa  # TODO coupling to this module
-import twitchactions as ta
+import phasmoactions
+import twitchactions
 
-FILENAME = "runtime.toml"
-IGNORE_MEMBERS = ['tag', 'config', 'last_used', 'chained']
+FILENAME = "config.toml"
+DEFAULT_CHANNEL = "drgreengiant"
 
 
-@dataclasses.dataclass
-class Runtime:
-    """Runtime data container"""
+@dataclasses.dataclass(slots=True)
+class ActionConfig:
+    """The global config for TwitchPlays actions"""
+    phasmo: phasmoactions.PhasmoActionConfig
+    twitch: twitchactions.TwitchActionConfig
+
+
+ConfigDict = dict[str, ActionConfig]
+
+
+@dataclasses.dataclass(slots=True)
+class Config:
+    """The global config for TwitchPlays"""
+    config: ConfigDict
     version: str
-    channel: str
-    action_list: ta.TwitchActionList
-    runtime_dict: ta.TwitchRuntimeDict
-    config: pa.Config
+    channel: str = DEFAULT_CHANNEL
+    filename: str = FILENAME
+
+    def to_dict(self) -> dict:
+        """Convert the config to a dict"""
+        return {key: dataclasses.asdict(item) for key, item in self.config.items()}
+
+    @staticmethod
+    def replace_enum(config: dict) -> dict:
+        """Replace enums with their values"""
+        def _replace_enum(obj):
+            """Replace enums with their values"""
+            if isinstance(obj, dict):
+                return {k: _replace_enum(v) for k, v in obj.items()}
+            if isinstance(obj, enum.Enum):
+                return obj.name
+            return obj
+        return {key: {k: _replace_enum(v) for k, v in item.items()} for key, item in config.items()}
+
+    @staticmethod
+    def remove_none(config: dict) -> dict:
+        """Remove keys containing None values"""
+        def _remove_none(obj):
+            """Remove None values"""
+            if isinstance(obj, dict):
+                return {k: _remove_none(v) for k, v in obj.items() if v is not None}
+            return obj
+        return {key: _remove_none(item) for key, item in config.items()}
+
+    def to_toml(self) -> str:
+        """Convert the config to TOML"""
+        asdict = self.to_dict()
+        asdict = self.replace_enum(asdict)
+        asdict = self.remove_none(asdict)
+
+        return tomlkit.dumps(asdict | {"version": self.version, "channel": self.channel})
+
+    def save(self) -> None:
+        """Save the config to file"""
+        towrite = self.to_toml()
+
+        with open(self.filename, "w") as f:
+            f.write(towrite)
+
+    @classmethod
+    def load(cls, filename: str = None) -> dict:
+        """Load the config from file"""
+        tomldata: tomlkit.document.TOMLDocument = None
+        filename = filename or FILENAME
+
+        with open(filename, "r") as f:
+            tomldata = tomlkit.loads(f.read())
+
+        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel"}
+        phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()}
+        twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()}
+
+        twitch = twitchactions.Config({key: twitchactions.TwitchActionConfig(**item) for key, item in twitchtoml.items()})
+        phasmo = phasmoactions.from_toml(phasmotoml)
+
+        return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key, item in phasmotoml.items()},
+                  version=tomldata["version"],
+                  channel=tomldata["channel"],
+                  filename=filename
+                  )
 
 
-def merge_interesting_data(runtime: Runtime) -> dict:
-    """Merge the interesting runtime data into a dict"""
-    asdict = {}
-    for k, v in runtime.runtime_dict.items():
-        asdict[k] = dataclasses.asdict(v)
-    #asdict = {k: v.to_dict() for k, v in runtime.runtime_dict.items()}
-    mycopy = copy.deepcopy(asdict)
+def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Config = None, twitch: twitchactions.Config = None, filename: str = None) -> ConfigDict:
+    """Make a config"""
+    channel = channel or DEFAULT_CHANNEL
+    phasmo = phasmo or phasmoactions.default_config()
+    twitch = twitch or twitchactions.Config()
+    filename = filename or FILENAME
 
-    for tag, command in mycopy.items():
-        action = next((x for x in runtime.action_list if x.tag == tag), None)
-        if action:
-            for subtag, val in dataclasses.asdict(action).items():
-                asdict[tag][subtag] = val
+    for key in phasmo.config.keys():
+        if not key in twitch.config:
+            twitch.config[key] = twitchactions.TwitchActionConfig(key)  # FIXME using the key as the command for now
 
-    mycopy = copy.deepcopy(asdict)
-    for tag, command in mycopy.items():
-        action = next((x for x in runtime.action_list if x.tag == tag), None)
-        for k, v in command.items():
-            if (v is None) or (k in IGNORE_MEMBERS) or (k.startswith(('key', 'button')) and action.chained):
-                asdict[tag].pop(k)
+    assert all(key in twitch.config for key in phasmo.config.keys())
 
-    asdict['channel'] = runtime.channel
-    asdict['version'] = runtime.version
-
-    return asdict
-
-
-def save_config(runtime: Runtime) -> None:
-    """Save the config to file"""
-    towrite = merge_interesting_data(runtime)
-
-    with open(FILENAME, "w") as f:
-        s = tomlkit.dumps(towrite)
-        f.write(s)
+    return Config({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
+                  version=version,
+                  channel=channel,
+                  filename=filename)

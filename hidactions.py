@@ -6,14 +6,14 @@ from typing import Any, Protocol
 import actions
 import errorcodes
 
-DEBUG = False
+DEBUG = True
 
 
 def dummy_run(message: str) -> errorcodes.ErrorSet:
     """Dummy run"""
     if DEBUG:
         print(message)
-    return errorcodes.errorset((errorcodes.ErrorCode.OK,))
+    return errorcodes.errorset(errorcodes.ErrorCode.OK)
 
 
 @enum.unique
@@ -111,11 +111,11 @@ class PressReleaseButton:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        return frozenset(
-            PressButton(self.config.keybind).run(),
+        return errorcodes.errorset([
+            PressButton(self.config).run(),
             actions.Wait(self.delay).run(),
-            ReleaseButton(self.config.keybind).run()
-        )
+            ReleaseButton(self.config).run()
+        ])
 
 
 @dataclasses.dataclass(slots=True)
@@ -176,8 +176,8 @@ class PressReleaseKey:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        return frozenset(
-            PressKey(self.config.key).run(),
+        return errorcodes.errorset([
+            PressKey(self.config).run(),
             actions.Wait(self.delay).run(),
-            ReleaseKey(self.config.key).run()
-        )
+            ReleaseKey(self.config).run()
+        ])

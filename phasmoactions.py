@@ -1,13 +1,14 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import random
 from typing import Any, Callable, Protocol
 
 import actions
 import errorcodes
 import hidactions
 
-DEBUG = True
+DEBUG = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -35,6 +36,10 @@ class PhasmoActionConfig(Protocol):
         """Get the mouse move direction"""
         ...
 
+    @property
+    def distance(self) -> int | None:
+        """Get the distance"""
+        ...
 
 ConfigDict = dict[str, PhasmoActionConfig]
 
@@ -95,6 +100,9 @@ class GenericPhasmoAction(GenericPhasmoActionBase):
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
 
+        if not actionconfig:
+            return errorcodes.errorset(errorcodes.ErrorCode.LOOKUP_FAILURE)
+
         if isinstance(actionconfig.hidconfig, hidactions.KeyboardActionConfig):
             return hidactions.PressReleaseKey(actionconfig.hidconfig).run()
         elif isinstance(actionconfig.hidconfig, hidactions.MouseButtonActionConfig):
@@ -104,7 +112,7 @@ class GenericPhasmoAction(GenericPhasmoActionBase):
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionActionConfig):
             return hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run()
         else:
-            return errorcodes.ErrorSet(errorcodes.ErrorCode.NOT_IMPLEMENTED)
+            return errorcodes.errorset(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 
 
 #####################################################################
@@ -140,9 +148,26 @@ class Walk(GenericPhasmoAction):
 
 
 @dataclasses.dataclass(slots=True)
+class WalkConfig:
+    hidconfig: hidactions.Config
+    _duration: float = Config.Defaults.walk_duration
+
+    @property
+    def duration(self) -> float:
+        """Get the duration"""
+        return self._duration
+
+
+@dataclasses.dataclass(slots=True)
 class WalkForward(Walk):
     """Walk forward"""
     direction: WalkDirection = WalkDirection.FORWARD
+
+
+@dataclasses.dataclass(slots=True)
+class WalkForwardConfig(WalkConfig):
+    """Walk forward config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("w"))
 
 
 @dataclasses.dataclass(slots=True)
@@ -152,15 +177,33 @@ class WalkBackward(Walk):
 
 
 @dataclasses.dataclass(slots=True)
+class WalkBackwardConfig(WalkConfig):
+    """Walk backward config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("s"))
+
+
+@dataclasses.dataclass(slots=True)
 class WalkLeft(Walk):
     """Walk left"""
     direction: WalkDirection = WalkDirection.LEFT
 
 
 @dataclasses.dataclass(slots=True)
+class WalkLeftConfig(WalkConfig):
+    """Walk left config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("a"))
+
+
+@dataclasses.dataclass(slots=True)
 class WalkRight(Walk):
     """Walk right"""
     direction: WalkDirection = WalkDirection.RIGHT
+
+
+@dataclasses.dataclass(slots=True)
+class WalkRightConfig(WalkConfig):
+    """Walk right config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("d"))
 
 #####################################################################
 
@@ -170,6 +213,12 @@ class CrouchToggle(GenericPhasmoAction):
     """Toggle crouch"""
     name: str = "crouch"
     chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class CrouchToggleConfig:
+    """Toggle crouch config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("c"))
 
 
 #####################################################################
@@ -182,6 +231,12 @@ class JournalToggle(GenericPhasmoAction):
     chained: bool = False
 
 
+@dataclasses.dataclass(slots=True)
+class JournalToggleConfig:
+    """Toggle the journal config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("j"))
+
+
 #####################################################################
 
 
@@ -191,6 +246,11 @@ class Place(GenericPhasmoAction):
     name: str = "place"
     chained: bool = False
 
+
+@dataclasses.dataclass(slots=True)
+class PlaceConfig:
+    """Place an item config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("f"))
 
 #####################################################################
 
@@ -202,15 +262,25 @@ class Pickup(GenericPhasmoAction):
     chained: bool = False
 
 
+@dataclasses.dataclass(slots=True)
+class PickupConfig:
+    """Pickup an item config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("e"))
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Drop(GenericPhasmoAction):
     """Drop an item"""
-    name: str = "Drop"
+    name: str = "drop"
     chained: bool = False
 
+
+@dataclasses.dataclass(slots=True)
+class DropConfig:
+    """Drop an item config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("g"))
 
 #####################################################################
 
@@ -222,6 +292,11 @@ class Switch(GenericPhasmoAction):
     chained: bool = False
 
 
+@dataclasses.dataclass(slots=True)
+class SwitchConfig:
+    """Switch to next inventory item config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("q"))
+
 #####################################################################
 
 
@@ -231,6 +306,11 @@ class TorchToggle(GenericPhasmoAction):
     name: str = "torch"
     chained: bool = False
 
+
+@dataclasses.dataclass(slots=True)
+class TorchToggleConfig:
+    """Toggle the torch config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("t"))
 
 #####################################################################
 
@@ -242,7 +322,23 @@ class Talk(GenericPhasmoAction):
     chained: bool = False
 
 
+@dataclasses.dataclass(slots=True)
+class TalkConfig:
+    """Toggle push to talk for a period of time config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("v"))
+    _duration: float = Config.Defaults.talk_duration
+
+    @property
+    def duration(self) -> float:
+        """Get the duration"""
+        return self._duration
+
 #####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class LookConfig:
+    hidconfig: hidactions.Config
 
 
 @dataclasses.dataclass(slots=True)
@@ -252,9 +348,21 @@ class LookUp(GenericPhasmoAction):
 
 
 @dataclasses.dataclass(slots=True)
+class LookUpConfig(LookConfig):
+    """Look up config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.look_distance, hidactions.MouseMoveDirection.UP))
+
+
+@dataclasses.dataclass(slots=True)
 class LookDown(GenericPhasmoAction):
     """Look down"""
     name: str = "look_down"
+
+
+@dataclasses.dataclass(slots=True)
+class LookDownConfig(LookConfig):
+    """Look down config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.look_distance, hidactions.MouseMoveDirection.DOWN))
 
 
 @dataclasses.dataclass(slots=True)
@@ -264,9 +372,24 @@ class LookLeft(GenericPhasmoAction):
 
 
 @dataclasses.dataclass(slots=True)
+class LookLeftConfig(LookConfig):
+    """Look left config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.look_distance, hidactions.MouseMoveDirection.LEFT))
+
+
+@dataclasses.dataclass(slots=True)
 class LookRight(GenericPhasmoAction):
     """Look right"""
     name: str = "look_right"
+
+
+@dataclasses.dataclass(slots=True)
+class LookRightConfig(LookConfig):
+    """Look right config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.look_distance, hidactions.MouseMoveDirection.RIGHT))
+
+
+PeekConfig = LookConfig
 
 
 @dataclasses.dataclass(slots=True)
@@ -276,9 +399,21 @@ class PeekUp(GenericPhasmoAction):
 
 
 @dataclasses.dataclass(slots=True)
+class PeekUpConfig(PeekConfig):
+    """Peek up config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.peek_distance, hidactions.MouseMoveDirection.UP))
+
+
+@dataclasses.dataclass(slots=True)
 class PeekDown(GenericPhasmoAction):
     """Peek down"""
     name: str = "peek_down"
+
+
+@dataclasses.dataclass(slots=True)
+class PeekDownConfig(PeekConfig):
+    """Peek down config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.peek_distance, hidactions.MouseMoveDirection.DOWN))
 
 
 @dataclasses.dataclass(slots=True)
@@ -288,9 +423,21 @@ class PeekLeft(GenericPhasmoAction):
 
 
 @dataclasses.dataclass(slots=True)
+class PeekLeftConfig(PeekConfig):
+    """Peek left config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.peek_distance, hidactions.MouseMoveDirection.LEFT))
+
+
+@dataclasses.dataclass(slots=True)
 class PeekRight(GenericPhasmoAction):
     """Peek right"""
     name: str = "peek_right"
+
+
+@dataclasses.dataclass(slots=True)
+class PeekRightConfig(PeekConfig):
+    """Peek right config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(Config.Defaults.peek_distance, hidactions.MouseMoveDirection.RIGHT))
 
 #####################################################################
 
@@ -302,7 +449,13 @@ class Use(GenericPhasmoAction):
     chained: bool = False
 
 
+@dataclasses.dataclass(slots=True)
+class UseConfig:
+    """Use item config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseButtonActionConfig("right"))
+
 #####################################################################
+
 
 @dataclasses.dataclass(slots=True)
 class Teabag(GenericPhasmoActionBase):
@@ -314,6 +467,24 @@ class Teabag(GenericPhasmoActionBase):
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         return actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+
+@dataclasses.dataclass(slots=True)
+class TeabagConfig:
+    """Crouch repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.5
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
 
 #####################################################################
 
@@ -329,6 +500,24 @@ class Disco(GenericPhasmoActionBase):
         actionconfig: PhasmoActionConfig = self.config
         return actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
+
+@dataclasses.dataclass(slots=True)
+class DiscoConfig:
+    """Turn the torch on and off repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.33
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
+
 #####################################################################
 
 
@@ -342,6 +531,24 @@ class CycleItems(GenericPhasmoActionBase):
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         return actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+
+@dataclasses.dataclass(slots=True)
+class CycleItemsConfig:
+    """Cycle through the inventory repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.5
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
 
 #####################################################################
 
@@ -358,6 +565,24 @@ class CycleItemsAndUse(GenericPhasmoActionBase):
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Use(self.config_fn)])
         return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
+
+@dataclasses.dataclass(slots=True)
+class CycleItemsAndUseConfig:
+    """Cycle through the inventory and use the item, repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.25
+    _repeats: int = 3
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
+
 #####################################################################
 
 
@@ -372,6 +597,24 @@ class DropAllItems(GenericPhasmoActionBase):
         actionconfig: PhasmoActionConfig = self.config
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)])
         return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+
+@dataclasses.dataclass(slots=True)
+class DropAllItemsConfig:
+    """Cycle through the inventory and drop each item config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.25
+    _repeats: int = 3
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
 
 #####################################################################
 
@@ -389,8 +632,38 @@ class Spin(GenericPhasmoActionBase):
         direction = actionconfig.mousemovedirection or hidactions.MouseMoveDirection.RIGHT
         distance = actionconfig.distance or LookRight().config.hidconfig.distance
 
-        look_action = hidactions.MoveMouseRelativeDirection(distance, direction)
+        look_action = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, direction))
         return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+
+
+@dataclasses.dataclass(slots=True)
+class SpinConfig:
+    """Cycle through the inventory and drop each item config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.01
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+    _mousemovedirection: hidactions.MouseMoveDirection = None
+    _distance: int = Config.Defaults.look_distance
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
+
+    @property
+    def mousemovedirection(self) -> hidactions.MouseMoveDirection:
+        """Get the mouse move direction"""
+        return self._mousemovedirection or random.choice(list([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]))
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
 
 #####################################################################
 
@@ -412,6 +685,24 @@ class Headbang(GenericPhasmoActionBase):
 
         once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
         return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
+
+
+@dataclasses.dataclass(slots=True)
+class HeadbangConfig:
+    """Look up and down repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.33
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
 
 #####################################################################
 
@@ -459,6 +750,53 @@ def all_actions_dict(config_fn: ConfigFn) -> ActionDict:
     """Get all actions as a dict"""
     return {action.name: action for action in all_actions(config_fn)}
 
+
+def default_config() -> Config:
+    """Get the default config"""
+    return Config({
+        WalkForward(None).name: WalkForwardConfig(),
+        WalkBackward(None).name: WalkBackwardConfig(),
+        WalkLeft(None).name: WalkLeftConfig(),
+        WalkRight(None).name: WalkRightConfig(),
+        CrouchToggle(None).name: CrouchToggleConfig(),
+        JournalToggle(None).name: JournalToggleConfig(),
+        Place(None).name: PlaceConfig(),
+        Pickup(None).name: PickupConfig(),
+        Drop(None).name: DropConfig(),
+        Switch(None).name: SwitchConfig(),
+        TorchToggle(None).name: TorchToggleConfig(),
+        Talk(None).name: TalkConfig(),
+        LookUp(None).name: LookUpConfig(),
+        LookDown(None).name: LookDownConfig(),
+        LookLeft(None).name: LookLeftConfig(),
+        LookRight(None).name: LookRightConfig(),
+        PeekUp(None).name: PeekUpConfig(),
+        PeekDown(None).name: PeekDownConfig(),
+        PeekLeft(None).name: PeekLeftConfig(),
+        PeekRight(None).name: PeekRightConfig(),
+        Use(None).name: UseConfig(),
+        Teabag(None).name: TeabagConfig(),
+        Disco(None).name: DiscoConfig(),
+        CycleItems(None).name: CycleItemsConfig(),
+        CycleItemsAndUse(None).name: CycleItemsAndUseConfig(),
+        DropAllItems(None).name: DropAllItemsConfig(),
+        Spin(None).name: SpinConfig(),
+        Headbang(None).name: HeadbangConfig()
+    })
+
+
+def from_toml(existing: dict[str, dict[str, Any]]) -> Config:
+    """Get a config from an existing config"""
+    ret = default_config()
+    for key, value in ret.config.items():
+        if key in existing:
+            to_replace = ret.config[key]
+            using_this = existing[key]
+            to_replace.hidconfig = type(to_replace.hidconfig)(**using_this["hidconfig"]) if to_replace.hidconfig and using_this["hidconfig"] else None
+            if to_replace.hidconfig:
+                to_replace.hidconfig.device = hidactions.HidType[to_replace.hidconfig.device]
+            pass
+    return ret
 
 if __name__ == "__main__":
     import pprint as pp

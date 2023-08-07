@@ -26,8 +26,7 @@ class ActionRepeat:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        ret = (self.action.run() for _ in range(self.times))
-        return errorcodes.errorset(ret)
+        return errorcodes.errorset([self.action.run() for _ in range(self.times)])
 
 
 @dataclasses.dataclass(slots=True)
@@ -37,8 +36,7 @@ class ActionSequence:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
-        ret = ((action.run() for action in self.actions))
-        return errorcodes.errorset(ret)
+        return errorcodes.errorset([action.run() for action in self.actions])
 
 
 @dataclasses.dataclass(slots=True)
@@ -51,7 +49,7 @@ class Wait:
         if DEBUG:
             print(f"Waiting for {self.duration} seconds")
         time.sleep(self.duration)
-        return errorcodes.errorset((errorcodes.ErrorCode.OK,))
+        return errorcodes.errorset(errorcodes.ErrorCode.OK)
 
 
 @dataclasses.dataclass(slots=True)
@@ -74,7 +72,7 @@ class WaitRandom:
         if DEBUG:
             print(f"Waiting for {self.wait_time:.2f} seconds")
         time.sleep(self.wait_time)
-        return errorcodes.errorset((errorcodes.ErrorCode.OK,))
+        return errorcodes.errorset(errorcodes.ErrorCode.OK)
 
 
 @dataclasses.dataclass(slots=True)

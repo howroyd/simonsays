@@ -3,12 +3,17 @@ import concurrent.futures as cf
 import dataclasses
 import functools
 import queue
+import random
 
-# import config as configsaver
-# import gui
 import phasmoactions
 import twitchactions
 import twitchirc
+import hidactions
+import config
+import errorcodes
+
+# import config as configsaver
+# import gui
 
 VERSION = "2.0.0"
 CHANNEL = "drgreengiant"
@@ -16,35 +21,25 @@ CHANNEL = "drgreengiant"
 
 def done_callback(future, tag):
     """Callback for when a command is done"""
-    print(f"Done: {tag=} {future.result()=}")
+    result: errorcodes.ErrorSet = future.result()
+
+    if errorcodes.success(result):
+        print(f"Done: {tag=}")
+    else:
+        print(f"Failed: {tag=} {result=}")
 
 
-@dataclasses.dataclass(slots=True)
-class GlobalConfig:
-    """Global configuration"""
-    phasmoconfig: phasmoactions.Config
-    twitchconfig: twitchactions.Config
-
-
-def make_phasmo_actions(globalconfig: GlobalConfig) -> phasmoactions.ActionDict:
+def make_phasmo_actions(globalconfig: config.Config) -> phasmoactions.ActionDict:
     """Make the phasmo actions"""
-    def get_phasmo_config() -> phasmoactions.Config:
-        """Get the phasmo config"""
-        return globalconfig.phasmoconfig
-    return phasmoactions.all_actions_dict(get_phasmo_config)
+    return phasmoactions.all_actions_dict(lambda: phasmoactions.Config({key: item.phasmo for key, item in globalconfig.config.items()}))
 
 
-def make_twitch_actions(globalconfig: GlobalConfig) -> twitchactions.ActionDict:
+def make_twitch_actions(globalconfig: config.Config) -> twitchactions.ActionDict:
     """Make the twitch actions"""
     def get_twitch_config() -> twitchactions.Config:
         """Get the twitch config"""
-        return globalconfig.twitchconfig
+        return twitchactions.Config({key: item.twitch for key, item in globalconfig.config.items()})
     return {key: twitchactions.TwitchAction(get_twitch_config, key, value) for key, value in make_phasmo_actions(globalconfig).items()}
-
-
-def find_tag_by_command_in_config(twitch_config: twitchactions.Config, command: str) -> str | None:
-    """Find a tag by command"""
-    return twitch_config.find_by_command(command)
 
 
 def find_tag_by_command_in_actions(twitch_actions: twitchactions.ActionDict, command: str) -> str | None:
@@ -56,29 +51,20 @@ def find_tag_by_command_in_actions(twitch_actions: twitchactions.ActionDict, com
 
 
 if __name__ == "__main__":
-    config = GlobalConfig(phasmoconfig=phasmoactions.Config(), twitchconfig=twitchactions.Config())
-    myactions = make_twitch_actions(config)
+    myconfig = config.make_config(version=VERSION, channel=CHANNEL)
+    myactions = make_twitch_actions(myconfig)
 
-    for key, value in myactions.items():
-        config.twitchconfig.config[key] = twitchactions.TwitchActionConfig(key, cooldown=0.5)
+    myconfig.config["cycle_items_and_use"].twitch.command = "chaos"
+    myconfig.config["drop_all_items"].twitch.command = "yeet"
 
-    import hidactions
+    myconfig.config["headbang"].twitch.cooldown = 10
 
-    @dataclasses.dataclass(slots=True)
-    class LookActionConfig:
-        hidconfig: hidactions.Config
-
-    look_up_hidconfig = hidactions.MouseMoveDirectionActionConfig(500, hidactions.MouseMoveDirection.UP)
-    look_up_config = LookActionConfig(hidconfig=look_up_hidconfig)
-
-    config.phasmoconfig.config['look_up'] = look_up_config
-    config.twitchconfig.config['headbang'].cooldown = 10
-
-    print()
+    myconfig.save()
+    myconfig = config.Config.load()
 
     with (cf.ThreadPoolExecutor(max_workers=1) as executor,
             twitchirc.TwitchIrc(CHANNEL) as irc):
-        print(f"TwitchIrc initialized to channel {CHANNEL}")
+        print(f"\nTwitchIrc initialized to channel {CHANNEL}\n")
 
         # mygui = gui.make_gui(runtime)
 
@@ -101,10 +87,5 @@ if __name__ == "__main__":
             tag = find_tag_by_command_in_actions(myactions, command)
 
             if tag is not None:
-                print(f"{command=}: {tag=}")
-
-                # ret = myactions[tag].run()
-                # done_callback(ret, tag)
-
                 future = executor.submit(myactions[tag].run)
                 future.add_done_callback(functools.partial(done_callback, tag=tag))

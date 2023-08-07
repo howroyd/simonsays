@@ -8,7 +8,7 @@ import actions
 import errorcodes
 import phasmoactions
 
-DEBUG = True
+DEBUG = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -62,9 +62,9 @@ class GenericTwitchAction:
     config_fn: ConfigFn
 
     @property
-    def config(self) -> TwitchActionConfig | None:
-        """Get the config for this action"""
-        return self.config_fn().get_config(self.name)  # TODO: think about relying on self.name existing in child class
+    def config(self) -> Config:
+        """Get the config"""
+        return self.config_fn()
 
 
 @dataclasses.dataclass(slots=True)
@@ -81,16 +81,16 @@ class TwitchAction(GenericTwitchAction, actions.Action):
         if not actionconfig.enabled:
             if DEBUG:
                 print(f"Action {self.name} is disabled")
-            return errorcodes.ErrorCode.DISABLED
+            return errorcodes.errorset(errorcodes.ErrorCode.DISABLED)
         if self.on_cooldown:
             if DEBUG:
                 print(f"Action {self.name} is on cooldown")
-            return errorcodes.ErrorCode.ON_COOLDOWN
+            return errorcodes.errorset(errorcodes.ErrorCode.ON_COOLDOWN)
         if actionconfig.random_chance is not None and random.randint(0, 100) > actionconfig.random_chance:
             if DEBUG:
                 print(f"Action {self.name} failed random chance")
             self.reset_cooldown()
-            return errorcodes.ErrorCode.RANDOM_CHANCE
+            return errorcodes.errorset(errorcodes.ErrorCode.RANDOM_CHANCE)
 
         self.reset_cooldown()
 
@@ -99,10 +99,18 @@ class TwitchAction(GenericTwitchAction, actions.Action):
 
         return self.action.run()
 
+    @property
+    def config(self) -> TwitchActionConfig | None:
+        """Get the config for this action"""
+        return self.config_fn().get_config(self.name)
+
     def check_command(self, command: str) -> bool:
         """Check if the command matches"""
         command = command.lower().lstrip().rstrip()
         actionconfig: TwitchActionConfig = self.config
+
+        if not actionconfig:
+            return False
 
         if isinstance(actionconfig.command, str):
             return command.startswith(actionconfig.command)
