@@ -828,7 +828,6 @@ def from_toml(existing: dict[str, dict[str, Any]]) -> Config:
 
 if __name__ == "__main__":
     import pprint as pp
-    import random
     pp.pprint(get_default_action_names())
     pp.pprint(all_actions_dict(Config()))
 

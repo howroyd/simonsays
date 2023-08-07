@@ -15,10 +15,14 @@ DEBUG = False
 @dataclasses.dataclass(slots=True)
 class TwitchActionConfig:
     """A config for a Twitch action"""
-    command: str | list[str]
+    command: str | tuple[str]
     enabled: bool = True
     cooldown: int | None = None
     random_chance: int | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.command, (tuple, str)) and isinstance(self.command, Iterable):
+            self.command = tuple(self.command)
 
     def check_command(self, command: str) -> bool:
         """Check if the command matches"""

@@ -27,6 +27,7 @@ class Config:
     """The global config for TwitchPlays"""
     config: ConfigDict
     version: str
+    enabled: bool = True
     channel: str = DEFAULT_CHANNEL
     filename: str = DEFAULT_FILENAME
 
@@ -78,7 +79,7 @@ class Config:
             f.write(towrite)
 
     @classmethod
-    def load(cls, version: str, filename: str = None) -> dict:
+    def load(cls, version: str, filename: str = None) -> "Config":
         """Load the config from file"""
         tomldata: tomlkit.document.TOMLDocument = None
         filename = filename or DEFAULT_FILENAME
@@ -92,7 +93,7 @@ class Config:
             print(f"Error loading config file: {filename=}")
             print(e)
 
-        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel"} if tomldata else {}
+        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel" and key != "enabled"} if tomldata else {}
         phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()} if actionstoml else {}
         twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()} if actionstoml else {}
 
@@ -125,11 +126,3 @@ def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Conf
                   version=version,
                   channel=channel,
                   filename=filename)
-
-
-def get_config(*, version: str, channel: str = None, filename: str = None) -> Config:
-    """Get a config"""
-    channel = channel or DEFAULT_CHANNEL
-    filename = filename or DEFAULT_FILENAME
-
-    from_file = Config.load(filename=filename)
