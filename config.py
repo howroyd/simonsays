@@ -1,6 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import hashlib
 import shutil
 
 import tomlkit
@@ -10,6 +11,21 @@ import twitchactions
 
 DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNEL = "drgreengiant"
+
+
+BLOCKLIST = [
+    'd08ba4bb01a6bb0f41df42a6cca6544df4031b367b27d978ed1f25afac5bdf3b',
+    '6c7dae28b93893d307aa39911e2fd4aeb573be00e0eed6e52e4af46c8c1a081c',
+    'c09ee3ae3857b990a784a192b4260c9e31f38dc836ccc5fa10f080ddbc375612',
+    # 'aa33eec00ac57b2c52f2f212ae8ee663f330bc67d0238ad5558a0476f8761267'
+]  # FIXME get this list from GitHub
+
+
+def check_blocklist(channel: str | list[str]) -> list[str]:
+    """Return any channels in the blocklist"""
+    channels = channel if isinstance(channel, list) else [channel]
+
+    return [channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST]
 
 
 @dataclasses.dataclass(slots=True)
@@ -30,6 +46,11 @@ class Config:
     enabled: bool = True
     channel: str = DEFAULT_CHANNEL
     filename: str = DEFAULT_FILENAME
+
+    def __post_init__(self):
+        if blockedchannels := check_blocklist(self.channel):
+            print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
+            exit()
 
     def to_dict(self) -> dict:
         """Convert the config to a dict"""

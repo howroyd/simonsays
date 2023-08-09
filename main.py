@@ -1,5 +1,6 @@
 #!./.venv/bin/python3
 import concurrent.futures as cf
+import dataclasses
 import functools
 import queue
 
@@ -93,11 +94,21 @@ if __name__ == "__main__":
             if not msg:
                 continue
 
+            if blockedchannels := config.check_blocklist(myconfig.channel) + config.check_blocklist(msg.channel):
+                print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
+                exit()
+
             tag = find_tag_by_command_in_actions(myactions, msg.payload)
 
             if tag is not None:
                 if not myconfig.enabled:
                     print(f"Commands disabled!  Ignoring \'{tag}\' from {msg.username}")
+                    continue
+
+                # msg = dataclasses.replace(msg, username="katatouille93")
+
+                if name := config.check_blocklist(msg.username):
+                    # print(f"User blocked: {name}")
                     continue
 
                 print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if n_channels > 1 else ''}")

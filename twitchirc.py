@@ -67,7 +67,8 @@ def _twitch_irc_thread(args: IrcThreadArgs):
             with IrcSocketManaged(args.address, args.timeout) as irc:
                 irc.write(f'PASS {args.oauth}\r\n')
                 irc.write(f'NICK {args.username}\r\n')
-                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channel]
+                channels = args.channel if isinstance(args.channel, list) else [args.channel]
+                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in channels]
 
                 args.event.set()
 
