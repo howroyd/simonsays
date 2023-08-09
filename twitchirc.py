@@ -3,6 +3,8 @@ import dataclasses
 import enum
 import multiprocessing as mp
 import pprint
+import socket
+import time
 from typing import Self
 
 import bufferedsocket
@@ -10,13 +12,12 @@ import bufferedsocket
 
 @dataclasses.dataclass(slots=True)
 class IrcSocket:
-    address: str = "irc.chat.twitch.tv"
-    port: int = 6667
+    address: tuple[str, int] = dataclasses.field(default_factory=lambda: ("irc.chat.twitch.tv", 6667))
     timeout: float = 0.25
     sock: bufferedsocket.BufferedSocket = dataclasses.field(init=False)
 
     def __post_init__(self):
-        self.sock = bufferedsocket.create_connection((self.address, self.port), timeout=self.timeout)
+        self.sock = bufferedsocket.create_connection(self.address, timeout=self.timeout)
 
     def close(self) -> None:
         """Closes the connection"""
@@ -46,44 +47,72 @@ class IrcSocketManaged(IrcSocket):
         self.close()
 
 
-def _twitch_irc_thread(address: str, port: int, timeout: float, username: str, oauth: str, channel: str, queue: mp.Queue):
-    """Thread for reading from Twitch IRC server"""
-    with IrcSocketManaged(address, port, timeout) as irc:
-        irc.write(f'PASS {oauth}\r\n')
-        irc.write(f'NICK {username}\r\n')
-        irc.write(f'JOIN #{channel}\r\n')
+@dataclasses.dataclass(slots=True)
+class IrcThreadArgs:
+    address: tuple[str, int]
+    timeout: float
+    username: str
+    oauth: str
+    channel: str | list[str]
+    queue: mp.Queue = dataclasses.field(default_factory=mp.Queue)
+    event: mp.Event = dataclasses.field(default_factory=mp.Event)
 
-        while True:
-            lines = irc.readlines()
-            for line in lines:
-                if "PING :tmi.twitch.tv" in line:
-                    irc.write("PONG :tmi.twitch.tv\r\n")
-                else:
-                    queue.put(line)
+
+def _twitch_irc_thread(args: IrcThreadArgs):
+    """Thread for reading from Twitch IRC server"""
+    while True:
+        try:
+            print("Connecting to Twitch IRC server")
+
+            with IrcSocketManaged(args.address, args.timeout) as irc:
+                irc.write(f'PASS {args.oauth}\r\n')
+                irc.write(f'NICK {args.username}\r\n')
+                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channel]
+
+                args.event.set()
+
+                while True:
+                    lines = irc.readlines()
+                    for line in lines:
+                        if "PING :tmi.twitch.tv" in line:
+                            irc.write("PONG :tmi.twitch.tv\r\n")
+                        else:
+                            args.queue.put(line)
+
+        except (TimeoutError, socket.timeout, socket.error, socket.gaierror, ConnectionResetError, ConnectionAbortedError) as e:
+            print(f"Error in Twitch IRC thread: {e}")
+            args.event.clear()
+            time.sleep(1)
 
 
 class TwitchIrc:
-    def __init__(self, channel: str, username: str | None = None, oauth: str | None = None):
-        self.channel = channel
-        self.username = username or "justinfan97339"
-        self.oauth = oauth or "gfdszgfds"
-        self.address = "irc.chat.twitch.tv"
-        self.port = 6667
-        self.timeout = 0.25
-        self._queue = mp.Queue()
+    def __init__(self, channel: str | list[str], username: str | None = None, oauth: str | None = None):
+        self._processdata = IrcThreadArgs(
+            address=("irc.chat.twitch.tv", 6667),
+            timeout=0.25,
+            username=username or "justinfan97339",
+            oauth=oauth or "gfdszgfds",
+            channel=channel
+        )
         self._process: mp.Process | None = None
 
     @property
-    def queue(self):
+    def queue(self) -> mp.Queue:
         """Returns the queue of messages from the IRC server"""
-        return self._queue
+        return self._processdata.queue
 
-    def start(self):
+    @property
+    def connected(self) -> bool:
+        """Returns True if the connection is established"""
+        return self._processdata.event.is_set()
+
+    def start(self, *, wait_for_connection: bool = True) -> None:
         """Starts the connection to Twitch IRC server"""
-        self._process = mp.Process(target=_twitch_irc_thread, args=(self.address, self.port, self.timeout, self.username, self.oauth, self.channel, self.queue))
+        self._process = mp.Process(target=_twitch_irc_thread, args=(self._processdata,))
         self._process.start()
+        self._processdata.event.wait() if wait_for_connection else None
 
-    def stop(self):
+    def stop(self) -> None:
         """Forcibly terminate the connection.  May deadlock anyone waiting on the queue"""
         #  FIXME - This is a bit of a hack.  We should probably send a message to the thread to tell it to stop
         self._process.terminate()
@@ -153,11 +182,8 @@ class TwitchMessage:
     """Represents a message from Twitch IRC server"""
     type: TwitchMessageEnum
     username: str
+    channel: str
     payload: str
-
-    def __post_init__(self):
-        object.__setattr__(self, "username", self.username.lstrip("#"))
-        object.__setattr__(self, "payload", self.payload.lstrip(":"))
 
     @classmethod
     def from_irc_message(cls, irc_msg: str) -> Self | None:
@@ -176,7 +202,12 @@ class TwitchMessage:
         if len(line) != 2:
             return None
 
-        return cls(msg_type, *line)
+        return cls(
+            type=msg_type,
+            username=line_split[0].split("!")[0].lstrip(":"),
+            channel=line[0].lstrip("#"),
+            payload=line[1].lstrip(":").rstrip("\r\n")
+        )
 
 
 if __name__ == "__main__":

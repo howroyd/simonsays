@@ -11,17 +11,16 @@ import twitchactions
 import twitchirc
 
 VERSION = "2.0.0"
-CHANNEL = "drgreengiant"
 
 
-def done_callback(future, tag):
+def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
     """Callback for when a command is done"""
     result: errorcodes.ErrorSet = future.result()
 
     if errorcodes.success(result):
-        print(f"Done: {tag=}")
+        print(f"Done \'{tag}\' from {msg.username}")
     else:
-        print(f"Failed: {tag=} {result=}")
+        print(f"Failed \'{tag}\' from {msg.username}. {result=}")
 
 
 def make_phasmo_actions(globalconfig: config.Config) -> phasmoactions.ActionDict:
@@ -71,11 +70,13 @@ if __name__ == "__main__":
     myactions = make_twitch_actions(myconfig)
     myconfig.save(backup_old=True)
 
+    n_channels = len(myconfig.channel) if isinstance(myconfig.channel, list) else 1
+
     print(preamble(myconfig))
 
     with (cf.ThreadPoolExecutor(max_workers=1) as executor,
-            twitchirc.TwitchIrc(CHANNEL) as irc):
-        print(f"Connected to Twitch channel {CHANNEL}\n")
+            twitchirc.TwitchIrc(myconfig.channel) as irc):
+        print(f"Connected to Twitch channel{'s' if n_channels > 1 else ''}: {', '.join(myconfig.channel) if isinstance(myconfig.channel, list) else myconfig.channel}\n")
 
         mygui = gui.make_gui(myconfig)
 
@@ -94,10 +95,10 @@ if __name__ == "__main__":
 
             tag = find_tag_by_command_in_actions(myactions, msg.payload)
 
-            if not myconfig.enabled:
-                print(f"Commands disabled: ignoring \'{tag}\'")
-                continue
-
             if tag is not None:
-                future = executor.submit(myactions[tag].run)
-                future.add_done_callback(functools.partial(done_callback, tag=tag))
+                if not myconfig.enabled:
+                    print(f"Commands disabled!  Ignoring \'{tag}\' from {msg.username}")
+                    continue
+
+                print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if n_channels > 1 else ''}")
+                executor.submit(myactions[tag].run).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))

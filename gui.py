@@ -144,7 +144,8 @@ def make_canvas(cfg: config.Config, image_path: str, *, window: tk.Tk | None = N
 
     canvas.create_image((0, 0), image=img, anchor=tk.N + tk.W)
     canvas.image = img  # Keep a reference to the image to prevent garbage collection
-    canvas.create_text((5, 5), text=f"Connected to:\n#{cfg.channel}", anchor=tk.N + tk.W)
+    channels = "\n".join(cfg.channel) if isinstance(cfg.channel, list) else cfg.channel
+    canvas.create_text((5, 5), text=f"Connected to:\n{channels}", anchor=tk.N + tk.W)
     canvas.create_text((img.width() - 5, 5), text=f"Version: {cfg.version}", anchor=tk.N + tk.E)
 
     window.update()
@@ -338,7 +339,7 @@ def enabled_cb(cfg: config.Config, enabled_button: tk.Button, state_var: tk.Bool
     if state_var.get():
         # Currently on, turn off
         enabled_button.configure(text="Disabled", fg="black", bg="red")
-        config.enabled = False
+        cfg.enabled = False
         state_var.set(False)
         print("Disabled")
     else:

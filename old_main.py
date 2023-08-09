@@ -1,9 +1,7 @@
 import logging
-import multiprocessing as mp
 import pathlib
 from dataclasses import dataclass
 from logging.handlers import TimedRotatingFileHandler
-from threading import Thread
 from time import sleep
 from typing import Optional
 
