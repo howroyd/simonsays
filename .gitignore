@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 # Custom, repo specific files to ignore
-katatoRIOT.png
 log*
+config.toml*

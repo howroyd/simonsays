@@ -13,6 +13,8 @@ class ErrorCode(enum.IntEnum):
     DISABLED = enum.auto()
     ON_COOLDOWN = enum.auto()
     RANDOM_CHANCE = enum.auto()
+    BLOCKED_USER = enum.auto()
+    BLOCKED_CHANNEL = enum.auto()
 
 
 ErrorSet = set[ErrorCode]

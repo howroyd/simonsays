@@ -3,9 +3,11 @@ import dataclasses
 import enum
 import hashlib
 import shutil
+from typing import NoReturn
 
 import tomlkit
 
+import errorcodes
 import phasmoactions
 import twitchactions
 
@@ -21,11 +23,18 @@ BLOCKLIST = [
 ]  # FIXME get this list from GitHub
 
 
-def check_blocklist(channel: str | list[str]) -> list[str]:
-    """Return any channels in the blocklist"""
+def check_blocklist(channel: str | list[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
+    """Return any channels/users in the blocklist"""
     channels = channel if isinstance(channel, list) else [channel]
+    blockedchannels = [channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST]
 
-    return [channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST]
+    if blockedchannels:
+        if not silent:
+            print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
+        if abort:
+            exit(errorcodes.ErrorCode.BLOCKED_CHANNEL)
+
+    return blockedchannels
 
 
 @dataclasses.dataclass(slots=True)
@@ -44,13 +53,12 @@ class Config:
     config: ConfigDict
     version: str
     enabled: bool = True
-    channel: str = DEFAULT_CHANNEL
+    channel: list[str] = DEFAULT_CHANNEL
     filename: str = DEFAULT_FILENAME
 
     def __post_init__(self):
-        if blockedchannels := check_blocklist(self.channel):
-            print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
-            exit()
+        self.channel = self.channel if isinstance(self.channel, list) else [self.channel]
+        check_blocklist(self.channel)
 
     def to_dict(self) -> dict:
         """Convert the config to a dict"""

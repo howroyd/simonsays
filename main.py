@@ -1,6 +1,5 @@
 #!./.venv/bin/python3
 import concurrent.futures as cf
-import dataclasses
 import functools
 import queue
 
@@ -66,18 +65,21 @@ Valid commands are:\n{make_bot_commands(globalconfig)}
     """
 
 
+class NoMessageException(Exception):
+    """No message received"""
+    pass
+
+
 if __name__ == "__main__":
     myconfig = config.Config.load(VERSION)
     myactions = make_twitch_actions(myconfig)
     myconfig.save(backup_old=True)
 
-    n_channels = len(myconfig.channel) if isinstance(myconfig.channel, list) else 1
-
     print(preamble(myconfig))
 
     with (cf.ThreadPoolExecutor(max_workers=1) as executor,
             twitchirc.TwitchIrc(myconfig.channel) as irc):
-        print(f"Connected to Twitch channel{'s' if n_channels > 1 else ''}: {', '.join(myconfig.channel) if isinstance(myconfig.channel, list) else myconfig.channel}\n")
+        print(f"Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}\n")
 
         mygui = gui.make_gui(myconfig)
 
@@ -88,15 +90,15 @@ if __name__ == "__main__":
             try:
                 queue_msg = irc.queue.get(timeout=0.1)
                 msg = twitchirc.TwitchMessage.from_irc_message(queue_msg) if queue_msg else None
+                if not msg:
+                    raise NoMessageException
             except queue.Empty:
-                pass
-
-            if not msg:
+                raise NoMessageException
+            except NoMessageException:
                 continue
 
-            if blockedchannels := config.check_blocklist(myconfig.channel) + config.check_blocklist(msg.channel):
-                print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
-                exit()
+            config.check_blocklist(myconfig.channel)
+            config.check_blocklist(msg.channel)
 
             tag = find_tag_by_command_in_actions(myactions, msg.payload)
 
@@ -111,5 +113,5 @@ if __name__ == "__main__":
                     # print(f"User blocked: {name}")
                     continue
 
-                print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if n_channels > 1 else ''}")
+                print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
                 executor.submit(myactions[tag].run).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))

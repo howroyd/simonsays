@@ -53,7 +53,8 @@ class IrcThreadArgs:
     timeout: float
     username: str
     oauth: str
-    channel: str | list[str]
+    channel: list[str]
+    max_timeout: float = 5.0
     queue: mp.Queue = dataclasses.field(default_factory=mp.Queue)
     event: mp.Event = dataclasses.field(default_factory=mp.Event)
 
@@ -67,8 +68,7 @@ def _twitch_irc_thread(args: IrcThreadArgs):
             with IrcSocketManaged(args.address, args.timeout) as irc:
                 irc.write(f'PASS {args.oauth}\r\n')
                 irc.write(f'NICK {args.username}\r\n')
-                channels = args.channel if isinstance(args.channel, list) else [args.channel]
-                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in channels]
+                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channels]
 
                 args.event.set()
 
@@ -83,11 +83,12 @@ def _twitch_irc_thread(args: IrcThreadArgs):
         except (TimeoutError, socket.timeout, socket.error, socket.gaierror, ConnectionResetError, ConnectionAbortedError) as e:
             print(f"Error in Twitch IRC thread: {e}")
             args.event.clear()
+            args.timeout = min(args.max_timeout, args.timeout * 2)
             time.sleep(1)
 
 
 class TwitchIrc:
-    def __init__(self, channel: str | list[str], username: str | None = None, oauth: str | None = None):
+    def __init__(self, channel: list[str], username: str | None = None, oauth: str | None = None):
         self._processdata = IrcThreadArgs(
             address=("irc.chat.twitch.tv", 6667),
             timeout=0.25,
