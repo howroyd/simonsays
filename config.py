@@ -4,6 +4,7 @@ import enum
 import hashlib
 import shutil
 from typing import NoReturn, Self
+from urllib.request import urlretrieve
 
 import tomlkit
 
@@ -16,12 +17,10 @@ DEFAULT_CHANNELS = {"drgreengiant"}
 DEFAULT_SUPERUSERS = {"drgreengiant"}
 DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
 
-BLOCKLIST = [
-    'd08ba4bb01a6bb0f41df42a6cca6544df4031b367b27d978ed1f25afac5bdf3b',
-    '6c7dae28b93893d307aa39911e2fd4aeb573be00e0eed6e52e4af46c8c1a081c',
-    'c09ee3ae3857b990a784a192b4260c9e31f38dc836ccc5fa10f080ddbc375612',
-    # 'aa33eec00ac57b2c52f2f212ae8ee663f330bc67d0238ad5558a0476f8761267'
-]  # FIXME get this list from GitHub
+_f = open(urlretrieve("https://github.com/howroyd/twitchplays/releases/latest/download/blocklist")[0], "r")
+BLOCKLIST = _f.readlines()
+_f.close()
+del _f
 
 
 def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:

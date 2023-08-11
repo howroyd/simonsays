@@ -459,6 +459,32 @@ class UseConfig:
 
 
 @dataclasses.dataclass(slots=True)
+class Box(GenericPhasmoAction):
+    """Music box grenade; use and drop"""
+    name: str = "box"
+    chained: bool = True
+
+    def run(self) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: PhasmoActionConfig = self.config
+        return actions.ActionSequence([Use(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)]).run()
+
+
+@dataclasses.dataclass(slots=True)
+class BoxConfig:
+    """Use item config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.5
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
 class Teabag(GenericPhasmoActionBase):
     """Crouch repeatedly"""
     name: str = "teabag"
@@ -752,6 +778,7 @@ def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
         PeekLeft(config_fn),
         PeekRight(config_fn),
         Use(config_fn),
+        Box(config_fn),
         Teabag(config_fn),
         Disco(config_fn),
         CycleItems(config_fn),
@@ -796,6 +823,7 @@ def default_config() -> Config:
         PeekLeft(None).name: PeekLeftConfig(),
         PeekRight(None).name: PeekRightConfig(),
         Use(None).name: UseConfig(),
+        Box(None).name: BoxConfig(),
         Teabag(None).name: TeabagConfig(),
         Disco(None).name: DiscoConfig(),
         CycleItems(None).name: CycleItemsConfig(),
