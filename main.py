@@ -1,16 +1,19 @@
 #!./.venv/bin/python3
 import concurrent.futures as cf
+import contextlib
 import functools
-import queue
 from typing import Callable
+
 import config
 import errorcodes
 import gui
+import offlineirc
 import phasmoactions
 import twitchactions
 import twitchirc
-import functools
+
 VERSION = "2.0.0"
+OFFLINE = True
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
@@ -75,11 +78,6 @@ Valid commands are:\n{make_bot_commands(globalconfig)}
     """
 
 
-class NoMessageException(Exception):
-    """No message received"""
-    pass
-
-
 if __name__ == "__main__":
     myconfig = config.Config.load(VERSION)
     myactions = make_twitch_actions(myconfig)
@@ -88,8 +86,15 @@ if __name__ == "__main__":
 
     print(preamble(myconfig))
 
-    with (cf.ThreadPoolExecutor(max_workers=1) as executor,
-            twitchirc.TwitchIrc(myconfig.channel) as irc):
+    with contextlib.ExitStack() as stack:
+        executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
+
+        irc = None
+        if OFFLINE:
+            irc = stack.enter_context(offlineirc.OfflineIrc(myconfig.channel, username="drgreengiant"))
+        else:
+            irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
+
         print(f"Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}\n")
 
         mygui = gui.make_gui(myconfig)
@@ -97,13 +102,9 @@ if __name__ == "__main__":
         while True:
             mygui.update()  # Required otherwise you cant click stuff
 
-            msg: twitchirc.TwitchMessage | None = None
-            try:
-                queue_msg = irc.queue.get(timeout=0.1)
-                msg = twitchirc.TwitchMessage.from_irc_message(queue_msg) if queue_msg else None
-                if not msg:
-                    raise NoMessageException
-            except (NoMessageException, queue.Empty):
+            msg = irc.get_message(irc)
+
+            if not msg:
                 continue
 
             config.check_blocklist(myconfig.channel)

@@ -6,13 +6,112 @@ import enum
 import multiprocessing as mp
 import os
 import pprint
+import queue
 import socket
 import time
-from typing import Self
+from typing import NoReturn, Protocol, Self
 
 import bufferedsocket
 
 RECORD_FILE = "irc.log"
+
+
+@enum.unique
+class TwitchMessageEnum(enum.Enum):
+    """Message types defined by Twitch IRC server"""
+    """Ref: https://dev.twitch.tv/docs/irc/example-parser"""
+    JOIN = enum.auto()
+    PART = enum.auto()
+    NOTICE = enum.auto()
+    CLEARCHAT = enum.auto()
+    HOSTTARGET = enum.auto()
+    PRIVMSG = enum.auto()
+    PING = enum.auto()
+    CAP = enum.auto()
+    GLOBALUSERSTATE = enum.auto()
+    USERSTATE = enum.auto()
+    ROOMSTATE = enum.auto()
+    RECONNECT = enum.auto()
+    NUMERIC = enum.auto()  # All numerics lumped in here.  Extend if required
+
+    @classmethod
+    def match_message_type(cls, string_to_match: str) -> Self | None:
+        """Matches the message type to the TwitchMessageEnum"""
+        match string_to_match.strip().upper():
+            case "JOIN":
+                return cls.JOIN
+            case "PART":
+                return cls.PART
+            case "NOTICE":
+                return cls.NOTICE
+            case "CLEARCHAT":
+                return cls.CLEARCHAT
+            case "HOSTTARGET":
+                return cls.HOSTTARGET
+            case "PRIVMSG":
+                return cls.PRIVMSG
+            case "PING":
+                return cls.PING
+            case "CAP":
+                return cls.CAP
+            case "GLOBALUSERSTATE":
+                return cls.GLOBALUSERSTATE
+            case "USERSTATE":
+                return cls.USERSTATE
+            case "ROOMSTATE":
+                return cls.ROOMSTATE
+            case "RECONNECT":
+                return cls.RECONNECT
+            case "421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376":
+                return cls.NUMERIC
+            case _:
+                return None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class TwitchMessageProto(Protocol):
+    """Protocol for TwitchMessage"""
+    username: str
+    channel: str
+    payload: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class TwitchMessage:
+    """Represents a message from Twitch IRC server"""
+    type: TwitchMessageEnum
+    username: str
+    channel: str
+    payload: str
+
+    @classmethod
+    def from_irc_message(cls, irc_msg: str) -> Self | None:
+        """Creates a TwitchMessage from an IRC message"""
+        msg_type = TwitchMessageEnum.match_message_type(irc_msg.split(maxsplit=2)[1])
+
+        if msg_type is None or msg_type == TwitchMessageEnum.NUMERIC:  # TODO should we keep numerics?
+            return None
+
+        line_split = irc_msg.split(maxsplit=3)
+        idx_of_msg_type = line_split.index(msg_type.name)
+
+        # Remove the username and PRIVMSG from the line
+        line = line_split[idx_of_msg_type + 1:]
+
+        if len(line) != 2:
+            return None
+
+        return cls(
+            type=msg_type,
+            username=line_split[0].split("!")[0].lstrip(":"),
+            channel=line[0].lstrip("#"),
+            payload=line[1].lstrip(":").rstrip("\r\n")
+        )
+
+
+class NoMessageException(Exception):
+    """No message received"""
+    pass
 
 
 @dataclasses.dataclass(slots=True)
@@ -64,7 +163,7 @@ class IrcThreadArgs:
     event: mp.Event = dataclasses.field(default_factory=mp.Event)
 
 
-def _twitch_irc_thread(args: IrcThreadArgs):
+def _twitch_irc_thread(args: IrcThreadArgs) -> NoReturn:
     """Thread for reading from Twitch IRC server"""
     if RECORD_FILE:
         root = os.path.dirname(os.path.realpath(__file__))
@@ -150,90 +249,17 @@ class TwitchIrc:
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop()
 
-
-@enum.unique
-class TwitchMessageEnum(enum.Enum):
-    """Message types defined by Twitch IRC server"""
-    """Ref: https://dev.twitch.tv/docs/irc/example-parser"""
-    JOIN = enum.auto()
-    PART = enum.auto()
-    NOTICE = enum.auto()
-    CLEARCHAT = enum.auto()
-    HOSTTARGET = enum.auto()
-    PRIVMSG = enum.auto()
-    PING = enum.auto()
-    CAP = enum.auto()
-    GLOBALUSERSTATE = enum.auto()
-    USERSTATE = enum.auto()
-    ROOMSTATE = enum.auto()
-    RECONNECT = enum.auto()
-    NUMERIC = enum.auto()  # All numerics lumped in here.  Extend if required
-
-    @classmethod
-    def match_message_type(cls, string_to_match: str) -> Self | None:
-        """Matches the message type to the TwitchMessageEnum"""
-        match string_to_match.strip().upper():
-            case "JOIN":
-                return cls.JOIN
-            case "PART":
-                return cls.PART
-            case "NOTICE":
-                return cls.NOTICE
-            case "CLEARCHAT":
-                return cls.CLEARCHAT
-            case "HOSTTARGET":
-                return cls.HOSTTARGET
-            case "PRIVMSG":
-                return cls.PRIVMSG
-            case "PING":
-                return cls.PING
-            case "CAP":
-                return cls.CAP
-            case "GLOBALUSERSTATE":
-                return cls.GLOBALUSERSTATE
-            case "USERSTATE":
-                return cls.USERSTATE
-            case "ROOMSTATE":
-                return cls.ROOMSTATE
-            case "RECONNECT":
-                return cls.RECONNECT
-            case "421" | "001" | "002" | "003" | "004" | "353" | "366" | "372" | "375" | "376":
-                return cls.NUMERIC
-            case _:
-                return None
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class TwitchMessage:
-    """Represents a message from Twitch IRC server"""
-    type: TwitchMessageEnum
-    username: str
-    channel: str
-    payload: str
-
-    @classmethod
-    def from_irc_message(cls, irc_msg: str) -> Self | None:
-        """Creates a TwitchMessage from an IRC message"""
-        msg_type = TwitchMessageEnum.match_message_type(irc_msg.split(maxsplit=2)[1])
-
-        if msg_type is None or msg_type == TwitchMessageEnum.NUMERIC:  # TODO should we keep numerics?
-            return None
-
-        line_split = irc_msg.split(maxsplit=3)
-        idx_of_msg_type = line_split.index(msg_type.name)
-
-        # Remove the username and PRIVMSG from the line
-        line = line_split[idx_of_msg_type + 1:]
-
-        if len(line) != 2:
-            return None
-
-        return cls(
-            type=msg_type,
-            username=line_split[0].split("!")[0].lstrip(":"),
-            channel=line[0].lstrip("#"),
-            payload=line[1].lstrip(":").rstrip("\r\n")
-        )
+    @staticmethod
+    def get_message(irc: Self, *, timeout: float = 0.1) -> TwitchMessage | None:
+        msg: TwitchMessage | None = None
+        try:
+            queue_msg = irc.queue.get(timeout=timeout)
+            msg = TwitchMessage.from_irc_message(queue_msg) if queue_msg else None
+            if not msg:
+                raise NoMessageException
+        except (NoMessageException, queue.Empty):
+            pass
+        return msg
 
 
 if __name__ == "__main__":
