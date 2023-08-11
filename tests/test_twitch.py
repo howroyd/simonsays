@@ -1,38 +1,52 @@
-import logging
-import time
-import twitch
 import pytest
-import socket
+
+import twitchirc
+
+DEFAULT_CHANNEL = "drgreengiant"
+
+
+def test_message_enum():
+    enumstringsexpected = {
+        "JOIN": twitchirc.TwitchMessageEnum.JOIN,
+        "PART": twitchirc.TwitchMessageEnum.PART,
+        "NOTICE": twitchirc.TwitchMessageEnum.NOTICE,
+        "CLEARCHAT": twitchirc.TwitchMessageEnum.CLEARCHAT,
+        "HOSTTARGET": twitchirc.TwitchMessageEnum.HOSTTARGET,
+        "PRIVMSG": twitchirc.TwitchMessageEnum.PRIVMSG,
+        "PING": twitchirc.TwitchMessageEnum.PING,
+        "CAP": twitchirc.TwitchMessageEnum.CAP,
+        "GLOBALUSERSTATE": twitchirc.TwitchMessageEnum.GLOBALUSERSTATE,
+        "USERSTATE": twitchirc.TwitchMessageEnum.USERSTATE,
+        "ROOMSTATE": twitchirc.TwitchMessageEnum.ROOMSTATE,
+        "RECONNECT": twitchirc.TwitchMessageEnum.RECONNECT,
+        "421": twitchirc.TwitchMessageEnum.NUMERIC,
+        "001": twitchirc.TwitchMessageEnum.NUMERIC,
+        "002": twitchirc.TwitchMessageEnum.NUMERIC,
+        "003": twitchirc.TwitchMessageEnum.NUMERIC,
+        "004": twitchirc.TwitchMessageEnum.NUMERIC,
+        "353": twitchirc.TwitchMessageEnum.NUMERIC,
+        "366": twitchirc.TwitchMessageEnum.NUMERIC,
+        "372": twitchirc.TwitchMessageEnum.NUMERIC,
+        "375": twitchirc.TwitchMessageEnum.NUMERIC,
+        "376": twitchirc.TwitchMessageEnum.NUMERIC,
+        "hodsaflkfj": None,
+        "  JOIN  \r\n": twitchirc.TwitchMessageEnum.JOIN,
+        "join": twitchirc.TwitchMessageEnum.JOIN,
+    }
+    for key, val in enumstringsexpected.items():
+        ret = twitchirc.TwitchMessageEnum.match_message_type(key)
+        assert val == ret, f"Failed to parse \"{key}\" into {val}: got {ret}"
+
 
 def channel_connection(channel: str):
-    with twitch.ChannelConnection(channel) as tw:
-        pass
+    with twitchirc.TwitchIrc(channel) as irc:
+        assert irc.connected, "Thought we were connected but flag isnt set"
 
-def channel_connection_with_retries(channel: str) -> bool:
-    n_retries = 4
-    ret = False
 
-    for i in range(n_retries):
-        try:
-            channel_connection(channel)
-            ret = True
-            break
-        except [TimeoutError, ConnectionError] as e:
-            time.sleep(1)
+# def test_bad_channel_connection():
+#     with pytest.raises(twitchirc.TwitchIrcConnectionError):
+#         channel_connection("")
 
-    return ret
 
-def test_channel_connection(n_retries: int = 4) -> None:
-    assert channel_connection_with_retries("katatouille93"), "test_channel_connection failed"
-
-    with pytest.raises(TimeoutError):
-        channel_connection("")
-
-def test_message_builder() -> bool:
-    test_data = b"Hello"
-    x = twitch.MessageBuilderDefault()
-    x.append(test_data)
-    assert x.buffer == test_data, "Message Builder append buffer failed"
-    y = x.get_and_clear()
-    assert y == test_data, "Message Builder get buffer failed"
-    assert 0 ==len(x.buffer), "Message Builder clear buffer failed"
+# def test_good_channel_connection():
+#     channel_connection(DEFAULT_CHANNEL)

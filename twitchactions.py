@@ -79,25 +79,26 @@ class TwitchAction(GenericTwitchAction, actions.Action):
     action: actions.Action
     last_used: float = 0.0
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: TwitchActionConfig = self.config
 
-        if not actionconfig.enabled:
-            if DEBUG:
-                print(f"Action {self.name} is disabled")
-            return errorcodes.errorset(errorcodes.ErrorCode.DISABLED)
-        if self.on_cooldown:
-            if DEBUG:
-                print(f"Action {self.name} is on cooldown")
-            return errorcodes.errorset(errorcodes.ErrorCode.ON_COOLDOWN)
-        if actionconfig.random_chance is not None and random.randint(0, 100) > actionconfig.random_chance:
-            if DEBUG:
-                print(f"Action {self.name} failed random chance")
-            self.reset_cooldown()
-            return errorcodes.errorset(errorcodes.ErrorCode.RANDOM_CHANCE)
+        if not force:
+            if not actionconfig.enabled:
+                if DEBUG:
+                    print(f"Action {self.name} is disabled")
+                return errorcodes.errorset(errorcodes.ErrorCode.DISABLED)
+            if self.on_cooldown:
+                if DEBUG:
+                    print(f"Action {self.name} is on cooldown")
+                return errorcodes.errorset(errorcodes.ErrorCode.ON_COOLDOWN)
+            if actionconfig.random_chance is not None and random.randint(0, 100) > actionconfig.random_chance:
+                if DEBUG:
+                    print(f"Action {self.name} failed random chance")
+                self.reset_cooldown()
+                return errorcodes.errorset(errorcodes.ErrorCode.RANDOM_CHANCE)
 
-        self.reset_cooldown()
+            self.reset_cooldown()
 
         if DEBUG:
             print(f"Running action {self.name}")
@@ -138,6 +139,11 @@ class TwitchAction(GenericTwitchAction, actions.Action):
     def reset_cooldown(self) -> None:
         """Reset the cooldown"""
         self.last_used = time.time()
+
+    def clear_cooldown(self) -> None:
+        """Clear the last used parameter so the action is ready to use again"""
+        print(f"Clearing cooldown for {self.name}")
+        self.last_used = 0.0
 
 
 ActionDict = dict[str, TwitchAction]

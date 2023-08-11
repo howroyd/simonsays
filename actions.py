@@ -94,20 +94,7 @@ class ActionRepeatWithWait:
         return errorcodes.errorset(ret)
 
 
-@dataclasses.dataclass(slots=True)
-class CommandAction:
-    """A command action"""
-    command: str | list[str]
-    action: Action
-
-    def check_command(self, command: str) -> bool:
-        """Check if the command matches"""
-        if isinstance(self.command, str):
-            return command == self.command
-        elif isinstance(self.command, list):
-            return command in self.command
-        else:
-            return False
+ActionDict = dict[str, Action]
 
 
 if __name__ == "__main__":

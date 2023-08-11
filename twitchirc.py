@@ -1,13 +1,18 @@
 #!./.venv/bin/python3
+import contextlib
 import dataclasses
+import datetime
 import enum
 import multiprocessing as mp
+import os
 import pprint
 import socket
 import time
 from typing import Self
 
 import bufferedsocket
+
+RECORD_FILE = "irc.log"
 
 
 @dataclasses.dataclass(slots=True)
@@ -61,19 +66,30 @@ class IrcThreadArgs:
 
 def _twitch_irc_thread(args: IrcThreadArgs):
     """Thread for reading from Twitch IRC server"""
+    if RECORD_FILE:
+        root = os.path.dirname(os.path.realpath(__file__))
+        logdir = os.path.join(root, "logs")
+        os.makedirs(logdir, exist_ok=True)
+        with open("./logs/" + RECORD_FILE, "a") as f:
+            f.write(f"Logging in {__file__} at {datetime.datetime.now().isoformat()}\n")
+
     while True:
         try:
             print("Connecting to Twitch IRC server")
 
-            with IrcSocketManaged(args.address, args.timeout) as irc:
+            with IrcSocketManaged(args.address, args.timeout) as irc, open("./logs/" + RECORD_FILE, "a") if RECORD_FILE else contextlib.nullcontext() as record_file:
                 irc.write(f'PASS {args.oauth}\r\n')
                 irc.write(f'NICK {args.username}\r\n')
-                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channels]
+                [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channel]
 
                 args.event.set()
 
                 while True:
                     lines = irc.readlines()
+
+                    if record_file:
+                        record_file.writelines(lines)
+
                     for line in lines:
                         if "PING :tmi.twitch.tv" in line:
                             irc.write("PONG :tmi.twitch.tv\r\n")
@@ -87,8 +103,13 @@ def _twitch_irc_thread(args: IrcThreadArgs):
             time.sleep(1)
 
 
+class TwitchIrcConnectionError(Exception):
+    """Failed to connect to the Twitch IRC Server"""
+    pass
+
+
 class TwitchIrc:
-    def __init__(self, channel: list[str], username: str | None = None, oauth: str | None = None):
+    def __init__(self, channel: list[str], username: str | None = None, oauth: str | None = None, timeout: float = None):
         self._processdata = IrcThreadArgs(
             address=("irc.chat.twitch.tv", 6667),
             timeout=0.25,
@@ -97,6 +118,7 @@ class TwitchIrc:
             channel=channel
         )
         self._process: mp.Process | None = None
+        self.timeout: float = timeout or 20.0
 
     @property
     def queue(self) -> mp.Queue:
@@ -112,12 +134,14 @@ class TwitchIrc:
         """Starts the connection to Twitch IRC server"""
         self._process = mp.Process(target=_twitch_irc_thread, args=(self._processdata,))
         self._process.start()
-        self._processdata.event.wait() if wait_for_connection else None
+
+        if wait_for_connection and not self._processdata.event.wait(self.timeout):
+            raise TwitchIrcConnectionError(f"Failed to connect to Twitch IRC server after {self.timeout} seconds")
 
     def stop(self) -> None:
         """Forcibly terminate the connection.  May deadlock anyone waiting on the queue"""
         #  FIXME - This is a bit of a hack.  We should probably send a message to the thread to tell it to stop
-        self._process.terminate()
+        self._process.terminate() if self._process else None
 
     def __enter__(self):
         self.start()
@@ -148,7 +172,7 @@ class TwitchMessageEnum(enum.Enum):
     @classmethod
     def match_message_type(cls, string_to_match: str) -> Self | None:
         """Matches the message type to the TwitchMessageEnum"""
-        match string_to_match.lstrip().rstrip().upper():
+        match string_to_match.strip().upper():
             case "JOIN":
                 return cls.JOIN
             case "PART":

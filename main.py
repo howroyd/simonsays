@@ -2,14 +2,14 @@
 import concurrent.futures as cf
 import functools
 import queue
-
+from typing import Callable
 import config
 import errorcodes
 import gui
 import phasmoactions
 import twitchactions
 import twitchirc
-
+import functools
 VERSION = "2.0.0"
 
 
@@ -20,7 +20,7 @@ def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> 
     if errorcodes.success(result):
         print(f"Done \'{tag}\' from {msg.username}")
     else:
-        print(f"Failed \'{tag}\' from {msg.username}. {result=}")
+        print(f"Failed \'{tag}\' from {msg.username} ({result=})")
 
 
 def make_phasmo_actions(globalconfig: config.Config) -> phasmoactions.ActionDict:
@@ -34,6 +34,16 @@ def make_twitch_actions(globalconfig: config.Config) -> twitchactions.ActionDict
         """Get the twitch config"""
         return twitchactions.Config({key: item.twitch for key, item in globalconfig.config.items()})
     return {key: twitchactions.TwitchAction(get_twitch_config, key, value) for key, value in make_phasmo_actions(globalconfig).items()}
+
+
+def make_superuser_actions(globalconfig: config.Config, twitch_actions: twitchactions.ActionDict) -> dict[str, Callable]:
+    """Make the superuser actions"""
+    superuser_actions = {globalconfig.superuser_prefix + " " + key: functools.partial(value.run, force=True) for key, value in twitch_actions.items()}
+
+    return {
+        globalconfig.superuser_prefix + " reload": lambda: print("Reload!"),  # TODO
+        globalconfig.superuser_prefix + " reset": lambda: [action.clear_cooldown() for action in twitch_actions.values()],
+    } | superuser_actions
 
 
 def find_tag_by_command_in_actions(twitch_actions: twitchactions.ActionDict, command: str) -> str | None:
@@ -73,6 +83,7 @@ class NoMessageException(Exception):
 if __name__ == "__main__":
     myconfig = config.Config.load(VERSION)
     myactions = make_twitch_actions(myconfig)
+    mysuperuseractions = make_superuser_actions(myconfig, myactions)
     myconfig.save(backup_old=True)
 
     print(preamble(myconfig))
@@ -92,9 +103,7 @@ if __name__ == "__main__":
                 msg = twitchirc.TwitchMessage.from_irc_message(queue_msg) if queue_msg else None
                 if not msg:
                     raise NoMessageException
-            except queue.Empty:
-                raise NoMessageException
-            except NoMessageException:
+            except (NoMessageException, queue.Empty):
                 continue
 
             config.check_blocklist(myconfig.channel)
@@ -107,11 +116,15 @@ if __name__ == "__main__":
                     print(f"Commands disabled!  Ignoring \'{tag}\' from {msg.username}")
                     continue
 
-                # msg = dataclasses.replace(msg, username="katatouille93")
-
-                if name := config.check_blocklist(msg.username):
-                    # print(f"User blocked: {name}")
+                if config.check_blocklist(msg.username, abort=False, silent=True):
                     continue
 
                 print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
                 executor.submit(myactions[tag].run).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))
+
+            elif msg.username in myconfig.superusers:
+                command = msg.payload.strip().lower()
+                routine = mysuperuseractions.get(command, None)
+                if routine is not None:
+                    print(f"Running \'{command}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
+                    routine()

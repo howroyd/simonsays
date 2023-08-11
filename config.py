@@ -3,7 +3,7 @@ import dataclasses
 import enum
 import hashlib
 import shutil
-from typing import NoReturn
+from typing import NoReturn, Self
 
 import tomlkit
 
@@ -12,8 +12,9 @@ import phasmoactions
 import twitchactions
 
 DEFAULT_FILENAME = "config.toml"
-DEFAULT_CHANNEL = "drgreengiant"
-
+DEFAULT_CHANNELS = {"drgreengiant"}
+DEFAULT_SUPERUSERS = {"stinky"}
+DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
 
 BLOCKLIST = [
     'd08ba4bb01a6bb0f41df42a6cca6544df4031b367b27d978ed1f25afac5bdf3b',
@@ -23,14 +24,14 @@ BLOCKLIST = [
 ]  # FIXME get this list from GitHub
 
 
-def check_blocklist(channel: str | list[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
+def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
     """Return any channels/users in the blocklist"""
-    channels = channel if isinstance(channel, list) else [channel]
+    channels = channel if isinstance(channel, set) else set(channel)
     blockedchannels = [channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST]
 
     if blockedchannels:
         if not silent:
-            print(f"Channel(s) blocked: {', '.join(blockedchannels)}")
+            print(f"User or Channel blocked: {', '.join(blockedchannels)}")
         if abort:
             exit(errorcodes.ErrorCode.BLOCKED_CHANNEL)
 
@@ -53,12 +54,27 @@ class Config:
     config: ConfigDict
     version: str
     enabled: bool = True
-    channel: list[str] = DEFAULT_CHANNEL
+    channel: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_CHANNELS)
+    superusers: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_SUPERUSERS)
+    superuser_prefix: str = DEFAULT_SUPERUSER_COMMAND_PREFIX
     filename: str = DEFAULT_FILENAME
 
     def __post_init__(self):
-        self.channel = self.channel if isinstance(self.channel, list) else [self.channel]
+        self.channel = self.channel if isinstance(self.channel, set) else set(self.channel)
+        self.superusers = self.superusers if isinstance(self.superusers, set) else set(self.superusers)
         check_blocklist(self.channel)
+
+    @staticmethod
+    def root_keys() -> set[str]:
+        """Return the root keys"""
+        return [
+            "version",
+            "enabled",
+            "channel",
+            "superusers",
+            "superuser_prefix",
+            "filename",
+        ]
 
     def to_dict(self) -> dict:
         """Convert the config to a dict"""
@@ -92,7 +108,7 @@ class Config:
         asdict = self.replace_enum(asdict)
         asdict = self.remove_none(asdict)
 
-        return tomlkit.dumps(asdict | {"version": self.version, "channel": self.channel})
+        return tomlkit.dumps(asdict | {"version": self.version, "channel": list(self.channel), "superusers": list(self.superusers)})
 
     def save(self, *, backup_old: bool = False) -> None:
         """Save the config to file"""
@@ -108,7 +124,7 @@ class Config:
             f.write(towrite)
 
     @classmethod
-    def load(cls, version: str, filename: str = None) -> "Config":
+    def load(cls, version: str, filename: str = None) -> Self:
         """Load the config from file"""
         tomldata: tomlkit.document.TOMLDocument = None
         filename = filename or DEFAULT_FILENAME
@@ -122,7 +138,7 @@ class Config:
             print(f"Error loading config file: {filename=}")
             print(e)
 
-        actionstoml = {key: item for key, item in tomldata.items() if key != "version" and key != "channel" and key != "enabled"} if tomldata else {}
+        actionstoml = {key: item for key, item in tomldata.items() if key not in cls.root_keys()} if tomldata else {}
         phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()} if actionstoml else {}
         twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()} if actionstoml else {}
 
@@ -131,27 +147,14 @@ class Config:
 
         assert all(key in twitch.config for key in phasmo.config.keys())
 
+        channel = set(tomldata.get("channel", DEFAULT_CHANNELS)) if tomldata else DEFAULT_CHANNELS
+        superusers = set(tomldata.get("superusers", DEFAULT_SUPERUSERS)) | DEFAULT_SUPERUSERS if tomldata else DEFAULT_SUPERUSERS
+        superuser_prefix = tomldata.get("superuser_prefix", DEFAULT_SUPERUSER_COMMAND_PREFIX) if tomldata else DEFAULT_SUPERUSER_COMMAND_PREFIX
+
         return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
                    version=version,
-                   channel=tomldata.get("channel", DEFAULT_CHANNEL) if tomldata else DEFAULT_CHANNEL,
+                   channel=channel,
+                   superusers=superusers,
+                   superuser_prefix=superuser_prefix,
                    filename=filename
                    )
-
-
-def make_config(*, version: str, channel: str = None, phasmo: phasmoactions.Config = None, twitch: twitchactions.Config = None, filename: str = None) -> ConfigDict:
-    """Make a config"""
-    channel = channel or DEFAULT_CHANNEL
-    phasmo = phasmo or phasmoactions.default_config()
-    twitch = twitch or twitchactions.Config()
-    filename = filename or DEFAULT_FILENAME
-
-    for key in phasmo.config.keys():
-        if key not in twitch.config:
-            twitch.config[key] = twitchactions.TwitchActionConfig(key)  # FIXME using the key as the command for now
-
-    assert all(key in twitch.config for key in phasmo.config.keys())
-
-    return Config({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
-                  version=version,
-                  channel=channel,
-                  filename=filename)
