@@ -13,7 +13,7 @@ import twitchactions
 import twitchirc
 
 VERSION = "2.0.0"
-OFFLINE = True
+OFFLINE = False
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:

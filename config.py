@@ -13,7 +13,7 @@ import twitchactions
 
 DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNELS = {"drgreengiant"}
-DEFAULT_SUPERUSERS = {"stinky"}
+DEFAULT_SUPERUSERS = {"drgreengiant"}
 DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
 
 BLOCKLIST = [
