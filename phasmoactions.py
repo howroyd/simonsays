@@ -50,6 +50,11 @@ class Config:
     """The global config for all Phasmophobia actions"""
     config: dict[str, PhasmoActionConfig] = dataclasses.field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        self.config.update({
+            RandomAction(None).name: RandomActionConfig(lambda: [v for k, v in self.config.items() if k != RandomAction(None).name])
+        })
+
     class Defaults:
         """Default values"""
         look_distance: int = 500
@@ -754,6 +759,32 @@ class HeadbangConfig:
 #####################################################################
 
 
+@dataclasses.dataclass(slots=True)
+class RandomAction(GenericPhasmoActionBase):
+    """Pich a random action and run it"""
+    name: str = "random"
+    chained: bool = True
+
+    def run(self) -> errorcodes.ErrorSet:
+        """Run the action"""
+        return random.choice(actionconfig.actionlist).run()
+
+
+@dataclasses.dataclass(slots=True)
+class RandomActionConfig:
+    """Look up and down repeatedly config"""
+    _actionlist: Callable[[], list[PhasmoAction]]
+    hidconfig: hidactions.Config = None
+
+    @property
+    def actionlist(self) -> list[PhasmoAction]:
+        """Get the action list"""
+        return self._actionlist()
+
+
+
+#####################################################################
+
 def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
     """Get all actions"""
     return [
@@ -786,6 +817,7 @@ def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
         DropAllItems(config_fn),
         Spin(config_fn),
         Headbang(config_fn),
+        RandomAction(config_fn),
     ]
 
 
@@ -830,7 +862,7 @@ def default_config() -> Config:
         CycleItemsAndUse(None).name: CycleItemsAndUseConfig(),
         DropAllItems(None).name: DropAllItemsConfig(),
         Spin(None).name: SpinConfig(),
-        Headbang(None).name: HeadbangConfig()
+        Headbang(None).name: HeadbangConfig(),
     })
 
 
