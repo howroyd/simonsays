@@ -1,12 +1,20 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 import actions
 import errorcodes
 
-DEBUG = True
+from pynput.keyboard import Key
+from pynput.keyboard import Controller as Keyboard
+
+from pynput.mouse._win32 import Button
+from pynput.mouse._win32 import Controller as Mouse
+
+DEBUG = False
+keyboard = Keyboard()
+mouse = Mouse()
 
 
 def dummy_run(message: str) -> errorcodes.ErrorSet:
@@ -16,12 +24,30 @@ def dummy_run(message: str) -> errorcodes.ErrorSet:
     return errorcodes.errorset(errorcodes.ErrorCode.OK)
 
 
+class ButtonUnknown(Exception):
+    """Unknown mouse button"""
+    pass
+
+
+def str_to_button(button: str) -> Button:
+    match button:
+        case "left":
+            return Button.left
+        case "middle":
+            return Button.middle
+        case "right":
+            return Button.right
+        case _:
+            raise ButtonUnknown(f"Unknown mouse button: {button}")
+
+
 @enum.unique
 class HidType(enum.Enum):
     """The type of HID action"""
-    KEYBOARD = enum.auto()
+    KEYBOARD = enum.auto()  # FIXME remove all autos
     MOUSE_BUTTON = enum.auto()
     MOUSE_MOVE = enum.auto()
+    MOUSE_MOVE_DIRECTION = enum.auto()
 
 
 @dataclasses.dataclass(slots=True)
@@ -63,6 +89,21 @@ class MouseMoveDirection(enum.Enum):
         """Handle missing values"""
         raise self.MouseMoveDirectionUnknown(f"Unknown mouse move direction: {value}")
 
+    @classmethod
+    def to_cartesian(cls, direction: Self | str, distance: int) -> tuple[int, int]:
+        """Convert a direction and distance to cartesian coordinates"""
+        if isinstance(direction, str):
+            direction = cls(direction.strip().lower())
+        match direction:
+            case cls.UP:
+                return (0, -distance)
+            case cls.DOWN:
+                return (0, distance)
+            case cls.LEFT:
+                return (-distance, 0)
+            case cls.RIGHT:
+                return (distance, 0)
+
 
 @dataclasses.dataclass(slots=True)
 class MouseMoveDirectionActionConfig:
@@ -90,6 +131,8 @@ class PressButton:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            mouse.press(str_to_button(self.config.button))
         return dummy_run(f"Pressing button: {self.config.button}")
 
 
@@ -100,6 +143,8 @@ class ReleaseButton:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            mouse.release(str_to_button(self.config.button))
         return dummy_run(f"Releasing button: {self.config.button}")
 
 
@@ -135,6 +180,8 @@ class MoveMouseRelative:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            mouse.move(self.config.x, self.config.y)
         return dummy_run(f"Moving mouse (relative) by: {self.config.x}, {self.config.y}")
 
 
@@ -145,6 +192,8 @@ class MoveMouseRelativeDirection:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            mouse.move(*MouseMoveDirection.to_cartesian(self.config.direction, self.config.distance))
         return dummy_run(f"Moving mouse (relative direction) by: {self.config.distance} in direction {self.config.direction.value}")
 
 
@@ -155,6 +204,11 @@ class PressKey:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            if len(self.config.key) > 1:
+                keyboard.press(Key[self.config.key])
+            else:
+                keyboard.press(self.config.key)
         return dummy_run(f"Pressing key: {self.config.key}")
 
 
@@ -165,6 +219,11 @@ class ReleaseKey:
 
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
+        if not DEBUG:
+            if len(self.config.key) > 1:
+                keyboard.release(Key[self.config.key])
+            else:
+                keyboard.release(self.config.key)
         return dummy_run(f"Releasing key: {self.config.key}")
 
 

@@ -74,7 +74,7 @@ def preamble(globalconfig: config.Config) -> str:
 \t\thttps://github.com/howroyd/twitchplays
 
 Valid commands are:\n{make_bot_commands(globalconfig)}
-\n\n
+\n
     """
 
 
@@ -95,9 +95,11 @@ if __name__ == "__main__":
         else:
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
 
-        print(f"Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}\n")
+        print(f"Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}")
+        print(f"Superuser{'s' if len(myconfig.superusers) > 1 else ''}: {', '.join(myconfig.superusers)}")
+        print()
 
-        mygui = gui.make_gui(myconfig)
+        mygui = gui.make_gui(myconfig, myactions)
 
         while True:
             mygui.update()  # Required otherwise you cant click stuff
@@ -111,6 +113,7 @@ if __name__ == "__main__":
             config.check_blocklist(msg.channel)
 
             tag = find_tag_by_command_in_actions(myactions, msg.payload)
+            to_run = None
 
             if tag is not None:
                 if not myconfig.enabled:
@@ -120,12 +123,12 @@ if __name__ == "__main__":
                 if config.check_blocklist(msg.username, abort=False, silent=True):
                     continue
 
-                print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
-                executor.submit(myactions[tag].run).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))
+                to_run = myactions[tag].run
 
             elif msg.username in myconfig.superusers:
                 command = msg.payload.strip().lower()
-                routine = mysuperuseractions.get(command, None)
-                if routine is not None:
-                    print(f"Running \'{command}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
-                    routine()
+                to_run = mysuperuseractions.get(command, None)
+
+            if to_run:
+                print(f"Running \'{tag}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
+                executor.submit(to_run).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))

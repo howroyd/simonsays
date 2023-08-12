@@ -61,6 +61,7 @@ class Config:
         peek_distance: int = 250
         toggle_duration: float = 0.1
         walk_duration: float = 3
+        sprint_duration: float = 3
         talk_duration: float = 10
 
     def get_config(self, name: str) -> PhasmoActionConfig | None:
@@ -152,6 +153,11 @@ class Walk(GenericPhasmoAction):
     def __post_init__(self) -> None:
         self.name = self.direction.value
 
+    def run(self) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: WalkConfig = self.config
+        return hidactions.PressReleaseKey(actionconfig.hidconfig, actionconfig.duration).run()
+
 
 @dataclasses.dataclass(slots=True)
 class WalkConfig:
@@ -210,6 +216,78 @@ class WalkRight(Walk):
 class WalkRightConfig(WalkConfig):
     """Walk right config"""
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("d"))
+
+
+def walk_direction_to_action(direction: WalkDirection) -> Walk | None:
+    """Convert a walk direction to an action"""
+    if direction == WalkDirection.FORWARD:
+        return WalkForward
+    elif direction == WalkDirection.BACKWARD:
+        return WalkBackward
+    elif direction == WalkDirection.LEFT:
+        return WalkLeft
+    elif direction == WalkDirection.RIGHT:
+        return WalkRight
+    else:
+        raise WalkDirectionUnknown(f"Unknown walk direction: {direction}")
+
+
+@dataclasses.dataclass(slots=True)
+class Sprint(Walk):
+    """Sprint in a direction"""
+
+    def __post_init__(self) -> None:
+        self.name = "sprint_" + self.direction.value
+
+    @property
+    def walk_action(self) -> Walk:
+        """Get the config for this action"""
+        match self.direction:
+            case WalkDirection.FORWARD:
+                return WalkForward(self.config_fn)
+            case WalkDirection.BACKWARD:
+                return WalkBackward(self.config_fn)
+            case WalkDirection.LEFT:
+                return WalkLeft(self.config_fn)
+            case WalkDirection.RIGHT:
+                return WalkRight(self.config_fn)
+            case _:
+                raise WalkDirectionUnknown(f"Unknown walk direction: {self.direction}")
+
+
+    def run(self) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: WalkConfig = self.config
+        sequence = actions.ActionSequence([
+            hidactions.PressKey(hidactions.KeyboardActionConfig("shift")),
+            self.walk_action,
+            hidactions.ReleaseKey(hidactions.KeyboardActionConfig("shift")),
+        ])
+        return sequence.run()
+
+
+@dataclasses.dataclass(slots=True)
+class SprintForward(Sprint):
+    """Sprint forward"""
+    direction: WalkDirection = WalkDirection.FORWARD
+
+
+@dataclasses.dataclass(slots=True)
+class SprintBackward(Sprint):
+    """Sprint backward"""
+    direction: WalkDirection = WalkDirection.BACKWARD
+
+
+@dataclasses.dataclass(slots=True)
+class SprintLeft(Sprint):
+    """Sprint left"""
+    direction: WalkDirection = WalkDirection.LEFT
+
+
+@dataclasses.dataclass(slots=True)
+class SprintRight(Sprint):
+    """Sprint right"""
+    direction: WalkDirection = WalkDirection.RIGHT
 
 #####################################################################
 
@@ -351,6 +429,7 @@ class LookConfig:
 class LookUp(GenericPhasmoAction):
     """Look up"""
     name: str = "look_up"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -363,6 +442,7 @@ class LookUpConfig(LookConfig):
 class LookDown(GenericPhasmoAction):
     """Look down"""
     name: str = "look_down"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -375,6 +455,7 @@ class LookDownConfig(LookConfig):
 class LookLeft(GenericPhasmoAction):
     """Look left"""
     name: str = "look_left"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -387,6 +468,7 @@ class LookLeftConfig(LookConfig):
 class LookRight(GenericPhasmoAction):
     """Look right"""
     name: str = "look_right"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -402,6 +484,7 @@ PeekConfig = LookConfig
 class PeekUp(GenericPhasmoAction):
     """Peek up"""
     name: str = "peek_up"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -414,6 +497,7 @@ class PeekUpConfig(PeekConfig):
 class PeekDown(GenericPhasmoAction):
     """Peek down"""
     name: str = "peek_down"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -426,6 +510,7 @@ class PeekDownConfig(PeekConfig):
 class PeekLeft(GenericPhasmoAction):
     """Peek left"""
     name: str = "peek_left"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -438,6 +523,7 @@ class PeekLeftConfig(PeekConfig):
 class PeekRight(GenericPhasmoAction):
     """Peek right"""
     name: str = "peek_right"
+    chained: bool = False
 
 
 @dataclasses.dataclass(slots=True)
@@ -577,7 +663,7 @@ class CycleItems(GenericPhasmoActionBase):
 class CycleItemsConfig:
     """Cycle through the inventory repeatedly config"""
     hidconfig: hidactions.Config = None
-    _pause: float = 0.5
+    _pause: float = 0.25
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
 
     def __post_init__(self) -> None:
@@ -639,7 +725,7 @@ class DropAllItems(GenericPhasmoActionBase):
     def run(self) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)])
+        sequence = actions.ActionSequence([Drop(self.config_fn), actions.Wait(actionconfig.pause), Switch(self.config_fn)])
         return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
 
 
@@ -647,7 +733,7 @@ class DropAllItems(GenericPhasmoActionBase):
 class DropAllItemsConfig:
     """Cycle through the inventory and drop each item config"""
     hidconfig: hidactions.Config = None
-    _pause: float = 0.25
+    _pause: float = 0.10
     _repeats: int = 3
 
     @property
@@ -674,7 +760,7 @@ class Spin(GenericPhasmoActionBase):
         actionconfig: PhasmoActionConfig = self.config
 
         direction = actionconfig.mousemovedirection or hidactions.MouseMoveDirection.RIGHT
-        distance = actionconfig.distance or LookRight().config.hidconfig.distance
+        distance = actionconfig.distance or (LookRight().config.hidconfig.distance // 5)
 
         look_action = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, direction))
         return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
@@ -684,10 +770,10 @@ class Spin(GenericPhasmoActionBase):
 class SpinConfig:
     """Cycle through the inventory and drop each item config"""
     hidconfig: hidactions.Config = None
-    _pause: float = 0.01
-    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+    _pause: float = 0.015
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (25, 50))
     _mousemovedirection: hidactions.MouseMoveDirection = None
-    _distance: int = Config.Defaults.look_distance
+    _distance: int = Config.Defaults.look_distance // 5
 
     def __post_init__(self) -> None:
         if not isinstance(self._repeats, tuple):
@@ -731,7 +817,12 @@ class Headbang(GenericPhasmoActionBase):
         if DEBUG:
             print(f"Headbang: repeats={repeats}, pause={pause}")
 
-        once = actions.ActionSequence([LookUp(self.config_fn), actions.Wait(pause), LookDown(self.config_fn)])
+        distance = actionconfig.distance or Config.Defaults.peek_distance
+
+        lookup = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, hidactions.MouseMoveDirection.UP))
+        lookdown = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, hidactions.MouseMoveDirection.DOWN))
+
+        once = actions.ActionSequence([lookup, actions.Wait(pause), lookdown])
         return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
 
 
@@ -741,6 +832,7 @@ class HeadbangConfig:
     hidconfig: hidactions.Config = None
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+    _distance: int = Config.Defaults.peek_distance
 
     def __post_init__(self) -> None:
         if not isinstance(self._repeats, tuple):
@@ -755,6 +847,11 @@ class HeadbangConfig:
     def repeats(self) -> int:
         """Get the repeats"""
         return random.randint(*self._repeats)
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
 
 #####################################################################
 
@@ -782,7 +879,6 @@ class RandomActionConfig:
         return self._actionlist()
 
 
-
 #####################################################################
 
 def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
@@ -792,6 +888,10 @@ def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
         WalkBackward(config_fn),
         WalkLeft(config_fn),
         WalkRight(config_fn),
+        SprintForward(config_fn),
+        SprintBackward(config_fn),
+        SprintLeft(config_fn),
+        SprintRight(config_fn),
         CrouchToggle(config_fn),
         JournalToggle(config_fn),
         Place(config_fn),
@@ -838,6 +938,10 @@ def default_config() -> Config:
         WalkBackward(None).name: WalkBackwardConfig(),
         WalkLeft(None).name: WalkLeftConfig(),
         WalkRight(None).name: WalkRightConfig(),
+        SprintForward(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
+        SprintBackward(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
+        SprintLeft(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
+        SprintRight(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
         CrouchToggle(None).name: CrouchToggleConfig(),
         JournalToggle(None).name: JournalToggleConfig(),
         Place(None).name: PlaceConfig(),

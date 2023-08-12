@@ -17,8 +17,8 @@ class TwitchActionConfig:
     """A config for a Twitch action"""
     command: str | tuple[str]
     enabled: bool = True
-    cooldown: int | None = None
-    random_chance: int | None = None
+    cooldown: int = 0
+    random_chance: int = 100
 
     def __post_init__(self) -> None:
         if not isinstance(self.command, (tuple, str)) and isinstance(self.command, Iterable):

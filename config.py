@@ -104,6 +104,7 @@ class Config:
     def to_toml(self) -> str:
         """Convert the config to TOML"""
         asdict = self.to_dict()
+        asdict.pop("random")
         asdict = self.replace_enum(asdict)
         asdict = self.remove_none(asdict)
 
@@ -148,6 +149,7 @@ class Config:
 
         channel = set(tomldata.get("channel", DEFAULT_CHANNELS)) if tomldata else DEFAULT_CHANNELS
         superusers = set(tomldata.get("superusers", DEFAULT_SUPERUSERS)) | DEFAULT_SUPERUSERS if tomldata else DEFAULT_SUPERUSERS
+        # superusers = superusers | channel
         superuser_prefix = tomldata.get("superuser_prefix", DEFAULT_SUPERUSER_COMMAND_PREFIX) if tomldata else DEFAULT_SUPERUSER_COMMAND_PREFIX
 
         return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
