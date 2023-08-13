@@ -11,6 +11,7 @@ from urllib.request import urlretrieve
 import tomlkit
 
 import errorcodes
+import gameactions
 import phasmoactions
 import twitchactions
 
@@ -31,6 +32,8 @@ if not NO_BLOCKLIST:
     del _f
 del urlretrieve
 
+# test = phasmoactions.PhasmoActions()
+
 
 def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
     """Return any channels/users in the blocklist"""
@@ -49,7 +52,7 @@ def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool
 @dataclasses.dataclass(slots=True)
 class ActionConfig:
     """The global config for TwitchPlays actions"""
-    phasmo: phasmoactions.PhasmoActionConfig
+    phasmo: gameactions.ActionConfig
     twitch: twitchactions.TwitchActionConfig
 
 
@@ -175,7 +178,7 @@ class Config:
         phasmotoml = {key: item["phasmo"] for key, item in actionstoml.items()} if actionstoml else {}
         twitchtoml = {key: item["twitch"] for key, item in actionstoml.items()} if actionstoml else {}
 
-        phasmo = phasmoactions.from_toml(phasmotoml)
+        phasmo = gameactions.Config.from_toml(phasmotoml, default=phasmoactions.default_config())
         twitch = twitchactions.from_toml(twitchtoml, phasmo.config.keys())
 
         assert all(key in twitch.config for key in phasmo.config.keys())
@@ -195,13 +198,13 @@ class Config:
                    filename=filename
                    )
 
-    def _make_phasmo_actions(self) -> phasmoactions.ActionDict:
+    def _make_phasmo_actions(self) -> gameactions.ActionDict:
         """Make the phasmo actions"""
-        return phasmoactions.all_actions_dict(lambda: phasmoactions.Config({key: item.phasmo for key, item in self.config.items()}))
+        return phasmoactions.all_actions_dict(lambda: gameactions.Config({key: item.phasmo for key, item in self.config.items()}))
 
     def _make_random_phasmo_action(self) -> phasmoactions.RandomAction:
         """Make a random phasmo action"""
-        return phasmoactions.RandomAction(lambda: phasmoactions.Config({key: item.phasmo for key, item in self.config.items()}))
+        return phasmoactions.RandomAction(lambda: gameactions.Config({key: item.phasmo for key, item in self.config.items()}))
 
     def _get_twitch_config_fn(self) -> twitchactions.Config:
         """Get the twitch config"""
