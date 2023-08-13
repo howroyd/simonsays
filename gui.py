@@ -8,7 +8,6 @@ from typing import Any, Callable
 
 import config
 import hidactions
-import twitchactions
 
 KEY_IGNORED_STR = 'ignored'
 
@@ -321,7 +320,7 @@ def set_enabled(cfg: config.Config, selection: tk.StringVar, state: bool) -> Non
     cfg.config[selection.get()].twitch.enabled = state
 
 
-def make_option_frame(where, cfg: config.Config, actions: twitchactions.ActionDict, selection: tk.StringVar) -> tuple[tk.Frame, dict]:
+def make_option_frame(where, cfg: config.Config, selection: tk.StringVar) -> tuple[tk.Frame, dict]:
     """Make the option frame"""
     FRAME_WIDTH = 400
 
@@ -344,11 +343,11 @@ def make_option_frame(where, cfg: config.Config, actions: twitchactions.ActionDi
     command_frame.pack()
     guivars[name.lower()] = var
 
-    if not actions[selection.get()].action.chained:
+    if not cfg.actions[selection.get()].action.chained:
         name = "Action type"
         action_type_frame, var = runtimeframes.make_dropdown_frame(name,
-                                                                get_hid_type_text(cfg, selection.get()),
-                                                                [hidtype.name for hidtype in hidactions.HidType])
+                                                                   get_hid_type_text(cfg, selection.get()),
+                                                                   [hidtype.name for hidtype in hidactions.HidType])
         action_type_frame.pack()
         guivars[name.lower()] = var
 
@@ -380,7 +379,7 @@ def make_option_frame(where, cfg: config.Config, actions: twitchactions.ActionDi
     return frame, guivars
 
 
-def update_from_selection(canvas: tk.Canvas, cfg: config.Config, actions: twitchactions.ActionDict, option_frame: tk.Frame | None, selection: tk.StringVar, var, index, mode) -> None:
+def update_from_selection(canvas: tk.Canvas, cfg: config.Config, option_frame: tk.Frame | None, selection: tk.StringVar, var, index, mode) -> None:
     """Update the vars from the selection"""
     window = canvas.winfo_toplevel()
 
@@ -392,11 +391,11 @@ def update_from_selection(canvas: tk.Canvas, cfg: config.Config, actions: twitch
         option_frame.destroy()
         option_frame = None
 
-    option_frame, _ = make_option_frame(canvas, cfg, actions, selection)
+    option_frame, _ = make_option_frame(canvas, cfg, selection)
     option_frame.pack(side=tk.TOP, anchor=tk.N, fill="none", pady=10, expand=True)
     option_frame.pack_propagate(False)
 
-    selection.trace_add("write", functools.partial(update_from_selection, canvas, cfg, actions, option_frame, selection))
+    selection.trace_add("write", functools.partial(update_from_selection, canvas, cfg, option_frame, selection))
 
     window.update()
 
@@ -416,7 +415,7 @@ def enabled_cb(cfg: config.Config, enabled_button: tk.Button, state_var: tk.Bool
         print("Enabled")
 
 
-def make_gui(cfg: config.Config, actions: twitchactions.ActionDict) -> tk.Tk:
+def make_gui(cfg: config.Config) -> tk.Tk:
     """Make the GUI"""
     canvas = make_canvas(cfg, "assets/Green_tato_640.png")
     window = canvas.winfo_toplevel()
@@ -424,7 +423,7 @@ def make_gui(cfg: config.Config, actions: twitchactions.ActionDict) -> tk.Tk:
     selection_frame, selection = make_selection_frame(canvas, cfg)
     selection_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
 
-    selection.trace_add("write", functools.partial(update_from_selection, canvas, cfg, actions, None, selection))
+    selection.trace_add("write", functools.partial(update_from_selection, canvas, cfg, None, selection))
     selection.set(next(iter(cfg.config)))
 
     enabled_state = tk.BooleanVar(canvas)

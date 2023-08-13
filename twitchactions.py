@@ -1,5 +1,6 @@
 #!./.venv/bin/python3
 import dataclasses
+import os
 import random
 import time
 from collections.abc import Iterable
@@ -9,7 +10,7 @@ import actions
 import errorcodes
 import phasmoactions
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG", False)
 
 
 @dataclasses.dataclass(slots=True)

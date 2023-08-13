@@ -1,4 +1,3 @@
-
 #!./.venv/bin/python3
 import dataclasses
 import multiprocessing as mp

@@ -1,6 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import os
 import random
 from typing import Any, Callable, Protocol
 
@@ -8,7 +9,7 @@ import actions
 import errorcodes
 import hidactions
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG", False)
 
 
 @dataclasses.dataclass(slots=True)

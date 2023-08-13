@@ -13,7 +13,7 @@ from typing import NoReturn, Protocol, Self
 
 import bufferedsocket
 
-RECORD_FILE = "irc.log"
+IRC_LOGFILE = os.getenv("IRC_LOGFILE", None)
 
 
 @enum.unique
@@ -165,18 +165,18 @@ class IrcThreadArgs:
 
 def _twitch_irc_thread(args: IrcThreadArgs) -> NoReturn:
     """Thread for reading from Twitch IRC server"""
-    if RECORD_FILE:
+    if IRC_LOGFILE:
         root = os.path.dirname(os.path.realpath(__file__))
         logdir = os.path.join(root, "logs")
         os.makedirs(logdir, exist_ok=True)
-        with open("./logs/" + RECORD_FILE, "a") as f:
+        with open("./logs/" + IRC_LOGFILE, "a") as f:
             f.write(f"Logging in {__file__} at {datetime.datetime.now().isoformat()}\n")
 
     while True:
         try:
             print("Connecting to Twitch IRC server")
 
-            with IrcSocketManaged(args.address, args.timeout) as irc, open("./logs/" + RECORD_FILE, "a") if RECORD_FILE else contextlib.nullcontext() as record_file:
+            with IrcSocketManaged(args.address, args.timeout) as irc, open("./logs/" + IRC_LOGFILE, "a") if IRC_LOGFILE else contextlib.nullcontext() as record_file:
                 irc.write(f'PASS {args.oauth}\r\n')
                 irc.write(f'NICK {args.username}\r\n')
                 [irc.write(f'JOIN #{channel.strip().lower()}\r\n') for channel in args.channel]

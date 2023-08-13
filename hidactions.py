@@ -1,15 +1,16 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import os
+import platform
 from typing import Any, Protocol, Self
+
+from pynput.keyboard import Controller as Keyboard
+from pynput.keyboard import Key
 
 import actions
 import errorcodes
 
-from pynput.keyboard import Key
-from pynput.keyboard import Controller as Keyboard
-
-import platform
 if platform.platform().startswith("Windows"):
     from pynput.mouse._win32 import Button
     from pynput.mouse._win32 import Controller as Mouse
@@ -19,7 +20,7 @@ elif platform.platform().startswith("Linux"):
 else:
     raise NotImplementedError(f"Unknown platform: {platform.platform()}")
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG", False)
 keyboard = Keyboard()
 mouse = Mouse()
 

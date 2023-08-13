@@ -1,0 +1,4 @@
+DEBUG=false
+OFFLINE=false
+NO_BLOCKLIST=false
+IRC_LOGFILE=

@@ -1,12 +1,13 @@
 #!./.venv/bin/python3
 import dataclasses
+import os
 import random
 import time
 from typing import Protocol
 
 import errorcodes
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG", False)
 
 
 @dataclasses.dataclass(slots=True)

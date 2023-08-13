@@ -1,9 +1,11 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import functools
 import hashlib
+import os
 import shutil
-from typing import NoReturn, Self
+from typing import Callable, NoReturn, Self
 from urllib.request import urlretrieve
 
 import tomlkit
@@ -12,8 +14,8 @@ import errorcodes
 import phasmoactions
 import twitchactions
 
-OFFLINE = True
-NO_BLOCKLIST = OFFLINE
+OFFLINE = os.getenv("OFFLINE", False)
+NO_BLOCKLIST = os.getenv("NO_BLOCKLIST", OFFLINE)
 
 DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNELS = {"drgreengiant"}
@@ -65,12 +67,27 @@ class Config:
     superuser_prefix: str = DEFAULT_SUPERUSER_COMMAND_PREFIX
     bots: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_BOTS)
     filename: str = DEFAULT_FILENAME
+    actions: twitchactions.ActionDict = dataclasses.field(init=False, default_factory=dict)
 
     def __post_init__(self):
         self.channel = self.channel if isinstance(self.channel, set) else set(self.channel)
         self.superusers = self.superusers if isinstance(self.superusers, set) else set(self.superusers)
         self.bots = self.bots if isinstance(self.bots, set) else set(self.bots)
         check_blocklist(self.channel)
+
+        actions = self._make_twitch_actions()
+        randomaction, randomconfig = self._make_random_twitch_action(actions)
+        actions.update(randomaction)
+
+        self.config.update(randomconfig)
+        self.actions = actions
+
+    def find_tag_by_command(self, command: str) -> str | None:
+        """Find a tag by command"""
+        for key, action in self.actions.items():
+            if action.check_command(command):
+                return key
+        return None
 
     @staticmethod
     def root_keys() -> set[str]:
@@ -177,3 +194,42 @@ class Config:
                    bots=bots,
                    filename=filename
                    )
+
+    def _make_phasmo_actions(self) -> phasmoactions.ActionDict:
+        """Make the phasmo actions"""
+        return phasmoactions.all_actions_dict(lambda: phasmoactions.Config({key: item.phasmo for key, item in self.config.items()}))
+
+    def _make_random_phasmo_action(self) -> phasmoactions.RandomAction:
+        """Make a random phasmo action"""
+        return phasmoactions.RandomAction(lambda: phasmoactions.Config({key: item.phasmo for key, item in self.config.items()}))
+
+    def _get_twitch_config_fn(self) -> twitchactions.Config:
+        """Get the twitch config"""
+        return lambda: twitchactions.Config({key: item.twitch for key, item in self.config.items()})
+
+    def _make_twitch_actions(self) -> twitchactions.ActionDict:
+        """Make the twitch actions"""
+        return {key: twitchactions.TwitchAction(self._get_twitch_config_fn(), key, value) for key, value in self._make_phasmo_actions().items()}
+
+    def _make_random_twitch_action(self, existingactions: twitchactions.ActionDict) -> tuple[twitchactions.ActionDict, ConfigDict]:
+        """Make a random twitch action"""
+        random_action = self._make_random_phasmo_action()
+
+        random_config = ActionConfig(
+            phasmo=phasmoactions.RandomActionConfig(lambda: existingactions),
+            twitch=twitchactions.TwitchActionConfig(random_action.name, random_chance=10)
+        )
+
+        twitchactiondict = {random_action.name: twitchactions.TwitchAction(self._get_twitch_config_fn(), random_action.name, random_action, force_underlying=True)}
+        configdict = {random_action.name: random_config}
+
+        return twitchactiondict, configdict
+
+    def _make_superuser_actions(self, twitch_actions: twitchactions.ActionDict) -> dict[str, Callable]:
+        """Make the superuser actions"""
+        superuser_actions = {self.superuser_prefix + " " + key: functools.partial(value.run, force=True) for key, value in twitch_actions.items()}
+
+        return {
+            self.superuser_prefix + " reload": lambda: print("Reload!"),  # TODO
+            self.superuser_prefix + " reset": lambda: [action.clear_cooldown() for action in twitch_actions.values()],
+        } | superuser_actions
