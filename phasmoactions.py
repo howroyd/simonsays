@@ -57,6 +57,7 @@ class Config:
         toggle_duration: float = 0.1
         walk_duration: float = 3
         sprint_duration: float = 3
+        sprint_key: str = "shift"
         talk_duration: float = 10
 
     def get_config(self, name: str) -> PhasmoActionConfig | None:
@@ -137,6 +138,20 @@ class WalkDirection(enum.Enum):
         """Handle missing values"""
         raise self.WalkDirectionUnknown(f"Unknown walk direction: {value}")
 
+    def to_action(self) -> "Walk":
+        """Convert a walk direction to an action"""
+        match self:
+            case self.FORWARD:
+                return WalkForward
+            case self.BACKWARD:
+                return WalkBackward
+            case self.LEFT:
+                return WalkLeft
+            case self.RIGHT:
+                return WalkRight
+            case _:
+                raise WalkDirectionUnknown(f"Unknown walk direction: {self}")
+
 
 @dataclasses.dataclass(slots=True)
 class Walk(GenericPhasmoAction):
@@ -212,19 +227,7 @@ class WalkRightConfig(WalkConfig):
     """Walk right config"""
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("d"))
 
-
-def walk_direction_to_action(direction: WalkDirection) -> Walk | None:
-    """Convert a walk direction to an action"""
-    if direction == WalkDirection.FORWARD:
-        return WalkForward
-    elif direction == WalkDirection.BACKWARD:
-        return WalkBackward
-    elif direction == WalkDirection.LEFT:
-        return WalkLeft
-    elif direction == WalkDirection.RIGHT:
-        return WalkRight
-    else:
-        raise WalkDirectionUnknown(f"Unknown walk direction: {direction}")
+#####################################################################
 
 
 @dataclasses.dataclass(slots=True)
@@ -234,28 +237,26 @@ class Sprint(Walk):
     def __post_init__(self) -> None:
         self.name = "sprint_" + self.direction.value
 
-    @property
-    def walk_action(self) -> Walk:
-        """Get the config for this action"""
-        match self.direction:
-            case WalkDirection.FORWARD:
-                return WalkForward(self.config_fn)
-            case WalkDirection.BACKWARD:
-                return WalkBackward(self.config_fn)
-            case WalkDirection.LEFT:
-                return WalkLeft(self.config_fn)
-            case WalkDirection.RIGHT:
-                return WalkRight(self.config_fn)
-            case _:
-                raise WalkDirectionUnknown(f"Unknown walk direction: {self.direction}")
-
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
+        actionconfig: SprintConfig = self.config
+
         return actions.ActionSequence([
-            hidactions.PressKey(hidactions.KeyboardActionConfig("shift")),
-            self.walk_action,
-            hidactions.ReleaseKey(hidactions.KeyboardActionConfig("shift")),
+            hidactions.PressKey(actionconfig.hidconfig),
+            self.direction.to_action()(self.config_fn),
+            hidactions.ReleaseKey(actionconfig.hidconfig),
         ]).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class SprintConfig:
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig(Config.Defaults.sprint_key))
+    _duration: float = Config.Defaults.sprint_duration
+
+    @property
+    def duration(self) -> float:
+        """Get the duration"""
+        return self._duration
 
 
 @dataclasses.dataclass(slots=True)
@@ -549,7 +550,7 @@ class Box(GenericPhasmoAction):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: BoxConfig = self.config
         return actions.ActionSequence([Use(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)]).run(force=force)
 
 
@@ -575,7 +576,7 @@ class Teabag(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: TeabagConfig = self.config
         return actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
@@ -611,7 +612,7 @@ class Disco(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: DiscoConfig = self.config
         return actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
@@ -647,7 +648,7 @@ class CycleItems(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: CycleItemsConfig = self.config
         return actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
@@ -683,7 +684,7 @@ class CycleItemsAndUse(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: CycleItemsAndUseConfig = self.config
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Use(self.config_fn)])
         return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
@@ -716,7 +717,7 @@ class DropAllItems(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: DropAllItemsConfig = self.config
         sequence = actions.ActionSequence([Drop(self.config_fn), actions.Wait(actionconfig.pause), Switch(self.config_fn)])
         return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
@@ -749,7 +750,7 @@ class Spin(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: SpinConfig = self.config
 
         direction = actionconfig.mousemovedirection or hidactions.MouseMoveDirection.RIGHT
         distance = actionconfig.distance or (LookRight().config.hidconfig.distance // 5)
@@ -802,7 +803,7 @@ class Headbang(GenericPhasmoActionBase):
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: PhasmoActionConfig = self.config
+        actionconfig: HeadbangConfig = self.config
         repeats = actionconfig.repeats
         pause = actionconfig.pause
 
@@ -931,10 +932,10 @@ def default_config() -> Config:
         WalkBackward(None).name: WalkBackwardConfig(),
         WalkLeft(None).name: WalkLeftConfig(),
         WalkRight(None).name: WalkRightConfig(),
-        SprintForward(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
-        SprintBackward(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
-        SprintLeft(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
-        SprintRight(None).name: WalkForwardConfig(_duration=Config.Defaults.sprint_duration),
+        SprintForward(None).name: SprintConfig(),
+        SprintBackward(None).name: SprintConfig(),
+        SprintLeft(None).name: SprintConfig(),
+        SprintRight(None).name: SprintConfig(),
         CrouchToggle(None).name: CrouchToggleConfig(),
         JournalToggle(None).name: JournalToggleConfig(),
         Place(None).name: PlaceConfig(),

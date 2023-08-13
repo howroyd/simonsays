@@ -13,7 +13,6 @@ import twitchactions
 import twitchirc
 
 VERSION = "2.0.0"
-OFFLINE = True
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
@@ -144,7 +143,7 @@ if __name__ == "__main__":
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
         irc = None
-        if OFFLINE:
+        if config.OFFLINE:
             irc = stack.enter_context(offlineirc.OfflineIrc(myconfig.channel, username="drgreengiant"))
         else:
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))

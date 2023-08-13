@@ -12,16 +12,22 @@ import errorcodes
 import phasmoactions
 import twitchactions
 
+OFFLINE = True
+NO_BLOCKLIST = OFFLINE
+
 DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNELS = {"drgreengiant"}
 DEFAULT_SUPERUSERS = {"drgreengiant"}
 DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
 DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 
-_f = open(urlretrieve("https://github.com/howroyd/twitchplays/releases/latest/download/blocklist")[0], "r")
-BLOCKLIST = _f.readlines()
-_f.close()
-del _f
+BLOCKLIST = []
+if not NO_BLOCKLIST:
+    _f = open(urlretrieve("https://github.com/howroyd/twitchplays/releases/latest/download/blocklist")[0], "r")
+    BLOCKLIST = _f.readlines()
+    _f.close()
+    del _f
+del urlretrieve
 
 
 def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
