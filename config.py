@@ -16,6 +16,7 @@ DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNELS = {"drgreengiant"}
 DEFAULT_SUPERUSERS = {"drgreengiant"}
 DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
+DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 
 _f = open(urlretrieve("https://github.com/howroyd/twitchplays/releases/latest/download/blocklist")[0], "r")
 BLOCKLIST = _f.readlines()
@@ -56,11 +57,13 @@ class Config:
     channel: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_CHANNELS)
     superusers: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_SUPERUSERS)
     superuser_prefix: str = DEFAULT_SUPERUSER_COMMAND_PREFIX
+    bots: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_BOTS)
     filename: str = DEFAULT_FILENAME
 
     def __post_init__(self):
         self.channel = self.channel if isinstance(self.channel, set) else set(self.channel)
         self.superusers = self.superusers if isinstance(self.superusers, set) else set(self.superusers)
+        self.bots = self.bots if isinstance(self.bots, set) else set(self.bots)
         check_blocklist(self.channel)
 
     @staticmethod
@@ -72,6 +75,7 @@ class Config:
             "channel",
             "superusers",
             "superuser_prefix",
+            "bots",
             "filename",
         ]
 
@@ -104,11 +108,17 @@ class Config:
     def to_toml(self) -> str:
         """Convert the config to TOML"""
         asdict = self.to_dict()
-        asdict.pop("random")
+        asdict.pop("random")  # TODO this should maybe be a "dont_save" flag in the action config??
         asdict = self.replace_enum(asdict)
         asdict = self.remove_none(asdict)
 
-        return tomlkit.dumps(asdict | {"version": self.version, "channel": list(self.channel), "superusers": list(self.superusers)})
+        return tomlkit.dumps(asdict | {
+            "version": self.version,
+            "channel": list(self.channel),
+            "superusers": list(self.superusers),
+            "superuser_prefix": self.superuser_prefix,
+            "bots": list(self.bots),
+        })
 
     def save(self, *, backup_old: bool = False) -> None:
         """Save the config to file"""
@@ -151,11 +161,13 @@ class Config:
         superusers = set(tomldata.get("superusers", DEFAULT_SUPERUSERS)) | DEFAULT_SUPERUSERS if tomldata else DEFAULT_SUPERUSERS
         # superusers = superusers | channel
         superuser_prefix = tomldata.get("superuser_prefix", DEFAULT_SUPERUSER_COMMAND_PREFIX) if tomldata else DEFAULT_SUPERUSER_COMMAND_PREFIX
+        bots = set(tomldata.get("bots", DEFAULT_BOTS)) if tomldata else DEFAULT_BOTS
 
         return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
                    version=version,
                    channel=channel,
                    superusers=superusers,
                    superuser_prefix=superuser_prefix,
+                   bots=bots,
                    filename=filename
                    )

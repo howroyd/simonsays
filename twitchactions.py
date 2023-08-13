@@ -15,13 +15,16 @@ DEBUG = False
 @dataclasses.dataclass(slots=True)
 class TwitchActionConfig:
     """A config for a Twitch action"""
-    command: str | tuple[str]
+    command: tuple[str]
     enabled: bool = True
     cooldown: int = 0
     random_chance: int = 100
+    forced: bool = False
 
     def __post_init__(self) -> None:
-        if not isinstance(self.command, (tuple, str)) and isinstance(self.command, Iterable):
+        if isinstance(self.command, str):
+            self.command = (self.command,)
+        elif not isinstance(self.command, tuple) and isinstance(self.command, Iterable):
             self.command = tuple(self.command)
 
     def check_command(self, command: str) -> bool:
@@ -77,13 +80,14 @@ class TwitchAction(GenericTwitchAction, actions.Action):
     """A Twitch action"""
     name: str
     action: actions.Action
+    force_underlying: bool = False
     last_used: float = 0.0
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: TwitchActionConfig = self.config
 
-        if not force:
+        if not force and not self.config.forced:
             if not actionconfig.enabled:
                 if DEBUG:
                     print(f"Action {self.name} is disabled")
@@ -103,7 +107,7 @@ class TwitchAction(GenericTwitchAction, actions.Action):
         if DEBUG:
             print(f"Running action {self.name}")
 
-        return self.action.run()
+        return self.action.run(force=force or self.force_underlying)
 
     @property
     def config(self) -> TwitchActionConfig | None:
@@ -151,7 +155,7 @@ ActionDict = dict[str, TwitchAction]
 
 def default_config(keys: Iterable[str]) -> Config:
     """Get the default config"""
-    return Config({key: TwitchActionConfig(key) for key in keys})
+    return Config({key: TwitchActionConfig(key.replace("_", " ")) for key in keys})
 
 
 def from_toml(existing: dict[str, dict[str, Any]], keys: Iterable[str]) -> Config:
@@ -226,10 +230,10 @@ if __name__ == "__main__":
         return global_config.twitchconfig
 
     myactions = {key: TwitchAction(get_twitch_config, key, value) for key, value in phasmoactions.all_actions_dict(get_phasmo_config).items()}
-    myactions["look_up"].run()
-    myactions["look_down"].run()
-    myactions["look_down"].run()
-    myactions["headbang"].run()
-    myactions["headbang"].run()
-    myactions["headbang"].run()
-    myactions["look_down"].run()
+    myactions["look_up"].run(force=force)
+    myactions["look_down"].run(force=force)
+    myactions["look_down"].run(force=force)
+    myactions["headbang"].run(force=force)
+    myactions["headbang"].run(force=force)
+    myactions["headbang"].run(force=force)
+    myactions["look_down"].run(force=force)

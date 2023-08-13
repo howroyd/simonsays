@@ -9,8 +9,15 @@ import errorcodes
 from pynput.keyboard import Key
 from pynput.keyboard import Controller as Keyboard
 
-from pynput.mouse._win32 import Button
-from pynput.mouse._win32 import Controller as Mouse
+import platform
+if platform.platform().startswith("Windows"):
+    from pynput.mouse._win32 import Button
+    from pynput.mouse._win32 import Controller as Mouse
+elif platform.platform().startswith("Linux"):
+    from pynput.mouse import Button
+    from pynput.mouse import Controller as Mouse
+else:
+    raise NotImplementedError(f"Unknown platform: {platform.platform()}")
 
 DEBUG = False
 keyboard = Keyboard()
@@ -129,7 +136,7 @@ class PressButton:
     """Press a mouse button"""
     config: MouseButtonActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             mouse.press(str_to_button(self.config.button))
@@ -141,7 +148,7 @@ class ReleaseButton:
     """Release a mouse button"""
     config: MouseButtonActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             mouse.release(str_to_button(self.config.button))
@@ -154,12 +161,12 @@ class PressReleaseButton:
     config: MouseButtonActionConfig
     delay: float = 0.1
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         return errorcodes.errorset([
-            PressButton(self.config).run(),
-            actions.Wait(self.delay).run(),
-            ReleaseButton(self.config).run()
+            PressButton(self.config).run(force=force),
+            actions.Wait(self.delay).run(force=force),
+            ReleaseButton(self.config).run(force=force)
         ])
 
 
@@ -168,7 +175,7 @@ class MoveMouse:
     """Move the mouse"""
     config: MouseMoveCartesianActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         return dummy_run(f"Moving mouse to: {self.config.x}, {self.config.y}")
 
@@ -178,7 +185,7 @@ class MoveMouseRelative:
     """Move the mouse relative to its current position"""
     config: MouseMoveCartesianActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             mouse.move(self.config.x, self.config.y)
@@ -190,7 +197,7 @@ class MoveMouseRelativeDirection:
     """Move the mouse relative to its current position in a direction"""
     config: MouseMoveDirectionActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             mouse.move(*MouseMoveDirection.to_cartesian(self.config.direction, self.config.distance))
@@ -202,7 +209,7 @@ class PressKey:
     """Press a key"""
     config: KeyboardActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             if len(self.config.key) > 1:
@@ -217,7 +224,7 @@ class ReleaseKey:
     """Release a key"""
     config: KeyboardActionConfig
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if not DEBUG:
             if len(self.config.key) > 1:
@@ -233,10 +240,10 @@ class PressReleaseKey:
     config: KeyboardActionConfig
     delay: float = 0.1
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         return errorcodes.errorset([
-            PressKey(self.config).run(),
-            actions.Wait(self.delay).run(),
-            ReleaseKey(self.config).run()
+            PressKey(self.config).run(force=force),
+            actions.Wait(self.delay).run(force=force),
+            ReleaseKey(self.config).run(force=force)
         ])

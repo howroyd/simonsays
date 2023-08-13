@@ -13,7 +13,7 @@ DEBUG = False
 class Action(Protocol):
     """Protocol for actions that can be run"""
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         ...
 
@@ -24,9 +24,9 @@ class ActionRepeat:
     action: Action
     times: int
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        return errorcodes.errorset([self.action.run() for _ in range(self.times)])
+        return errorcodes.errorset([self.action.run(force=force) for _ in range(self.times)])
 
 
 @dataclasses.dataclass(slots=True)
@@ -34,9 +34,9 @@ class ActionSequence:
     """Run actions in sequence"""
     actions: list[Action]
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        return errorcodes.errorset([action.run() for action in self.actions])
+        return errorcodes.errorset([action.run(force=force) for action in self.actions])
 
 
 @dataclasses.dataclass(slots=True)
@@ -44,7 +44,7 @@ class Wait:
     """Wait for a duration"""
     duration: float
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if DEBUG:
             print(f"Waiting for {self.duration} seconds")
@@ -67,7 +67,7 @@ class WaitRandom:
         """Post init"""
         self.recalculate_wait_time()
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         if DEBUG:
             print(f"Waiting for {self.wait_time:.2f} seconds")
@@ -83,14 +83,14 @@ class ActionRepeatWithWait:
     wait: Wait | WaitRandom
     recalculate_wait: bool = False  # Recalculate the wait time each time if random
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         ret = []
         for _ in range(self.times):
-            ret.append(self.action.run())
+            ret.append(self.action.run(force=force))
             if self.recalculate_wait:
                 self.wait.recalculate_wait_time()
-            ret.append(self.wait.run())
+            ret.append(self.wait.run(force=force))
         return errorcodes.errorset(ret)
 
 
@@ -100,6 +100,6 @@ ActionDict = dict[str, Action]
 if __name__ == "__main__":
     print("Hello World!")
 
-    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=False).run()
+    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=False).run(force=force)
     print()
-    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=True).run()
+    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=True).run(force=force)

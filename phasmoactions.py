@@ -50,11 +50,6 @@ class Config:
     """The global config for all Phasmophobia actions"""
     config: dict[str, PhasmoActionConfig] = dataclasses.field(default_factory=dict)
 
-    def __post_init__(self) -> None:
-        self.config.update({
-            RandomAction(None).name: RandomActionConfig(lambda: [v for k, v in self.config.items() if k != RandomAction(None).name])
-        })
-
     class Defaults:
         """Default values"""
         look_distance: int = 500
@@ -103,7 +98,7 @@ class GenericPhasmoActionBase:
 class GenericPhasmoAction(GenericPhasmoActionBase):
     """Generic Phasmophobia action"""
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
 
@@ -111,13 +106,13 @@ class GenericPhasmoAction(GenericPhasmoActionBase):
             return errorcodes.errorset(errorcodes.ErrorCode.LOOKUP_FAILURE)
 
         if isinstance(actionconfig.hidconfig, hidactions.KeyboardActionConfig):
-            return hidactions.PressReleaseKey(actionconfig.hidconfig).run()
+            return hidactions.PressReleaseKey(actionconfig.hidconfig).run(force=force)
         elif isinstance(actionconfig.hidconfig, hidactions.MouseButtonActionConfig):
-            return hidactions.PressReleaseButton(actionconfig.hidconfig).run()
+            return hidactions.PressReleaseButton(actionconfig.hidconfig).run(force=force)
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveCartesianActionConfig):
-            return hidactions.MoveMouseRelative(actionconfig.hidconfig).run()
+            return hidactions.MoveMouseRelative(actionconfig.hidconfig).run(force=force)
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionActionConfig):
-            return hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run()
+            return hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run(force=force)
         else:
             return errorcodes.errorset(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 
@@ -153,10 +148,10 @@ class Walk(GenericPhasmoAction):
     def __post_init__(self) -> None:
         self.name = self.direction.value
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: WalkConfig = self.config
-        return hidactions.PressReleaseKey(actionconfig.hidconfig, actionconfig.duration).run()
+        return hidactions.PressReleaseKey(actionconfig.hidconfig, actionconfig.duration).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -254,16 +249,13 @@ class Sprint(Walk):
             case _:
                 raise WalkDirectionUnknown(f"Unknown walk direction: {self.direction}")
 
-
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        actionconfig: WalkConfig = self.config
-        sequence = actions.ActionSequence([
+        return actions.ActionSequence([
             hidactions.PressKey(hidactions.KeyboardActionConfig("shift")),
             self.walk_action,
             hidactions.ReleaseKey(hidactions.KeyboardActionConfig("shift")),
-        ])
-        return sequence.run()
+        ]).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -555,10 +547,10 @@ class Box(GenericPhasmoAction):
     name: str = "box"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        return actions.ActionSequence([Use(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)]).run()
+        return actions.ActionSequence([Use(self.config_fn), actions.Wait(actionconfig.pause), Drop(self.config_fn)]).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -581,10 +573,10 @@ class Teabag(GenericPhasmoActionBase):
     name: str = "teabag"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        return actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(CrouchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -617,10 +609,10 @@ class Disco(GenericPhasmoActionBase):
     name: str = "disco"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        return actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(TorchToggle(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -653,10 +645,10 @@ class CycleItems(GenericPhasmoActionBase):
     name: str = "cycle"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
-        return actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(Switch(self.config_fn), actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -686,14 +678,14 @@ class CycleItemsConfig:
 @dataclasses.dataclass(slots=True)
 class CycleItemsAndUse(GenericPhasmoActionBase):
     """Cycle through the inventory and use the item, repeatedly"""
-    name: str = "cycle_items_and_use"
+    name: str = "rekt"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         sequence = actions.ActionSequence([Switch(self.config_fn), actions.Wait(actionconfig.pause), Use(self.config_fn)])
-        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -719,14 +711,14 @@ class CycleItemsAndUseConfig:
 @dataclasses.dataclass(slots=True)
 class DropAllItems(GenericPhasmoActionBase):
     """Cycle through the inventory and drop each item"""
-    name: str = "drop_all_items"
+    name: str = "yeet"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         sequence = actions.ActionSequence([Drop(self.config_fn), actions.Wait(actionconfig.pause), Switch(self.config_fn)])
-        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(sequence, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -751,11 +743,11 @@ class DropAllItemsConfig:
 
 @dataclasses.dataclass(slots=True)
 class Spin(GenericPhasmoActionBase):
-    """Cycle through the inventory and drop each item"""
+    """Spin on the spot"""
     name: str = "spin"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
 
@@ -763,12 +755,12 @@ class Spin(GenericPhasmoActionBase):
         distance = actionconfig.distance or (LookRight().config.hidconfig.distance // 5)
 
         look_action = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, direction))
-        return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run()
+        return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
 class SpinConfig:
-    """Cycle through the inventory and drop each item config"""
+    """Spin on the spot config"""
     hidconfig: hidactions.Config = None
     _pause: float = 0.015
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (25, 50))
@@ -808,7 +800,7 @@ class Headbang(GenericPhasmoActionBase):
     name: str = "headbang"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: PhasmoActionConfig = self.config
         repeats = actionconfig.repeats
@@ -823,7 +815,7 @@ class Headbang(GenericPhasmoActionBase):
         lookdown = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, hidactions.MouseMoveDirection.DOWN))
 
         once = actions.ActionSequence([lookup, actions.Wait(pause), lookdown])
-        return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run()
+        return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -862,21 +854,23 @@ class RandomAction(GenericPhasmoActionBase):
     name: str = "random"
     chained: bool = True
 
-    def run(self) -> errorcodes.ErrorSet:
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        return random.choice(actionconfig.actionlist).run()
+        tag, randomaction = random.choice([(k, v) for k, v in self.config.actiondict.items() if k != self.name])
+        print(f"RandomAction: {tag}")
+        return randomaction.run()
 
 
 @dataclasses.dataclass(slots=True)
 class RandomActionConfig:
     """Look up and down repeatedly config"""
-    _actionlist: Callable[[], list[PhasmoAction]]
+    _actiondict: Callable[[], ActionDict]
     hidconfig: hidactions.Config = None
 
     @property
-    def actionlist(self) -> list[PhasmoAction]:
-        """Get the action list"""
-        return self._actionlist()
+    def actiondict(self) -> ActionDict:
+        """Get the action dictionary"""
+        return self._actiondict()
 
 
 #####################################################################
@@ -917,7 +911,6 @@ def all_actions(config_fn: ConfigFn) -> list[PhasmoAction]:
         DropAllItems(config_fn),
         Spin(config_fn),
         Headbang(config_fn),
-        RandomAction(config_fn),
     ]
 
 
@@ -1031,6 +1024,6 @@ if __name__ == "__main__":
 
     myactions = all_actions_dict(lambda: config)
 
-    myactions["look_up"].run()
-    myactions["look_down"].run()
-    myactions["headbang"].run()
+    myactions["look_up"].run(force=force)
+    myactions["look_down"].run(force=force)
+    myactions["headbang"].run(force=force)
