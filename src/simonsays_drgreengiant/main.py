@@ -8,7 +8,7 @@ import errorcodes
 import gui
 import offlineirc
 import twitchactions
-import twitchirc
+from twitchirc_drgreengiant import twitchirc
 
 VERSION = "2.0.0"
 
@@ -23,12 +23,12 @@ def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> 
         print(f"Failed \'{tag}\' from {msg.username} ({result=})")
 
 
-def make_commands_str(globalconfig: config.Config) -> str:
+def make_commands_str(myconfig: config.Config) -> str:
     """Make a command string to paste into chat"""
-    return ", ".join((f"{value.twitch.command[0]}" for value in globalconfig.config.values()))
+    return ", ".join((f"{value.twitch.command[0]}" for value in myconfig.config.values()))
 
 
-def preamble(globalconfig: config.Config) -> str:
+def preamble(myconfig: config.Config) -> str:
     """Make the preamble"""
     return f"""\n\t\t--- TwitchPlays v{VERSION} ---\n
 \tCreated by DrGreenGiant (Simon Howroyd)
@@ -39,8 +39,15 @@ def preamble(globalconfig: config.Config) -> str:
 \tFor more information on this software, visit:
 \t\thttps://github.com/howroyd/twitchplays
 
-Valid commands are:\n{make_commands_str(globalconfig)}
+Valid commands are:\n{make_commands_str(myconfig)}
 \n
+    """
+
+
+def channel_connected(myconfig: config.Config) -> None:
+    """Make the text to print when connected to a channel"""
+    return f"""Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}\n
+    Superuser{'s' if len(myconfig.superusers) > 1 else ''}: {', '.join(myconfig.superusers)}\n
     """
 
 
@@ -86,9 +93,7 @@ if __name__ == "__main__":
         else:
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
 
-        print(f"Connected to Twitch channel{'s' if len(myconfig.channel) > 1 else ''}: {', '.join(myconfig.channel)}")
-        print(f"Superuser{'s' if len(myconfig.superusers) > 1 else ''}: {', '.join(myconfig.superusers)}")
-        print()
+        print(channel_connected(myconfig))
 
         mygui = gui.make_gui(myconfig)
 

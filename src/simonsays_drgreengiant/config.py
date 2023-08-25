@@ -3,20 +3,20 @@ import dataclasses
 import enum
 import functools
 import hashlib
-import os
 import shutil
 from typing import Callable, NoReturn, Self
 from urllib.request import urlretrieve
 
 import tomlkit
 
+import environment
 import errorcodes
 import gameactions
 import phasmoactions
 import twitchactions
 
-OFFLINE = os.getenv("OFFLINE", False)
-NO_BLOCKLIST = os.getenv("NO_BLOCKLIST", OFFLINE)
+OFFLINE = environment.getenvboolean("OFFLINE", False)
+NO_BLOCKLIST = environment.getenvboolean("NO_BLOCKLIST", OFFLINE)
 
 DEFAULT_FILENAME = "config.toml"
 DEFAULT_CHANNELS = {"drgreengiant"}

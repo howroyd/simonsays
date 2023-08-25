@@ -1,7 +1,6 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-import os
 import platform
 from typing import Any, Protocol, Self
 
@@ -9,6 +8,7 @@ from pynput.keyboard import Controller as Keyboard
 from pynput.keyboard import Key
 
 import actions
+import environment
 import errorcodes
 
 if platform.platform().startswith("Windows"):
@@ -20,7 +20,7 @@ elif platform.platform().startswith("Linux"):
 else:
     raise NotImplementedError(f"Unknown platform: {platform.platform()}")
 
-DEBUG = os.getenv("DEBUG", False)
+DEBUG = environment.getenvboolean("DEBUG", False)
 keyboard = Keyboard()
 mouse = Mouse()
 

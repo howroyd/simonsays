@@ -1,16 +1,16 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
-import os
 import random
 from typing import Any, Callable, ClassVar
 
 import actions
+import environment
 import errorcodes
 import gameactions
 import hidactions
 
-DEBUG = os.getenv("DEBUG", False)
+DEBUG = environment.getenvboolean("DEBUG", False)
 
 GenericActionBase = gameactions.GenericActionBase
 GenericAction = gameactions.GenericAction

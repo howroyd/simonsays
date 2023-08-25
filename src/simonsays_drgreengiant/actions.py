@@ -1,13 +1,13 @@
 #!./.venv/bin/python3
 import dataclasses
-import os
 import random
 import time
 from typing import Protocol
 
+import environment
 import errorcodes
 
-DEBUG = os.getenv("DEBUG", False)
+DEBUG = environment.getenvboolean("DEBUG", False)
 
 
 @dataclasses.dataclass(slots=True)
@@ -96,11 +96,3 @@ class ActionRepeatWithWait:
 
 
 ActionDict = dict[str, Action]
-
-
-if __name__ == "__main__":
-    print("Hello World!")
-
-    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=False).run(force=force)
-    print()
-    ActionRepeatWithWait(PressReleaseKey("c"), 3, WaitRandom(0.1, 0.5), recalculate_wait=True).run(force=force)

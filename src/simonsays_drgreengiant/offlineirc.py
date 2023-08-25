@@ -5,7 +5,7 @@ import queue
 import sys
 from typing import NoReturn, Self
 
-import twitchirc
+from twitchirc_drgreengiant import twitchirc
 
 
 @dataclasses.dataclass(slots=True)
