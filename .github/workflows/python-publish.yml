@@ -34,12 +34,28 @@ jobs:
         python tools/create_exe.py
         Compress-Archive -Path dist/* -Destination release.zip
         dir
-    - name: Upload zipped exe to release
-      uses: JasonEtco/upload-to-release@master
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
       with:
-        args: release.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: release-executable-windows-zip
+        path: release.zip
+
+  executable-upload:
+    runs-on: ubuntu-latest
+    needs: windows-build
+    permissions:
+      contents: read
+    steps:
+      - name: Download math result for job 2
+        uses: actions/download-artifact@v3
+        with:
+          name: release-executable-windows-zip
+      - name: Upload zipped exe to release
+        uses: JasonEtco/upload-to-release@master
+        with:
+          args: release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   pypi-publish:
     runs-on: ubuntu-latest
