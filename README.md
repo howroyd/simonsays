@@ -1,8 +1,10 @@
-[![CodeQL Vulnerabilities](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml)\
-[![Linting and Testing](https://github.com/howroyd/simonsays/actions/workflows/python-app.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/python-app.yml)\
-[![Upload to PyPi](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml)
+# SimonSays
 
-# Who am I?
+[![CodeQL Vulnerabilities](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml)\
+[![Linting and Testing](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml)\
+[![Build and Release](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml)
+
+## Who am I?
 
 Hi, I am Simon.  You might know me on Twitch as `GreenaGiant`.
 
@@ -10,13 +12,13 @@ My day job is as a senior embedded firmware engineer in the UK.  Normally writin
 
 I use Python regularly to create tools to help with work, and used it extensively in my PhD and postdoc.  I am pretty good at Python but I probably fall sort of being a Python professional, or maybe I am being too modest.
 
-# Naming
+## Naming
 
 I am not content with the name "TwitchPlays".   There are loads of other bits of software with this name.  Not only do I not wish to tread on their toes, it would also be nice to have a more unique identity.
 
 If you have any suggestions, then please submit it in the `issues` tab, or create a `discussion`.  All ideas are greatly received and will of course be fully accredited.
 
-# TwitchPlays
+## TwitchPlays
 
 Example here: <https://clips.twitch.tv/ExuberantEsteemedPistachioCurseLit-L-jTrUt1MRaZF1u3>
 
@@ -28,7 +30,7 @@ I was unable to find the work on github, so created a fresh repository.  If anyo
 
 The initial commit on `main` (and now permanently on `archive`) shows the original files as taken from the website when I started this.  The original header is at the bottom of this Readme.  I've added a **GNU GPL v2** as I believe this license matches the header comments and way the code has been distributed before me.  Any issues, please do let me know.  Out of respect for all the contributors to this software and its inspiration, please do adhere to this license.  It is, I think, the most simple to understand and adhere to licence.
 
-# Windows Defender
+## Windows Defender
 
 In the releases section of this repository are `exe` files you can download and try.  If you do download this `exe`, Windows Defender will throw a fit.  Feel free to Google "pyinstaller windows defender" to see what the issue is with needing to pay Microsoft for a certificate to prevent Defender going mad.  I can't justify the cost of a certificate, nor do I think it provides and security value, only convenience, which goes against the whole point of a security guarantee imo.
 
@@ -60,7 +62,7 @@ If you have any suggestions, questions or concerns, then please do use the appro
 
 ---
 
-# Original file header comments
+## Original file header comments
 >
 > Written by DougDoug and DDarknut
 >

@@ -1,25 +1,50 @@
 # This workflow will upload a Python Package using Twine when a release is created
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# It will also use PyInstaller to create a Windows executable and upload it to the GitHub release
 
-name: Upload Python Package
+name: Build and Publish
 
 on:
   release:
     types: [published]
 
-permissions:
-  contents: read
-
 jobs:
-  deploy:
+  windows-build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+        token: ${{ secrets.REPO_SCOPED_TOKEN }}
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        git submodule update --init --recursive
+        python -m pip install --upgrade pip
+        pip install PyInstaller wheel
+        if (Test-Path requirements.txt) {pip install -r requirements.txt}
+    - name: Build executable with PyInstaller
+      run: |
+        python tools/create_exe.py
+        Compress-Archive -Path dist/* -Destination release.zip
+        dir
+    - name: Upload zipped exe to release
+      uses: JasonEtco/upload-to-release@master
+      with:
+        args: release.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  pypi-publish:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python

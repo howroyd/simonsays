@@ -9,17 +9,14 @@
 # the `language` matrix defined below to confirm you have the correct set of
 # supported CodeQL languages.
 #
-name: "CodeQL"
+name: "CodeQL Vulnerability Scan"
 
 on:
   push:
     branches:
-      - '*'
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+      - '*'   # Scan all branches upon push
   schedule:
-    - cron: '35 10 * * 6'
+    - cron: '00 9 * * 0'
 
 jobs:
   analyze:
