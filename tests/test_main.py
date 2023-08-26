@@ -1,4 +1,4 @@
-from simonsays_drgreengiant import main
+from simonsays_drgreengiant import simonsays
 
 
 def test_test():

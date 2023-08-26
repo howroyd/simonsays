@@ -2,6 +2,7 @@
 import concurrent.futures as cf
 import contextlib
 import functools
+from typing import NoReturn
 
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
@@ -75,7 +76,7 @@ def get_action_from_message(myconfig: config.Config, msg: twitchirc.TwitchMessag
     return functools.partial(myconfig.actions[tag].run, force=sudo), tag
 
 
-if __name__ == "__main__":
+def main() -> NoReturn:
     myconfig = config.Config.load(VERSION)
     myconfig.save(backup_old=True)
 
@@ -108,3 +109,7 @@ if __name__ == "__main__":
             if actiontag := get_action_from_message(myconfig, msg):
                 action, tag = actiontag
                 executor.submit(action).add_done_callback(functools.partial(done_callback, msg=msg, tag=tag))
+
+
+if __name__ == "__main__":
+    main()
