@@ -162,3 +162,4 @@ cython_debug/
 # Custom, repo specific files to ignore
 log*
 config.toml*
+blocklist

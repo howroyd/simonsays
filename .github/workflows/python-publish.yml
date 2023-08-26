@@ -58,17 +58,25 @@ jobs:
         git submodule update --init --recursive
         python -m pip install --upgrade pip
         pip install PyInstaller wheel
-        if (Test-Path requirements.txt) {pip install -r requirements.txt}
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Build executable with PyInstaller
       run: |
         python tools/create_exe.py
         tar -czvf linux_release.tar.gz dist/*
         dir
+    - name: Generate blocklist
+      run: |
+        python tools/generate_blocklist.py
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: release-executable-linux-zip
         path: linux_release.tar.gz
+    - name: Upload Blocklist
+      uses: actions/upload-artifact@v3
+      with:
+        name: blocklist
+        path: blocklist
 
   executable-upload:
     runs-on: ubuntu-latest
@@ -90,10 +98,16 @@ jobs:
           args: windows_release.zip application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload tarballes linux executable to release
+      - name: Upload tarballed linux executable to release
         uses: JasonEtco/upload-to-release@master
         with:
           args: linux_release.tar.gz application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload blocklist
+        uses: JasonEtco/upload-to-release@master
+        with:
+          args: blocklist text/plain
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
