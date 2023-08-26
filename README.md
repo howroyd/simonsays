@@ -4,35 +4,21 @@
 [![Linting and Testing](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml)\
 [![Build and Release](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml)
 
-## Who am I?
+Taking inspiration from the many other "TwitchPlays" style programmes, including that featured by [DougDoug](#original-file-header-comments), this software has been specifically created to be an easy to use for those non programmers among the gaming community.
 
-Hi, I am Simon.  You might know me on Twitch as `GreenaGiant`.
+Out of the box, this uses a [connection](https://github.com/howroyd/twitchirc) to Twitch chat, in a receive only mode, to capture messages typed by viewers.  Connections to multiple different chats simultaneously is possible for collaboration streams!
 
-My day job is as a senior embedded firmware engineer in the UK.  Normally writing C++ for bare metal devices, previously working in healthcare and also in construction.
+Trigger words must be at the start of a sentence typed in chat and do not need to be prepended by an `!` like many other bots.  However, you can reconfigure the trigger words however you like.
 
-I use Python regularly to create tools to help with work, and used it extensively in my PhD and postdoc.  I am pretty good at Python but I probably fall sort of being a Python professional, or maybe I am being too modest.
+## Compatibility
 
-## Naming
+This software talks directly to the operating system *as if* it were a mouse or keyboard plugged into your machine.  It does not modify any game code nor any files on your computer.  It has been tested in Windows and Linux.
 
-I am not content with the name "TwitchPlays".   There are loads of other bits of software with this name.  Not only do I not wish to tread on their toes, it would also be nice to have a more unique identity.
+The main use case to date has been for Phasmophobia streamers to allow their chat to troll them during gameplay.  Therefore, all the preset actions are Phasmophobia focused at the moment, however, if you would like another game to be considered then please raise a feature request [issue](https://github.com/howroyd/simonsays/issues) and I will look into it!  (Or, if you want to try your hand at programming, feel free to fork or PR this repository!)
 
-If you have any suggestions, then please submit it in the `issues` tab, or create a `discussion`.  All ideas are greatly received and will of course be fully accredited.
+### Windows Defender
 
-## TwitchPlays
-
-Example here: <https://clips.twitch.tv/ExuberantEsteemedPistachioCurseLit-L-jTrUt1MRaZF1u3>
-
-This work in progress code is a rewrite and extension of an excellent system seen on DoudDougW's Twitch channel (<https://www.twitch.tv/dougdougw>). They've kindly provided the code on their website (<https://www.dougdoug.com/twitchplays>)
-
-The inspiration and request was from my friend Kat who wants to use a similar concept to control Phasmophobia on her channel (<https://www.twitch.tv/katatouille93>)
-
-I was unable to find the work on github, so created a fresh repository.  If anyone knows otherwise, please let me know so I can attribute this repo to their work in the usual Github way.
-
-The initial commit on `main` (and now permanently on `archive`) shows the original files as taken from the website when I started this.  The original header is at the bottom of this Readme.  I've added a **GNU GPL v2** as I believe this license matches the header comments and way the code has been distributed before me.  Any issues, please do let me know.  Out of respect for all the contributors to this software and its inspiration, please do adhere to this license.  It is, I think, the most simple to understand and adhere to licence.
-
-## Windows Defender
-
-In the releases section of this repository are `exe` files you can download and try.  If you do download this `exe`, Windows Defender will throw a fit.  Feel free to Google "pyinstaller windows defender" to see what the issue is with needing to pay Microsoft for a certificate to prevent Defender going mad.  I can't justify the cost of a certificate, nor do I think it provides and security value, only convenience, which goes against the whole point of a security guarantee imo.
+Windows Defender will likely throw a fit if you download the executable and run it.  This is purely because I have not paid Microsoft for an exemption in Windows Defender.
 
 So you have a few options:
 
@@ -40,29 +26,52 @@ So you have a few options:
 - Go into Windows Defender, look at the history, and allow this, and only this, `exe` that it has blocked.
 - or, don't use the `exe`; instead run the raw Python (see below)
 
-This code opens connections over the internet, sends and receives data and initiates HID (keyboard and mouse) commands.  It looks exactly like many Trojans.  It is only you, the human, that can decide whether it is malicious or not.  Hopefully you can see all the information here to inform that decision.  To assiste I have added Github actions which will show a green tech on the repository if it has passed code analysis scans for security.  These scans also happen weekly, so if a vulnerability exists that currently is not known about, becomes known, then that green tick will change to a red cross.  Hopefully, this provides peace of mind even if this software stops being maintained; you can still see whether it is still safe or not.
+This code opens connections over the internet, sends and receives data and initiates HID (keyboard and mouse) commands.  It looks exactly like many Trojans which do this nefariously.  It is only you, the human, that can decide whether it is malicious or not.  Hopefully you can see all the information here to inform that decision.  To assist I have added Github actions which will show a green tick on the repository if it has passed code analysis scans for security usind `CodeQL`.  These scans also happen weekly, so if a vulnerability exists that currently is not known about, becomes known, then that green tick will change to a red cross.  Hopefully, this provides peace of mind even if this software stops being maintained; you can still see whether it is still safe or not.  Furthermore, I do not manually build the executables any more, this is done autonomously by GitHub *only* if the code scans pass at the time of release.
 
-## Running the raw Python
+## Contributing and Thanks
 
-Many tutorials on the internet on how to get Python.  I am using v3.10 and at least this version will be required.  There is a `requirements.txt` to make the process of getting dependencies easier, feel free to Google how to use this file with `pip` (one option is `pip install -r requirements.txt`).  One of the dependencies relies upon Windows.  Cross platform (MacOS, Linux, etc.) will not work, but if it is something you want, use the "issues" tab to create a feature request and I will take a look.
+This software is provided free of charge under the license found [here](./LICENSE).  It is kindly requested that if you enjoy using SimonSays then please do promote the links to this so more people can have fun.
 
-The only difference between running the `exe` or running the Python, is that the `exe` does not require the host machine to have Python installed, but does require an exception in Windows Defender.  I assume most broadcasters don't use Python, don't care about it and don't want to install loads of extra stuff on their machines.  The `exe` is also more portable as it doesn't care if you do already have Python installed, but the wrong version, missing dependencies, etc.
+It would be fun to extend this to be able to connect to other chat servers such as, YouTube, Kick, etc.  If you're interested in this then please let me know by raising an [issue](https://github.com/howroyd/simonsays/issues).
 
-## Building your own exe
+If you would like to contribute artwork, programming, testing or in any other way, then please do get in touch in any way convenient, preferably [here](https://github.com/howroyd/simonsays/discussions).
 
-There is a batch script, `create_exe.bat` which you can run from a cmd window to build the `exe`.  This is what I use and I have included it in the repo for visibility for those concerned about the above security issues.
+No financial reward is expected to use this software, but if it is something you wish to consider then you can either sponsor this project or send a one off donation under [Sponsor this project](https://github.com/howroyd/simonsays).
 
-You will see that in the batch script there is a link to a `png` image to use as the `exe` icon.  This is image file is NOT included in this repo as I do not own the rights to distribute it as an image.  I am permitted by _katatouille93_ to use it embedded inside the `exe` for the icon.  You can just remove the `-i <image_file>` from the script, or change `<filename>` to an image of your choosing, if you want to fork this repo and create your own `exe`.
+You can find me on Twitch as [DrGreenGiant](https://www.twitch.tv/drgreengiant) and on [YouTube](https://youtube.com/@SimonHowroyd?si=wsQ0XuGwGjaXB7HU) too.
 
-You have all the source and also the mechanism to build the `exe` I put in the Releases section of this repo.  It is up to you to exercise due diligence as to whether you trust this process enough to make exceptions in Windows Defender.
+## Installation
 
-## Suggestions or Queries
+### As an Executable
 
-If you have any suggestions, questions or concerns, then please do use the appropriate features of Github (issues and discussions) to get in touch.
+The latest release can be found [here](https://github.com/howroyd/simonsays/releases/latest).
 
----
+Other releases are published on GitHub [here](https://github.com/howroyd/simonsays/releases).
+
+Look for the one tagged in green `latest`.  At the bottom of that release you will see a drop-down box called **Assets** which has the `windows_release.zip` and `linux_release.tar.gz`.  Unzip the file to a location of your choice, e.g. your Desktop, and run the contained file.  It will generate a config file so tghat if you change any keybindings, etc, they will be remembered.
+
+### As a Python Module
+
+Available on PyPi at <https://pypi.org/project/simonsays-drgreengiant/>
+
+```bash
+pip install simonsays_drgreengiant
+```
+
+## Python Module Usage
+
+If you install this as a Python module, then you can run the software by:
+
+```python
+from simonsays_drgreengiant import simonsays
+
+simonsays.main()
+```
 
 ## Original file header comments
+
+Although this software is a complete re-write of the code that inspired me, I would still love to give credit to the original source code that got me started:
+
 >
 > Written by DougDoug and DDarknut
 >
