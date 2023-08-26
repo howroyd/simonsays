@@ -6,9 +6,8 @@ import functools
 import config
 import errorcodes
 import gui
-import offlineirc
 import twitchactions
-from twitchirc_drgreengiant import twitchirc
+from twitchirc_drgreengiant import twitchirc, offlineirc
 
 VERSION = "2.0.0"
 

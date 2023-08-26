@@ -1,7 +1,4 @@
-wheel
-pytest
-pytest-cov
 tomlkit
 Pillow
-PyInstaller
 twitchirc_drgreengiant
+./pynput_local

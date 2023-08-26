@@ -33,6 +33,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8
         if (Test-Path requirements.txt) {pip install -r requirements.txt}
+        pip install pytest pytest-cov PyInstaller wheel
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -42,5 +43,8 @@ jobs:
     - name: Test with pytest
       run: |
         dir
-        python -m pip install -e ./pynput_local
         python run_tests.py
+    - name: Build with pyinstaller
+      run: |
+        dir
+        python tools/create_exe.py

@@ -8,7 +8,7 @@
             "name": "Python: main.py",
             "type": "python",
             "request": "launch",
-            "program": "simonsays_drgreengiant/src/main.py",
+            "program": "src/simonsays_drgreengiant/main.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }
