@@ -1,14 +1,24 @@
 #!./.venv/bin/python3
 import dataclasses
 import functools
+import multiprocessing as mp
+import os
 import pprint as pp
 import tkinter as tk
 from collections.abc import Iterable
-from typing import Any, Callable
+from typing import Any, Callable, NoReturn, Optional
 
 from . import config, hidactions
 
 KEY_IGNORED_STR = 'ignored'
+
+
+def on_closing(exit_event: Optional[mp.Event] = None) -> NoReturn:
+    """Exit the program when window is closed"""
+    if exit_event is None:
+        print("GUI closed, exiting...")
+        os._exit(0)
+    exit_event.set()
 
 
 class Callbacks:
@@ -155,7 +165,7 @@ def populate_frame(cfg: config.Config,
 def make_window(cfg: config.Config, width_px: int, height_px: int) -> tk.Tk:
     """Make the window"""
     window = tk.Tk()
-    window.title(f"Twitch Plays v{cfg.version} by DrGreenGiant")
+    window.title(f"Simon Says {cfg.version} by DrGreenGiant")
     window.geometry(f"{width_px}x{height_px}")
     return window
 
@@ -414,10 +424,13 @@ def enabled_cb(cfg: config.Config, enabled_button: tk.Button, state_var: tk.Bool
         print("Enabled")
 
 
-def make_gui(cfg: config.Config) -> tk.Tk:
+def make_gui(cfg: config.Config) -> tuple[tk.Tk, mp.Event]:
     """Make the GUI"""
     canvas = make_canvas(cfg, "assets/Green_tato_640.png")
     window = canvas.winfo_toplevel()
+
+    exit_event = mp.Event()
+    window.protocol("WM_DELETE_WINDOW", functools.partial(on_closing, exit_event))
 
     selection_frame, selection = make_selection_frame(canvas, cfg)
     selection_frame.pack(side=tk.TOP, anchor=tk.N, pady=10, expand=True)
@@ -434,4 +447,4 @@ def make_gui(cfg: config.Config) -> tk.Tk:
 
     window.update()
 
-    return window
+    return window, exit_event

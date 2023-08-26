@@ -4,11 +4,12 @@ import contextlib
 import functools
 from typing import NoReturn
 
+import git
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
 from . import config, errorcodes, gui, twitchactions
 
-VERSION = "2.0.0"
+VERSION = git.Repo().tags[-1].name
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
@@ -28,14 +29,14 @@ def make_commands_str(myconfig: config.Config) -> str:
 
 def preamble(myconfig: config.Config) -> str:
     """Make the preamble"""
-    return f"""\n\t\t--- TwitchPlays v{VERSION} ---\n
-\tCreated by DrGreenGiant (Simon Howroyd)
+    return f"""\n\t\t--- SimonSays v{VERSION} ---\n
+\tCreated by twitch.tv/DrGreenGiant (Simon Howroyd)
 
 \tThis software is licensed under:
 \tGNU GENERAL PUBLIC LICENSE version 2.0 (GPL-2.0)
 
 \tFor more information on this software, visit:
-\t\thttps://github.com/howroyd/twitchplays
+\t\thttps://github.com/howroyd/SimonSays
 
 Valid commands are:\n{make_commands_str(myconfig)}
 \n
@@ -93,10 +94,12 @@ def main() -> NoReturn:
 
         print(channel_connected(myconfig))
 
-        mygui = gui.make_gui(myconfig)
+        mygui, exit_event = gui.make_gui(myconfig)
 
         while True:
             mygui.update()  # Required otherwise you cant click stuff
+            if exit_event.is_set():
+                raise SystemExit
 
             msg = irc.get_message(irc)
 

@@ -23,7 +23,7 @@ DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 
 BLOCKLIST = []
 if not NO_BLOCKLIST:
-    _f = open(urlretrieve("https://github.com/howroyd/twitchplays/releases/latest/download/blocklist")[0], "r")
+    _f = open(urlretrieve("https://github.com/howroyd/simonsays/releases/latest/download/blocklist")[0], "r")
     BLOCKLIST = _f.readlines()
     _f.close()
     del _f
@@ -48,7 +48,7 @@ def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool
 
 @dataclasses.dataclass(slots=True)
 class ActionConfig:
-    """The global config for TwitchPlays actions"""
+    """The global config for SimonSays actions"""
     phasmo: gameactions.ActionConfig
     twitch: twitchactions.TwitchActionConfig
 
@@ -58,7 +58,7 @@ ConfigDict = dict[str, ActionConfig]
 
 @dataclasses.dataclass(slots=True)
 class Config:
-    """The global config for TwitchPlays"""
+    """The global config for SimonSays"""
     config: ConfigDict
     version: str
     enabled: bool = True

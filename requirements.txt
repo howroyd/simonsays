@@ -1,4 +1,5 @@
-tomlkit
+gitpython
 Pillow
-twitchirc_drgreengiant
 pynput
+tomlkit
+twitchirc_drgreengiant
