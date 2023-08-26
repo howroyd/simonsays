@@ -6,8 +6,7 @@ import tkinter as tk
 from collections.abc import Iterable
 from typing import Any, Callable
 
-import config
-import hidactions
+from . import config, hidactions
 
 KEY_IGNORED_STR = 'ignored'
 

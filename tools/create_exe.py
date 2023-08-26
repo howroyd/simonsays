@@ -8,7 +8,7 @@ DIRNAME = DIRPATH.split('\\')[-2]
 
 def build() -> None:
     PyInstaller.__main__.run([
-        f'{DIRPATH}\\main.py',
+        f'{DIRPATH}\\src\\simonsays_drgreengiant\\main.py',
         # '--clean',
         '-n', DIRNAME,
         '--onefile',

@@ -7,9 +7,7 @@ from typing import Any, Protocol, Self
 from pynput.keyboard import Controller as Keyboard
 from pynput.keyboard import Key
 
-import actions
-import environment
-import errorcodes
+from . import actions, environment, errorcodes
 
 if platform.platform().startswith("Windows"):
     from pynput.mouse._win32 import Button

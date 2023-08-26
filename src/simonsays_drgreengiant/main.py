@@ -3,11 +3,9 @@ import concurrent.futures as cf
 import contextlib
 import functools
 
-import config
-import errorcodes
-import gui
-import twitchactions
-from twitchirc_drgreengiant import twitchirc, offlineirc
+from twitchirc_drgreengiant import offlineirc, twitchirc
+
+from . import config, errorcodes, gui, twitchactions
 
 VERSION = "2.0.0"
 

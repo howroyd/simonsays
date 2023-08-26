@@ -2,8 +2,7 @@
 import dataclasses
 from typing import Any, Callable, Protocol, Self
 
-import errorcodes
-import hidactions
+from . import errorcodes, hidactions
 
 
 @dataclasses.dataclass(slots=True)

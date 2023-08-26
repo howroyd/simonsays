@@ -5,10 +5,7 @@ import time
 from collections.abc import Iterable
 from typing import Any, Callable
 
-import actions
-import environment
-import errorcodes
-import phasmoactions
+from . import actions, environment, errorcodes, phasmoactions
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 

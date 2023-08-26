@@ -4,11 +4,7 @@ import enum
 import random
 from typing import Any, Callable, ClassVar
 
-import actions
-import environment
-import errorcodes
-import gameactions
-import hidactions
+from . import actions, environment, errorcodes, gameactions, hidactions
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 

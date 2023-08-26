@@ -9,11 +9,8 @@ from urllib.request import urlretrieve
 
 import tomlkit
 
-import environment
-import errorcodes
-import gameactions
-import phasmoactions
-import twitchactions
+from . import (environment, errorcodes, gameactions, phasmoactions,
+               twitchactions)
 
 OFFLINE = environment.getenvboolean("OFFLINE", False)
 NO_BLOCKLIST = environment.getenvboolean("NO_BLOCKLIST", OFFLINE)

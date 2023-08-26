@@ -4,8 +4,7 @@ import random
 import time
 from typing import Protocol
 
-import environment
-import errorcodes
+from . import environment, errorcodes
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 
