@@ -1,2 +1,1 @@
-import main
-
+from simonsays_drgreengiant import main

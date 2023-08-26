@@ -1,4 +1,4 @@
 tomlkit
 Pillow
 twitchirc_drgreengiant
-./pynput_local
+pynput
