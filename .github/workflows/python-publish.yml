@@ -53,7 +53,7 @@ jobs:
       - name: Upload zipped exe to release
         uses: JasonEtco/upload-to-release@master
         with:
-          args: release.zip
+          args: release.zip application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
