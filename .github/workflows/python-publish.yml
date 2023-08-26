@@ -32,7 +32,7 @@ jobs:
     - name: Build executable with PyInstaller
       run: |
         python tools/create_exe.py
-        Compress-Archive -Path dist/* -Destination release.zip
+        Compress-Archive -Path dist/* -Destination windows_release.zip
         dir
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
@@ -62,7 +62,7 @@ jobs:
     - name: Build executable with PyInstaller
       run: |
         python tools/create_exe.py
-        tar -czvf release.tar.gz dist/*
+        tar -czvf linux_release.tar.gz dist/*
         dir
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
