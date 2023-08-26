@@ -1,3 +1,7 @@
+[![CodeQL Vulnerabilities](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml)\
+[![Linting and Testing](https://github.com/howroyd/simonsays/actions/workflows/python-app.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/python-app.yml)\
+[![Upload to PyPi](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml/badge.svg?branch=version2)](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml)
+
 # Who am I?
 
 Hi, I am Simon.  You might know me on Twitch as `GreenaGiant`.
