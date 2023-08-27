@@ -9,7 +9,12 @@ from twitchirc_drgreengiant import offlineirc, twitchirc
 
 from . import config, errorcodes, gui, twitchactions
 
-VERSION = git.Repo().tags[-1].name
+VERSION = "0.0.0dev"
+
+try:
+    VERSION = git.Repo().tags[-1].name
+except IndexErrror:
+    pass
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
