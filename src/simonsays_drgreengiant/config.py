@@ -24,7 +24,7 @@ DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 BLOCKLIST = []
 if not NO_BLOCKLIST:
     _f = open(urlretrieve("https://github.com/howroyd/simonsays/releases/latest/download/blocklist")[0], "r")
-    BLOCKLIST = _f.readlines()
+    BLOCKLIST = [line.strip() for line in _f.readlines()]
     _f.close()
     del _f
 del urlretrieve

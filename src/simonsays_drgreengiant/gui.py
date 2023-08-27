@@ -8,7 +8,7 @@ import tkinter as tk
 from collections.abc import Iterable
 from typing import Any, Callable, NoReturn, Optional
 
-from . import config, hidactions
+from . import config, environment, hidactions
 
 KEY_IGNORED_STR = 'ignored'
 
@@ -426,7 +426,7 @@ def enabled_cb(cfg: config.Config, enabled_button: tk.Button, state_var: tk.Bool
 
 def make_gui(cfg: config.Config) -> tuple[tk.Tk, mp.Event]:
     """Make the GUI"""
-    canvas = make_canvas(cfg, "assets/Green_tato_640.png")
+    canvas = make_canvas(cfg, environment.resource_path("assets", "Green_tato_640.png"))
     window = canvas.winfo_toplevel()
 
     exit_event = mp.Event()

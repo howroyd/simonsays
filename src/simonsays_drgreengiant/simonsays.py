@@ -3,13 +3,14 @@ import concurrent.futures as cf
 import contextlib
 import functools
 import os
+import sys
 from typing import NoReturn
-
+import time
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
-from . import config, errorcodes, gui, twitchactions
+from . import config, environment, errorcodes, gui, twitchactions
 
-VERSION = os.getenv("VERSION", "0.0.0dev")
+VERSION = environment.getenv("VERSION", "0.0.0dev")
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
@@ -39,6 +40,8 @@ def preamble(myconfig: config.Config) -> str:
 \t\thttps://github.com/howroyd/SimonSays
 
 Valid commands are:\n{make_commands_str(myconfig)}
+
+Channels: {', '.join(myconfig.channel)}
 \n
     """
 
@@ -83,20 +86,12 @@ def main() -> NoReturn:
 
     print(preamble(myconfig))
 
-    print("Blocklist:")
-    print(config.BLOCKLIST)
-
-    with open(".env", "r") as f:
-        print("Environment variables:")
-        print(f.readlines())
-
-    print(f"Channels: {myconfig.channel}")
-
     with contextlib.ExitStack() as stack:
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
         irc = None
         if config.OFFLINE:
+            print("OFFLINE MODE")
             irc = stack.enter_context(offlineirc.OfflineIrc(myconfig.channel, username="drgreengiant"))
         else:
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
@@ -108,6 +103,7 @@ def main() -> NoReturn:
         while True:
             mygui.update()  # Required otherwise you cant click stuff
             if exit_event.is_set():
+                print("GUI closed, exiting...")
                 raise SystemExit
 
             msg = irc.get_message(irc)
