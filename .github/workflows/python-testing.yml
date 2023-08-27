@@ -62,24 +62,6 @@ jobs:
     - name: Test with pytest
       run: |
         python run_tests.py
-
-  windows-build:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: true
-        token: ${{ secrets.REPO_SCOPED_TOKEN }}
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-    - name: Install dependencies
-      run: |
-        git submodule update --init --recursive
-        python -m pip install --upgrade pip
-        pip install PyInstaller wheel
-        if (Test-Path requirements.txt) {pip install -r requirements.txt}
-    - name: Build with pyinstaller
+    - name: Test build executable with pyinstaller
       run: |
         python tools/create_exe.py

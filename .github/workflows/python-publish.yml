@@ -29,6 +29,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install PyInstaller wheel
         if (Test-Path requirements.txt) {pip install -r requirements.txt}
+    - name: Install simonsays
+      run: |
+        pip install ./pynput_local
+        pip install .
     - name: Build executable with PyInstaller
       run: |
         python tools/create_exe.py
@@ -59,6 +63,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install PyInstaller wheel
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install simonsays
+      run: |
+        pip install ./pynput_local
+        pip install .
     - name: Build executable with PyInstaller
       run: |
         python tools/create_exe.py
