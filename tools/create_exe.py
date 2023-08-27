@@ -15,7 +15,7 @@ def build() -> None:
     PyInstaller.__main__.run([
         f'{DIRPATH / "main.py"}',
         # '--clean',
-        '-n', DIRPATH.name,
+        '-n', f"{DIRPATH.name}-{VERSION.replace('.', '_')}",
         '--onefile',
         '--noconfirm',
         '--log-level', 'WARN',

@@ -83,6 +83,15 @@ def main() -> NoReturn:
 
     print(preamble(myconfig))
 
+    print("Blocklist:")
+    print(config.BLOCKLIST)
+
+    with open(".env", "r") as f:
+        print("Environment variables:")
+        print(f.readlines())
+
+    print(f"Channels: {myconfig.channel}")
+
     with contextlib.ExitStack() as stack:
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
