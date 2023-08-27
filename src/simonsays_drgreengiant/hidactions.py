@@ -10,17 +10,13 @@ from pynput.keyboard import Key
 from . import actions, environment, errorcodes
 
 OPERATINGSYSTEM = platform.platform()
-
-try:
-    if OPERATINGSYSTEM.startswith("Windows"):
-        from pynput.mouse._win32 import Button
-        from pynput.mouse._win32 import Controller as Mouse
-    elif OPERATINGSYSTEM.startswith("Linux"):
-        from pynput.mouse._xorg import Button
-        from pynput.mouse._xorg import Controller as Mouse
-    else:
-        raise NotImplementedError(f"Unknown platform: {OPERATINGSYSTEM}")
-except ImportError:
+if OPERATINGSYSTEM.startswith("Windows"):
+    from pynput.mouse._win32 import Button
+    from pynput.mouse._win32 import Controller as Mouse
+elif OPERATINGSYSTEM.startswith("Linux"):
+    from pynput.mouse._xorg import Button
+    from pynput.mouse._xorg import Controller as Mouse
+else:
     raise NotImplementedError(f"Unknown platform: {OPERATINGSYSTEM}")
 
 DEBUG = environment.getenvboolean("DEBUG", False)
