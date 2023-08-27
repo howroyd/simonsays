@@ -53,7 +53,7 @@ jobs:
       run: |
         git submodule update --init --recursive
         python -m pip install --upgrade pip
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov PyInstaller wheel
         if (Test-Path requirements.txt) {pip install -r requirements.txt}
     - name: Install simonsays
       run: |
