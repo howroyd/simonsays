@@ -1,28 +1,28 @@
 #!./.venv/bin/python3
 import enum
-from collections.abc import Iterable
+from typing import Any, Iterable
 
 
 @enum.unique
 class ErrorCode(enum.IntEnum):
     """Error codes"""
     OK = 0
-    UNKNOWN = enum.auto()
-    NOT_IMPLEMENTED = enum.auto()
-    LOOKUP_FAILURE = enum.auto()
-    DISABLED = enum.auto()
-    ON_COOLDOWN = enum.auto()
-    RANDOM_CHANCE = enum.auto()
-    BLOCKED_USER = enum.auto()
-    BLOCKED_CHANNEL = enum.auto()
+    UNKNOWN = 1
+    NOT_IMPLEMENTED = 2
+    LOOKUP_FAILURE = 3
+    DISABLED = 4
+    ON_COOLDOWN = 5
+    RANDOM_CHANCE = 6
+    BLOCKED_USER = 7
+    BLOCKED_CHANNEL = 8
 
 
 ErrorSet = set[ErrorCode]
 
 
-def flatten(xs):
-    """Flatten an iterable"""
-    for x in xs:
+def flatten(iter: Iterable[Any]) -> Any:
+    """Flatten an iterable which may contain nested iterables"""
+    for x in iter:
         if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
             yield from flatten(x)
         else:

@@ -13,8 +13,8 @@ if platform.platform().startswith("Windows"):
     from pynput.mouse._win32 import Button
     from pynput.mouse._win32 import Controller as Mouse
 elif platform.platform().startswith("Linux"):
-    from pynput.mouse import Button
-    from pynput.mouse import Controller as Mouse
+    from pynput.mouse._xorg import Button
+    from pynput.mouse._xorg import Controller as Mouse
 else:
     raise NotImplementedError(f"Unknown platform: {platform.platform()}")
 
@@ -36,6 +36,7 @@ class ButtonUnknown(Exception):
 
 
 def str_to_button(button: str) -> Button:
+    """Convert a string to a pynput mouse button"""
     match button:
         case "left":
             return Button.left
@@ -91,9 +92,10 @@ class MouseMoveDirection(enum.Enum):
     LEFT = "left"
     RIGHT = "right"
 
-    def _missing_(self, value: Any) -> Any:
+    @classmethod
+    def _missing_(cls, value: Any) -> Any:
         """Handle missing values"""
-        raise self.MouseMoveDirectionUnknown(f"Unknown mouse move direction: {value}")
+        raise MouseMoveDirectionUnknown(f"Unknown mouse move direction: {value}")
 
     @classmethod
     def to_cartesian(cls, direction: Self | str, distance: int) -> tuple[int, int]:

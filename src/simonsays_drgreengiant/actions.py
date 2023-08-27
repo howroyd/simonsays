@@ -2,13 +2,14 @@
 import dataclasses
 import random
 import time
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from . import environment, errorcodes
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 
 
+@runtime_checkable
 @dataclasses.dataclass(slots=True)
 class Action(Protocol):
     """Protocol for actions that can be run"""
@@ -82,6 +83,12 @@ class ActionRepeatWithWait:
     times: int
     wait: Wait | WaitRandom
     recalculate_wait: bool = False  # Recalculate the wait time each time if random
+
+    def __post_init__(self) -> None:
+        """Post init"""
+        if not isinstance(self.wait, WaitRandom):
+            if self.recalculate_wait:
+                raise ValueError("Cannot recalculate wait time for non-random wait")
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
