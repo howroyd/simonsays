@@ -2,20 +2,14 @@
 import concurrent.futures as cf
 import contextlib
 import functools
+import os
 from typing import NoReturn
 
-import git
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
 from . import config, errorcodes, gui, twitchactions
 
-VERSION = "0.0.0dev"
-
-try:
-    VERSION = git.Repo().tags[-1].name
-except IndexError:
-    # NOTE  When in a GitHub action for pytest, this will fail
-    pass
+VERSION = os.getenv("VERSION", "0.0.0dev")
 
 
 def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> None:
