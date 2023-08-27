@@ -13,7 +13,8 @@ VERSION = "0.0.0dev"
 
 try:
     VERSION = git.Repo().tags[-1].name
-except IndexErrror:
+except IndexError:
+    # NOTE  When in a GitHub action for pytest, this will fail
     pass
 
 
