@@ -6,6 +6,7 @@ from typing import Any, Protocol, Self
 
 from pynput.keyboard import Controller as Keyboard
 from pynput.keyboard import Key
+from pynput.keyboard import Listener as KeyboardListener
 
 from . import actions, environment, errorcodes
 
@@ -13,15 +14,57 @@ OPERATINGSYSTEM = platform.platform()
 if OPERATINGSYSTEM.startswith("Windows"):
     from pynput.mouse._win32 import Button
     from pynput.mouse._win32 import Controller as Mouse
+    from pynput.mouse._win32 import Listener as MouseListener
 elif OPERATINGSYSTEM.startswith("Linux"):
     from pynput.mouse._xorg import Button
     from pynput.mouse._xorg import Controller as Mouse
+    from pynput.mouse._xorg import Listener as MouseListener
 else:
     raise NotImplementedError(f"Unknown platform: {OPERATINGSYSTEM}")
+
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 keyboard = Keyboard()
 mouse = Mouse()
+
+keyboard_listener: KeyboardListener | None = None
+mouse_listener: MouseListener | None = None
+
+
+def start_listeners() -> tuple[KeyboardListener, MouseListener]:
+    """Start the listeners for a keyboard or mouse event"""
+    global keyboard_listener, mouse_listener
+
+    keyboard_listener = KeyboardListener(on_press=on_press, on_release=on_release)
+    keyboard_listener.start()
+
+    mouse_listener = MouseListener(on_click=on_click)
+    mouse_listener.start()
+
+    return (keyboard_listener, mouse_listener)
+
+
+def stop_listeners() -> None:
+    """Stop the keyboard and mouse listeners"""
+    global keyboard_listener, mouse_listener
+
+    keyboard_listener.stop()
+    mouse_listener.stop()
+
+
+def on_press(key) -> None:
+    print(f"Key {key} pressed")
+    stop_listeners()
+
+
+def on_release(key) -> None:
+    print(f"Key {key} pressed")
+    stop_listeners()
+
+
+def on_click(x, y, button, pressed) -> None:
+    print(f"Mouse {button} pressed")
+    stop_listeners()
 
 
 def dummy_run(message: str) -> errorcodes.ErrorSet:

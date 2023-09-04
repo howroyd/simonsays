@@ -286,6 +286,23 @@ class RuntimeFrames:
 
         return frame, value
 
+    def make_button_frame(self, name: str, initial_value: str, setter: Callable[[str], None] = None) -> tuple[tk.Frame, tk.StringVar]:
+        """Make the command frame"""
+        frame = tk.Frame(self.root, width=self.frame_width, height=50)
+
+        value = tk.StringVar(frame)
+        value.set(initial_value)
+
+        label = tk.Label(frame, text=name, width=25, anchor=tk.E)
+
+        button = tk.Button(frame, text=value.get())
+        button.config(width=27, command=setter)
+
+        pack_lhs(label)
+        pack_rhs(button)
+
+        return frame, value
+
 
 def make_cooldown_frame(where, cfg: config.Config, selection: tk.StringVar, frame_width: int) -> tuple[tk.Frame, tk.IntVar]:
     """Make the cooldown frame"""
@@ -352,11 +369,19 @@ def make_option_frame(where, cfg: config.Config, selection: tk.StringVar) -> tup
     command_frame.pack()
     guivars[name.lower()] = var
 
+    # if not cfg.actions[selection.get()].action.chained:
+    #     name = "Action type"
+    #     action_type_frame, var = runtimeframes.make_dropdown_frame(name,
+    #                                                                get_hid_type_text(cfg, selection.get()),
+    #                                                                [hidtype.name for hidtype in hidactions.HidType])
+    #     action_type_frame.pack()
+    #     guivars[name.lower()] = var
+
     if not cfg.actions[selection.get()].action.chained:
-        name = "Action type"
-        action_type_frame, var = runtimeframes.make_dropdown_frame(name,
-                                                                   get_hid_type_text(cfg, selection.get()),
-                                                                   [hidtype.name for hidtype in hidactions.HidType])
+        name = "Keybind"
+        action_type_frame, var = runtimeframes.make_button_frame(name,
+                                                                 "Set keybind",
+                                                                 lambda: hidactions.start_listeners())
         action_type_frame.pack()
         guivars[name.lower()] = var
 

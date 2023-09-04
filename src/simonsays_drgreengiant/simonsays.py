@@ -2,10 +2,8 @@
 import concurrent.futures as cf
 import contextlib
 import functools
-import os
-import sys
 from typing import NoReturn
-import time
+
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
 from . import config, environment, errorcodes, gui, twitchactions
