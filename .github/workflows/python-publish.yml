@@ -15,10 +15,9 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
-        token: ${{ secrets.REPO_SCOPED_TOKEN }}
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
@@ -49,10 +48,9 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
-        token: ${{ secrets.REPO_SCOPED_TOKEN }}
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
@@ -128,7 +126,9 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
