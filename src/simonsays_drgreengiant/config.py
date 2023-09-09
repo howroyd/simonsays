@@ -4,6 +4,7 @@ import enum
 import functools
 import hashlib
 import shutil
+
 from typing import Callable, NoReturn, Self
 from urllib.request import urlretrieve
 

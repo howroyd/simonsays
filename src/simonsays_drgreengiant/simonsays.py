@@ -96,10 +96,10 @@ def main() -> NoReturn:
 
         print(channel_connected(myconfig))
 
-        mygui, exit_event = gui.make_gui(myconfig)
+        mygui, exit_event, redrawfn = gui.make_gui(myconfig)
 
         while True:
-            mygui.update()  # Required otherwise you cant click stuff
+            redrawfn()  # Required otherwise you cant click stuff
             if exit_event.is_set():
                 print("GUI closed, exiting...")
                 raise SystemExit
