@@ -61,8 +61,13 @@ class Config:
                     using_this_hidconfig = using_this.get("hidconfig", None)
                     kwargs = {**using_this}
                     if to_replace_hidconfig:
-                        kwargs["hidconfig"] = type(to_replace.hidconfig)(**using_this_hidconfig) if using_this_hidconfig else to_replace.hidconfig
-                        kwargs["hidconfig"].device = hidactions.HidType[kwargs["hidconfig"].device]
+                        hiddevice = hidactions.HidType[kwargs["hidconfig"]["device"]] if "device" in kwargs["hidconfig"] else to_replace_hidconfig.device
+                        if hiddevice == hidactions.HidType.KEYBOARD:
+                            kwargs["hidconfig"] = hidactions.KeyboardActionConfig(**using_this_hidconfig) if using_this_hidconfig else to_replace.hidconfig
+                        elif hiddevice == hidactions.HidType.MOUSE_BUTTON:
+                            kwargs["hidconfig"] = hidactions.MouseButtonActionConfig(**using_this_hidconfig) if using_this_hidconfig else to_replace.hidconfig
+                        else:
+                            kwargs["hidconfig"] = type(to_replace.hidconfig)(**using_this_hidconfig) if using_this_hidconfig else to_replace.hidconfig
                     else:
                         kwargs["hidconfig"] = None
                     ret.config[key] = type(to_replace)(**kwargs)

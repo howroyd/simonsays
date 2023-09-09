@@ -2,10 +2,10 @@
 import dataclasses
 import enum
 import platform
-from typing import Any, Protocol, Self
+from typing import Any, Callable, Protocol, Self
 
 from pynput.keyboard import Controller as Keyboard
-from pynput.keyboard import Key
+from pynput.keyboard import Key, KeyCode
 from pynput.keyboard import Listener as KeyboardListener
 
 from . import actions, environment, errorcodes
@@ -30,15 +30,25 @@ mouse = Mouse()
 keyboard_listener: KeyboardListener | None = None
 mouse_listener: MouseListener | None = None
 
+KeybindChangeCallback = Callable[[Key | Button], None]
 
-def start_listeners() -> tuple[KeyboardListener, MouseListener]:
+
+def start_listeners(on_press: KeybindChangeCallback) -> tuple[KeyboardListener, MouseListener]:
     """Start the listeners for a keyboard or mouse event"""
     global keyboard_listener, mouse_listener
 
-    keyboard_listener = KeyboardListener(on_press=on_press, on_release=on_release)
+    def on_keyboard(key: Key) -> None:
+        """Callback for a keyboard event"""
+        on_press(key)
+
+    def on_mouse_button(x, y, button, pressed) -> None:
+        """Callback for a mouse event"""
+        on_press(button)
+
+    keyboard_listener = KeyboardListener(on_press=on_keyboard)
     keyboard_listener.start()
 
-    mouse_listener = MouseListener(on_click=on_click)
+    mouse_listener = MouseListener(on_click=on_mouse_button)
     mouse_listener.start()
 
     return (keyboard_listener, mouse_listener)
@@ -50,21 +60,6 @@ def stop_listeners() -> None:
 
     keyboard_listener.stop()
     mouse_listener.stop()
-
-
-def on_press(key) -> None:
-    print(f"Key {key} pressed")
-    stop_listeners()
-
-
-def on_release(key) -> None:
-    print(f"Key {key} pressed")
-    stop_listeners()
-
-
-def on_click(x, y, button, pressed) -> None:
-    print(f"Mouse {button} pressed")
-    stop_listeners()
 
 
 def dummy_run(message: str) -> errorcodes.ErrorSet:
@@ -88,6 +83,10 @@ def str_to_button(button: str) -> Button:
             return Button.middle
         case "right":
             return Button.right
+        case "x1":
+            return Button.x1
+        case "x2":
+            return Button.x2
         case _:
             raise ButtonUnknown(f"Unknown mouse button: {button}")
 

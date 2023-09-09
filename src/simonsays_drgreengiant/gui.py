@@ -378,10 +378,36 @@ def make_option_frame(where, cfg: config.Config, selection: tk.StringVar) -> tup
     #     guivars[name.lower()] = var
 
     if not cfg.actions[selection.get()].action.chained:
+
+        def on_press(key: hidactions.Key | hidactions.Button, tag: str) -> None:
+            """On press"""
+            hidactions.stop_listeners()
+            print(f"Pressed {key} for action {tag}")
+
+            if isinstance(key, hidactions.Key):
+                print(f"Setting keybind to {key.name}")
+                new_hidconfig = hidactions.KeyboardActionConfig(key=key.name)
+                cfg.actions[tag].action.config.hidconfig = new_hidconfig
+                cfg.save()
+            elif isinstance(key, hidactions.KeyCode):
+                print(f"Setting keybind to {key.char}")
+                new_hidconfig = hidactions.KeyboardActionConfig(key=key.char)
+                cfg.actions[tag].action.config.hidconfig = new_hidconfig
+                cfg.save()
+            elif isinstance(key, hidactions.Button):
+                print(f"Setting button to {key.name})")
+                new_hidconfig = hidactions.MouseButtonActionConfig(button=key.name)
+                cfg.actions[tag].action.config.hidconfig = new_hidconfig
+                cfg.save()
+            else:
+                raise ValueError(f"Unknown key type: {key}")
+
+        callback = functools.partial(on_press, tag=selection.get())
+
         name = "Keybind"
         action_type_frame, var = runtimeframes.make_button_frame(name,
                                                                  "Set keybind",
-                                                                 lambda: hidactions.start_listeners())
+                                                                 lambda: hidactions.start_listeners(callback))
         action_type_frame.pack()
         guivars[name.lower()] = var
 
