@@ -299,3 +299,51 @@ class PressReleaseKey:
             actions.Wait(self.delay).run(force=force),
             ReleaseKey(self.config).run(force=force)
         ])
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class PressKeyOrButton:
+    """Press a key or button"""
+    config: KeyboardActionConfig | MouseButtonActionConfig
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        if isinstance(self.config, KeyboardActionConfig):
+            return PressKey(self.config).run(force=force)
+        elif isinstance(self.config, MouseButtonActionConfig):
+            return PressButton(self.config).run(force=force)
+        else:
+            raise NotImplementedError(f"Unknown config type: {self.config}")
+
+
+@dataclasses.dataclass(slots=True)
+class ReleaseKeyOrButton:
+    """Release a key or button"""
+    config: KeyboardActionConfig | MouseButtonActionConfig
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        if isinstance(self.config, KeyboardActionConfig):
+            return ReleaseKey(self.config).run(force=force)
+        elif isinstance(self.config, MouseButtonActionConfig):
+            return ReleaseButton(self.config).run(force=force)
+        else:
+            raise NotImplementedError(f"Unknown config type: {self.config}")
+
+
+@dataclasses.dataclass(slots=True)
+class PressReleaseKeyOrButton:
+    """Press and release a key or button"""
+    config: KeyboardActionConfig | MouseButtonActionConfig
+    delay: float = 0.1
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        if isinstance(self.config, KeyboardActionConfig):
+            return PressReleaseKey(self.config, delay=self.delay).run(force=force)
+        elif isinstance(self.config, MouseButtonActionConfig):
+            return PressReleaseButton(self.config, delay=self.delay).run(force=force)
+        else:
+            raise NotImplementedError(f"Unknown config type: {self.config}")

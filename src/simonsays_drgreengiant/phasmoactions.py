@@ -88,7 +88,7 @@ class Walk(GenericAction):
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
         actionconfig: WalkConfig = self.config
-        return hidactions.PressReleaseKey(actionconfig.hidconfig, actionconfig.duration).run(force=force)
+        return hidactions.PressReleaseKeyOrButton(actionconfig.hidconfig, actionconfig.duration).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -164,9 +164,9 @@ class Sprint(Walk):
         actionconfig: SprintConfig = self.config
 
         return actions.ActionSequence([
-            hidactions.PressKey(actionconfig.hidconfig),
+            hidactions.PressKeyOrButton(actionconfig.hidconfig),
             self.direction.to_action()(self.config_fn),
-            hidactions.ReleaseKey(actionconfig.hidconfig),
+            hidactions.ReleaseKeyOrButton(actionconfig.hidconfig),
         ]).run(force=force)
 
 
