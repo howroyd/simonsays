@@ -1,0 +1,2 @@
+[run]
+omit = run_tests.py, __init__.py, main.py

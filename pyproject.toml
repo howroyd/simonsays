@@ -1,0 +1,43 @@
+[build-system]
+requires = ["pytest", "pytest-cov", "setuptools>=61.0", "PyInstaller", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simonsays_drgreengiant"
+version = "2.0.0rc7"
+authors = [{ name = "Simon Howroyd", email = "howroydlsu@gmail.com" }]
+description = "A Twitch Plays style programme to allow users in Twitch chats to control the broadcasters mouse and keyboard"
+keywords = ["twitch", "chat", "twitchplays", "troll"]
+readme = "README.md"
+requires-python = ">=3.11.4"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment",
+    "Topic :: Communications :: Chat :: Internet Relay Chat",
+]
+dynamic = ["dependencies"]
+
+[project.urls]
+"Homepage" = "https://github.com/howroyd/simonsays"
+"Repository" = "https://github.com/howroyd/simonsays"
+"Bug Tracker" = "https://github.com/howroyd/simonsays/issues"
+
+[tool.setuptools.packages.find]
+where = ["src", "tests"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+minversion = "2.0"
+python_files = ["tests/test_*.py", "tests/*_test.py"]
+addopts = [
+    "--cov=.",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+#    "--cov-fail-under=95",
+]
+filterwarnings = "ignore::DeprecationWarning"

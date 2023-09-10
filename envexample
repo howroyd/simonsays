@@ -1,0 +1,5 @@
+VERSION=0.0.0dev
+DEBUG=false
+OFFLINE=false
+NO_BLOCKLIST=false
+IRC_LOGFILE=
