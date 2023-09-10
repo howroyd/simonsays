@@ -6,9 +6,15 @@
 
 Taking inspiration from the many other "TwitchPlays" style programmes, including that featured by [DougDoug](#original-file-header-comments), this software has been specifically created to be an easy to use for those non programmers among the gaming community.
 
-Out of the box, this uses a [connection](https://github.com/howroyd/twitchirc) to Twitch chat, in a receive only mode, to capture messages typed by viewers.  Connections to multiple different chats simultaneously is possible for collaboration streams!
+Out of the box, this uses a [connection](https://github.com/howroyd/twitchirc) to Twitch chat, in a receive-only mode, to capture messages typed by viewers.  Connections to multiple different chats simultaneously is possible for collaboration streams!
 
-Trigger words must be at the start of a sentence typed in chat and do not need to be prepended by an `!` like many other bots.  However, you can reconfigure the trigger words however you like.
+Trigger words must be at the start of a sentence typed in chat and ***do not*** need to be prepended by a `!` like many other bots.  However, you can reconfigure the trigger words however you like.
+
+## How To Guide
+
+For basic installation and usage in a video format, I have recorded the below on YouTube:
+
+[![How to guide video](https://img.youtube.com/vi/tYnfSwJiYAY/default.jpg)](https://youtu.be/tYnfSwJiYAY)
 
 ## Compatibility
 
@@ -24,13 +30,13 @@ So you have a few options:
 
 - Disable Windows Defender; Hell no.  Don't do this.  Anyone who tells you to is either an idiot, dangerous or both.
 - Go into Windows Defender, look at the history, and allow this, and only this, `exe` that it has blocked.
-- or, don't use the `exe`; instead run the raw Python (see below)
+- ... or, don't use the `exe`; instead run the raw Python (see below)
 
-This code opens connections over the internet, sends and receives data and initiates HID (keyboard and mouse) commands.  It looks exactly like many Trojans which do this nefariously.  It is only you, the human, that can decide whether it is malicious or not.  Hopefully you can see all the information here to inform that decision.  To assist I have added Github actions which will show a green tick on the repository if it has passed code analysis scans for security usind `CodeQL`.  These scans also happen weekly, so if a vulnerability exists that currently is not known about, becomes known, then that green tick will change to a red cross.  Hopefully, this provides peace of mind even if this software stops being maintained; you can still see whether it is still safe or not.  Furthermore, I do not manually build the executables any more, this is done autonomously by GitHub *only* if the code scans pass at the time of release.
+This code opens connections over the internet, sends and receives data and initiates HID (keyboard and mouse) commands.  It looks exactly like many Trojans which do this nefariously.  It is only you, the human, that can decide whether it is malicious or not.  Hopefully you can see all the information here to inform that decision.  To assist I have added GitHub actions which will show a green tick on the repository if it has passed code analysis scans for security using `CodeQL`.  These scans also happen weekly, so if a vulnerability exists that currently is not known about, becomes known, then that green tick will change to a red cross.  Hopefully, this provides peace of mind even if this software stops being maintained; you can still see whether it is still safe or not.  Furthermore, I do not manually build the executables any more, this is done autonomously by GitHub *only* if the code scans pass at the time of release.
 
 ## Contributing and Thanks
 
-This software is provided free of charge under the license found [here](./LICENSE).  It is kindly requested that if you enjoy using SimonSays then please do promote the links to this so more people can have fun.
+This software is provided free of charge under the licence found [here](./LICENSE).  It is kindly requested that if you enjoy using SimonSays then please do promote the links to this so more people can have fun.
 
 It would be fun to extend this to be able to connect to other chat servers such as, YouTube, Kick, etc.  If you're interested in this then please let me know by raising an [issue](https://github.com/howroyd/simonsays/issues).
 
@@ -48,7 +54,7 @@ The latest release can be found [here](https://github.com/howroyd/simonsays/rele
 
 Other releases are published on GitHub [here](https://github.com/howroyd/simonsays/releases).
 
-Look for the one tagged in green `latest`.  At the bottom of that release you will see a drop-down box called **Assets** which has the `windows_release.zip` and `linux_release.tar.gz`.  Unzip the file to a location of your choice, e.g. your Desktop, and run the contained file.  It will generate a config file so tghat if you change any keybindings, etc, they will be remembered.
+Look for the one tagged in green `latest`.  At the bottom of that release you will see a drop-down box called **Assets** which has the `windows_release.zip` and `linux_release.tar.gz`.  Unzip the file to a location of your choice, e.g. your Desktop, and run the contained file.  It will generate a config file so that if you change any keybinding, etc, they will be remembered.
 
 ### As a Python Module
 
@@ -73,7 +79,7 @@ simonsays.main()
 Although this software is a complete re-write of the code that inspired me, I would still love to give credit to the original source code that got me started:
 
 >
-> Written by DougDoug and DDarknut
+> Written by [DougDoug](https://www.twitch.tv/dougdoug) and DDarknut
 >
 > Hello! This file contains the main logic to process Twitch chat and convert it to game commands.
 > The code is written in Python 3.X
