@@ -25,7 +25,7 @@ def update_env() -> None:
             # with open(DATAPATH, "r") as f:
             for line in f.readlines():
                 thisline = line.strip()
-                if thisline.startswith("#") or not "=" in thisline:
+                if thisline.startswith("#") or "=" not in thisline:
                     continue
                 key, value = thisline.split("=", 1)
                 newvars[key] = value

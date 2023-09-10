@@ -4,7 +4,6 @@ import enum
 import functools
 import hashlib
 import shutil
-
 from typing import Callable, NoReturn, Self
 from urllib.request import urlretrieve
 
@@ -22,10 +21,11 @@ DEFAULT_SUPERUSERS = {"drgreengiant"}
 DEFAULT_SUPERUSER_COMMAND_PREFIX = "sudo"
 DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 
-BLOCKLIST = []
+BLOCKLIST = set()
 if not NO_BLOCKLIST:
     _f = open(urlretrieve("https://github.com/howroyd/simonsays/releases/latest/download/blocklist")[0], "r")
-    BLOCKLIST = [line.strip() for line in _f.readlines()]
+    BLOCKLIST = set((line.strip() for line in _f.readlines()))
+    # BLOCKLIST.append("aa33eec00ac57b2c52f2f212ae8ee663f330bc67d0238ad5558a0476f8761267")  # "drgreengiant" for testing
     _f.close()
     del _f
 del urlretrieve
@@ -33,10 +33,10 @@ del urlretrieve
 # test = phasmoactions.PhasmoActions()
 
 
-def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> list[str] | NoReturn:
+def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> set[str] | NoReturn:
     """Return any channels/users in the blocklist"""
     channels = channel if isinstance(channel, set) else set(channel)
-    blockedchannels = [channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST]
+    blockedchannels = set((channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST))
 
     if blockedchannels:
         if not silent:

@@ -41,7 +41,7 @@ Valid commands are:\n{make_commands_str(myconfig)}
 
 Channels: {', '.join(myconfig.channel)}
 \n
-    """
+"""
 
 
 def channel_connected(myconfig: config.Config) -> None:
