@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simonsays_drgreengiant"
-version = "2.0.0rc6"
+version = "2.0.0rc7"
 authors = [{ name = "Simon Howroyd", email = "howroydlsu@gmail.com" }]
 description = "A Twitch Plays style programme to allow users in Twitch chats to control the broadcasters mouse and keyboard"
 keywords = ["twitch", "chat", "twitchplays", "troll"]

@@ -5,7 +5,7 @@ import platform
 from typing import Any, Callable, Protocol, Self
 
 from pynput.keyboard import Controller as Keyboard
-from pynput.keyboard import Key
+from pynput.keyboard import Key, KeyCode
 from pynput.keyboard import Listener as KeyboardListener
 
 from . import actions, environment, errorcodes
