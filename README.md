@@ -10,6 +10,8 @@ Out of the box, this uses a [connection](https://github.com/howroyd/twitchirc) t
 
 Trigger words must be at the start of a sentence typed in chat and ***do not*** need to be prepended by a `!` like many other bots.  However, you can reconfigure the trigger words however you like.
 
+The beautiful artwork is courtesy of the wonderful **Szinie**.  Please do show appreciation over on her [Twitch channel](https://www.twitch.tv/szinie).
+
 ## How To Guide
 
 For basic installation and usage in a video format, I have recorded the below on YouTube:
