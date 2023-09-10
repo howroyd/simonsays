@@ -5,7 +5,7 @@ import platform
 from typing import Any, Callable, Protocol, Self
 
 from pynput.keyboard import Controller as Keyboard
-from pynput.keyboard import Key, KeyCode
+from pynput.keyboard import Key
 from pynput.keyboard import Listener as KeyboardListener
 
 from . import actions, environment, errorcodes
@@ -37,6 +37,8 @@ def start_listeners(on_press: KeybindChangeCallback) -> tuple[KeyboardListener, 
     """Start the listeners for a keyboard or mouse event"""
     global keyboard_listener, mouse_listener
 
+    print("Starting keyboard and mouse listeners...", end="", flush=True)  # NOTE: flushing so it is very clear when we start keylogging
+
     def on_keyboard(key: Key) -> None:
         """Callback for a keyboard event"""
         on_press(key)
@@ -51,6 +53,8 @@ def start_listeners(on_press: KeybindChangeCallback) -> tuple[KeyboardListener, 
     mouse_listener = MouseListener(on_click=on_mouse_button)
     mouse_listener.start()
 
+    print("listening", flush=True)
+
     return (keyboard_listener, mouse_listener)
 
 
@@ -58,8 +62,12 @@ def stop_listeners() -> None:
     """Stop the keyboard and mouse listeners"""
     global keyboard_listener, mouse_listener
 
+    print("Stopping keyboard and mouse listeners...", end="", flush=True)  # NOTE: flushing so it is very clear when we stop keylogging
+
     keyboard_listener.stop()
     mouse_listener.stop()
+
+    print("stopped", flush=True)
 
 
 def dummy_run(message: str) -> errorcodes.ErrorSet:
