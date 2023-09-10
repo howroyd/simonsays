@@ -16,6 +16,8 @@ For basic installation and usage in a video format, I have recorded the below on
 
 [![How to guide video](https://img.youtube.com/vi/tYnfSwJiYAY/default.jpg)](https://youtu.be/tYnfSwJiYAY)
 
+The latest release can be found [here](https://github.com/howroyd/simonsays/releases/latest).
+
 ## Compatibility
 
 This software talks directly to the operating system *as if* it were a mouse or keyboard plugged into your machine.  It does not modify any game code nor any files on your computer.  It has been tested in Windows and Linux.
