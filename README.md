@@ -2,7 +2,7 @@
 
 [![CodeQL Vulnerabilities](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/codeql-analysis.yml)\
 [![Bandit Python Vulnerabilities](https://github.com/howroyd/simonsays/actions/workflows/bandit.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/bandit.yml)\
-[![Pysa Static Analysis](https://github.com/howroyd/simonsays/actions/workflows/pysa.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/pysa.yml)
+[![Pysa Static Analysis](https://github.com/howroyd/simonsays/actions/workflows/pysa.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/pysa.yml)\
 [![Linting and Testing](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-testing.yml)\
 [![Build and Release](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml/badge.svg)](https://github.com/howroyd/simonsays/actions/workflows/python-publish.yml)
 
