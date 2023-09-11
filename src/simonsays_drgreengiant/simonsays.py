@@ -2,6 +2,7 @@
 import concurrent.futures as cf
 import contextlib
 import functools
+import pprint
 from typing import NoReturn
 
 from twitchirc_drgreengiant import offlineirc, twitchirc
@@ -23,24 +24,45 @@ def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> 
 
 def make_commands_str(myconfig: config.Config) -> str:
     """Make a command string to paste into chat"""
-    return ", ".join((f"{value.twitch.command[0]}" for value in myconfig.config.values()))
+    ret = pprint.pformat([value.twitch.command[0] for value in myconfig.config.values()], compact=True)
+    return ret.replace("'", "").replace("[", "").replace("]", "")
+
+
+def license() -> str:
+    """Make the license string"""
+    return """\tThis program is free software; you can redistribute it and/or modify
+\tit under the terms of the GNU General Public License version 2 as published by
+\tthe Free Software Foundation.
+
+\tThis program is distributed in the hope that it will be useful,
+\tbut WITHOUT ANY WARRANTY; without even the implied warranty of
+\tMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+\tGNU General Public License for more details.
+
+\tYou should have received a copy of the GNU General Public License along
+\twith this program; if not, write to the Free Software Foundation, Inc.,
+\t51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+"""
 
 
 def preamble(myconfig: config.Config) -> str:
     """Make the preamble"""
-    return f"""\n\t\t--- SimonSays v{VERSION} ---\n
-\tCreated by twitch.tv/DrGreenGiant (Simon Howroyd)
+    return f"""\n\t\t---  ---\n
+\tSimonSays v{VERSION} - Twitch chat interaction to keyboard and mouse
+\tcommands, aimed at Phasmophobia game livestreams.
+\tCopyright (C) 2023 Simon Howroyd
 
-\tThis software is licensed under:
-\tGNU GENERAL PUBLIC LICENSE version 2.0 (GPL-2.0)
+{license()}
 
 \tFor more information on this software, visit:
 \t\thttps://github.com/howroyd/SimonSays
 
-Valid commands are:\n{make_commands_str(myconfig)}
+Valid commands are:
+{make_commands_str(myconfig)}
 
-Channels: {', '.join(myconfig.channel)}
-\n
+Channels set in config.toml:
+{', '.join(myconfig.channel)}
+
 """
 
 
