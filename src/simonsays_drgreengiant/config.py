@@ -5,7 +5,6 @@ import functools
 import hashlib
 import shutil
 from typing import Callable, NoReturn, Self
-from urllib.request import urlretrieve
 
 import tomlkit
 
@@ -23,14 +22,13 @@ DEFAULT_BOTS = {"buttsbot", "streamelements", "nightbot", "streamlabs"}
 
 BLOCKLIST = set()
 if not NO_BLOCKLIST:
-    _f = open(urlretrieve("https://github.com/howroyd/simonsays/releases/latest/download/blocklist")[0], "r")
-    BLOCKLIST = set((line.strip() for line in _f.readlines()))
-    # BLOCKLIST.append("aa33eec00ac57b2c52f2f212ae8ee663f330bc67d0238ad5558a0476f8761267")  # "drgreengiant" for testing
-    _f.close()
-    del _f
-del urlretrieve
+    import urllib.request as urllib_request
 
-# test = phasmoactions.PhasmoActions()
+    with urllib_request.urlopen("https://github.com/howroyd/simonsays/releases/latest/download/blocklist") as _blocklist:
+        BLOCKLIST = set((line.strip() for line in _blocklist.readlines()))
+
+        del urllib_request
+    del _blocklist
 
 
 def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> set[str] | NoReturn:
