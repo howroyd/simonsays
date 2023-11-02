@@ -1,4 +1,6 @@
 Pillow
 pynput
+requests
+semantic-version
 tomlkit
 twitchirc_drgreengiant
