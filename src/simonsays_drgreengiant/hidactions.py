@@ -130,6 +130,16 @@ class MouseMoveCartesianActionConfig:
     device: HidType = HidType.MOUSE_MOVE
 
 
+@dataclasses.dataclass(slots=True)
+class MouseMoveCartesianSmoothActionConfig:
+    """An action to move the mouse in cartesian coordinates in a smooth way"""
+    x: int
+    y: int
+    repeats: int = 10
+    pause: float = 0.01
+    device: HidType = HidType.MOUSE_MOVE
+
+
 class MouseMoveDirectionUnknown(Exception):
     """Unknown mouse move direction"""
     pass
@@ -172,7 +182,17 @@ class MouseMoveDirectionActionConfig:
     device: HidType = HidType.MOUSE_MOVE
 
 
-Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveCartesianActionConfig | MouseMoveDirectionActionConfig
+@dataclasses.dataclass(slots=True)
+class MouseMoveDirectionSmoothActionConfig:
+    """An action to move the mouse smoothly in a direction"""
+    distance: int
+    direction: MouseMoveDirection
+    repeats: int = 10
+    pause: float = 0.01
+    device: HidType = HidType.MOUSE_MOVE
+
+
+Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveCartesianActionConfig | MouseMoveCartesianSmoothActionConfig | MouseMoveDirectionActionConfig | MouseMoveDirectionSmoothActionConfig
 
 #####################################################################
 
@@ -245,6 +265,22 @@ class MoveMouseRelative:
 
 
 @dataclasses.dataclass(slots=True)
+class MoveMouseRelativeSmooth:
+    """Move the mouse relative to its current position"""
+    config: MouseMoveCartesianSmoothActionConfig
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        if not DEBUG:
+            x = self.config.x // self.config.repeats
+            y = self.config.y // self.config.repeats
+            look_action = MoveMouseRelative(MouseMoveCartesianActionConfig(x, y))
+
+            return actions.ActionRepeatWithWait(look_action, self.config.repeats, actions.Wait(self.config.pause)).run(force=force)
+        return dummy_run(f"Moving mouse smoothly (relative) by: {self.config.x}, {self.config.y} in {self.config.repeats} repeats with {self.config.pause} pause")
+
+
+@dataclasses.dataclass(slots=True)
 class MoveMouseRelativeDirection:
     """Move the mouse relative to its current position in a direction"""
     config: MouseMoveDirectionActionConfig
@@ -254,6 +290,23 @@ class MoveMouseRelativeDirection:
         if not DEBUG:
             mouse.move(*MouseMoveDirection.to_cartesian(self.config.direction, self.config.distance))
         return dummy_run(f"Moving mouse (relative direction) by: {self.config.distance} in direction {self.config.direction.value}")
+
+
+@dataclasses.dataclass(slots=True)
+class MoveMouseRelativeDirectionSmooth:
+    """Move the mouse relative to its current position, smoothly in a direction"""
+    config: MouseMoveDirectionSmoothActionConfig
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        if not DEBUG:
+            x, y = MouseMoveDirection.to_cartesian(self.config.direction, self.config.distance)
+            x = x // self.config.repeats
+            y = y // self.config.repeats
+            look_action = MoveMouseRelative(MouseMoveCartesianActionConfig(x, y))
+
+            return actions.ActionRepeatWithWait(look_action, self.config.repeats, actions.Wait(self.config.pause)).run(force=force)
+        return dummy_run(f"Moving mouse smoothly (relative direction) by: {self.config.distance} in directino {self.config.direction.value} repeats with {self.config.pause} pause")
 
 
 @dataclasses.dataclass(slots=True)
