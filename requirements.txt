@@ -2,3 +2,4 @@ Pillow
 pynput
 tomlkit
 twitchirc_drgreengiant
+semantic-version

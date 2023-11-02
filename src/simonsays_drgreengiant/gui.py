@@ -8,6 +8,8 @@ import tkinter as tk
 from collections.abc import Iterable
 from typing import Any, Callable, NoReturn, Optional
 
+import semantic_version
+
 from . import config, environment, hidactions
 
 KEY_IGNORED_STR = 'ignored'
@@ -171,7 +173,7 @@ def make_window(cfg: config.Config, width_px: int, height_px: int) -> tk.Tk:
     return window
 
 
-def make_canvas(cfg: config.Config, image_path: str, *, window: tk.Tk | None = None) -> tk.Canvas:
+def make_canvas(cfg: config.Config, image_path: str, updateavailable: semantic_version = None, *, window: tk.Tk | None = None) -> tk.Canvas:
     """Make the canvas with a background image"""
     # img = tk.PhotoImage(file=image_path)
     from PIL import Image
@@ -187,7 +189,13 @@ def make_canvas(cfg: config.Config, image_path: str, *, window: tk.Tk | None = N
     canvas.image = img  # Keep a reference to the image to prevent garbage collection
     channels = "\n".join(cfg.channel)
     canvas.create_text((5, 5), text=f"Connected to channels:\n{channels}", anchor=tk.N + tk.W)
-    canvas.create_text((img.width() - 5, 5), text=f"Version: {cfg.version}", anchor=tk.N + tk.E)
+
+    versiontext = f"Version: {cfg.version}"
+    if updateavailable:
+        versiontext += "\nNew version available!"
+        versiontext += f"\nLatest version: {updateavailable}"
+
+    canvas.create_text((img.width() - 5, 5), text=versiontext, anchor=tk.N + tk.E)
 
     window.update()
 
@@ -490,9 +498,9 @@ def enabled_cb(cfg: config.Config, enabled_button: tk.Button, state_var: tk.Bool
         print("Enabled")
 
 
-def make_gui(cfg: config.Config) -> tuple[tk.Tk, mp.Event, Callable]:
+def make_gui(cfg: config.Config, updateavailable: semantic_version.Version = None) -> tuple[tk.Tk, mp.Event, Callable]:
     """Make the GUI"""
-    canvas = make_canvas(cfg, environment.resource_path("assets", "Green_tato_640.png"))
+    canvas = make_canvas(cfg, environment.resource_path("assets", "Green_tato_640.png"), updateavailable)
     window = canvas.winfo_toplevel()
 
     triggerredraw = mp.Event()

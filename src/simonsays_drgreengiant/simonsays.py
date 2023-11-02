@@ -5,6 +5,8 @@ import functools
 import pprint
 from typing import NoReturn
 
+import requests
+import semantic_version
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
 from . import config, environment, errorcodes, gui, twitchactions
@@ -100,6 +102,15 @@ def get_action_from_message(myconfig: config.Config, msg: twitchirc.TwitchMessag
     return functools.partial(myconfig.actions[tag].run, force=sudo), tag
 
 
+def check_for_updates() -> semantic_version.Version | None:
+    latest = requests.get("https://api.github.com/repos/howroyd/simonsays/releases/latest")
+    latestversion = semantic_version.Version(latest.json()["tag_name"].lstrip("v"))
+    thisversion = semantic_version.Version.coerce(VERSION.lstrip("v"))
+    if latestversion > thisversion:
+        return latestversion
+    return None
+
+
 def main() -> NoReturn:
     myconfig = config.Config.load(VERSION)
     myconfig.save(backup_old=True)
@@ -109,16 +120,20 @@ def main() -> NoReturn:
     with contextlib.ExitStack() as stack:
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
+        updateavailable = None
         irc = None
         if config.OFFLINE:
             print("OFFLINE MODE")
             irc = stack.enter_context(offlineirc.OfflineIrc(myconfig.channel, username="drgreengiant"))
         else:
+            if updateavailable := check_for_updates():
+                print(f"Update available!  Current version: {VERSION}, Latest version: {updateavailable}")
+                print("https://github.com/howroyd/simonsays/releases/tag/2.0.0\n\n")
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
 
         print(channel_connected(myconfig))
 
-        mygui, exit_event, redraw_gui = gui.make_gui(myconfig)
+        mygui, exit_event, redraw_gui = gui.make_gui(myconfig, updateavailable=updateavailable)
 
         while True:
             redraw_gui()  # Required otherwise you can't click stuff
