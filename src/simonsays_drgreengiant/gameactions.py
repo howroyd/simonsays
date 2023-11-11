@@ -125,6 +125,8 @@ class GenericAction(GenericActionBase):
             return hidactions.MoveMouseRelative(actionconfig.hidconfig).run(force=force)
         elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionActionConfig):
             return hidactions.MoveMouseRelativeDirection(actionconfig.hidconfig).run(force=force)
+        elif isinstance(actionconfig.hidconfig, hidactions.MouseMoveDirectionSmoothActionConfig):
+            return hidactions.MoveMouseRelativeDirectionSmooth(actionconfig.hidconfig).run(force=force)
         else:
             return errorcodes.errorset(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 

@@ -350,7 +350,7 @@ class LookUp(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookUpConfig(LookConfig):
     """Look up config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.UP))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.UP))
 
 
 @dataclasses.dataclass(slots=True)
@@ -363,7 +363,7 @@ class LookDown(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookDownConfig(LookConfig):
     """Look down config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
 
 
 @dataclasses.dataclass(slots=True)
@@ -376,7 +376,7 @@ class LookLeft(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookLeftConfig(LookConfig):
     """Look left config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
 
 
 @dataclasses.dataclass(slots=True)
@@ -389,7 +389,7 @@ class LookRight(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookRightConfig(LookConfig):
     """Look right config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
 
 
 PeekConfig = LookConfig
@@ -405,7 +405,7 @@ class PeekUp(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekUpConfig(PeekConfig):
     """Peek up config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.UP))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.UP))
 
 
 @dataclasses.dataclass(slots=True)
@@ -418,7 +418,7 @@ class PeekDown(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekDownConfig(PeekConfig):
     """Peek down config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
 
 
 @dataclasses.dataclass(slots=True)
@@ -431,7 +431,7 @@ class PeekLeft(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekLeftConfig(PeekConfig):
     """Peek left config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
 
 
 @dataclasses.dataclass(slots=True)
@@ -444,7 +444,7 @@ class PeekRight(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekRightConfig(PeekConfig):
     """Peek right config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
 
 #####################################################################
 
@@ -734,8 +734,8 @@ class Headbang(GenericActionBase):
 
         distance = actionconfig.distance or DEFAULTS.PEEK_DISTANCE
 
-        lookup = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, hidactions.MouseMoveDirection.UP))
-        lookdown = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, hidactions.MouseMoveDirection.DOWN))
+        lookup = hidactions.MoveMouseRelativeDirectionSmooth(hidactions.MouseMoveDirectionSmoothActionConfig(distance, hidactions.MouseMoveDirection.UP))
+        lookdown = hidactions.MoveMouseRelativeDirectionSmooth(hidactions.MouseMoveDirectionSmoothActionConfig(distance, hidactions.MouseMoveDirection.DOWN))
 
         once = actions.ActionSequence([lookup, actions.Wait(pause), lookdown])
         return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run(force=force)
