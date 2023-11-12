@@ -861,7 +861,7 @@ class FreezeConfig:
     """Counterstrafe to freeze on the spot config"""
     hidconfig: hidactions.Config = None
     _pause: float = 0.01
-    _repeats: int = dataclasses.field(init=False)
+    _repeats: int = int(5 / 4 / 0.01)
 
     def __post_init__(self) -> None:
         self._repeats = int(5.0 / 4.0 / self._pause)
@@ -875,6 +875,68 @@ class FreezeConfig:
     def repeats(self) -> int:
         """Get the repeats"""
         return self._repeats
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Tornado(GenericActionBase):
+    """Spin on the spot whilst yeeting"""
+    name: str = "tornado"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: TornadoConfig = self.config
+
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE,
+                                                              actionconfig.mousemovedirection or random.choice([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]),
+                                                              pause=actionconfig.pause)
+
+        look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
+        lookfar = actions.ActionRepeat(look, 4)
+        dropaction = Drop(self.config_fn)
+        switchaction = Switch(self.config_fn)
+
+        lookanddrop = actions.ActionSequence([lookfar, dropaction, switchaction])
+
+        return actions.ActionRepeat(lookanddrop, 4).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class TornadoConfig:
+    """Spin on the spot whilst yeeting config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.005
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (25, 50))
+    _mousemovedirection: hidactions.MouseMoveDirection = None
+    _distance: int = DEFAULTS.LOOK_DISTANCE // 5
+
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
+
+        self.hidconfig = hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, None, pause=self._pause)
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
+
+    @property
+    def mousemovedirection(self) -> hidactions.MouseMoveDirection:
+        """Get the mouse move direction"""
+        return self._mousemovedirection or random.choice(list([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]))
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
 
 #####################################################################
 
@@ -945,6 +1007,7 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         Yoga(None).name: gameactions.ActionAndConfig(Yoga, YogaConfig()),
         Feet(None).name: gameactions.ActionAndConfig(Feet, FeetConfig()),
         Freeze(None).name: gameactions.ActionAndConfig(Freeze, FreezeConfig()),
+        Tornado(None).name: gameactions.ActionAndConfig(Tornado, TornadoConfig()),
     }
 
 
@@ -1015,6 +1078,7 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         Yoga(config_fn),
         Feet(config_fn),
         Freeze(config_fn),
+        Tornado(config_fn),
     ]
 
 
@@ -1063,4 +1127,5 @@ def default_config() -> gameactions.Config:
         Yoga(None).name: YogaConfig(),
         Feet(None).name: FeetConfig(),
         Freeze(None).name: FreezeConfig(),
+        Tornado(None).name: TornadoConfig(),
     })
