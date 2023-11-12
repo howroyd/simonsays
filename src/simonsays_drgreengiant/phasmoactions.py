@@ -332,6 +332,26 @@ class TalkConfig:
         """Get the duration"""
         return self._duration
 
+
+@dataclasses.dataclass(slots=True)
+class Radio(GenericAction):
+    """Toggle global push to talk radio for a period of time"""
+    name: str = "radio"
+    chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class RadioConfig:
+    """Toggle global push to talk radio for a period of time config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("b"))
+    _duration: float = DEFAULTS.TALK_DURATION
+
+    @property
+    def duration(self) -> float:
+        """Get the duration"""
+        return self._duration
+
+
 #####################################################################
 
 
@@ -846,6 +866,7 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         Switch(None).name: gameactions.ActionAndConfig(Switch, SwitchConfig()),
         TorchToggle(None).name: gameactions.ActionAndConfig(TorchToggle, TorchToggleConfig()),
         Talk(None).name: gameactions.ActionAndConfig(Talk, TalkConfig()),
+        Radio(None).name: gameactions.ActionAndConfig(Radio, RadioConfig()),
         LookUp(None).name: gameactions.ActionAndConfig(LookUp, LookUpConfig()),
         LookDown(None).name: gameactions.ActionAndConfig(LookDown, LookDownConfig()),
         LookLeft(None).name: gameactions.ActionAndConfig(LookLeft, LookLeftConfig()),
@@ -914,6 +935,7 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         Switch(config_fn),
         TorchToggle(config_fn),
         Talk(config_fn),
+        Radio(config_fn),
         LookUp(config_fn),
         LookDown(config_fn),
         LookLeft(config_fn),
@@ -960,6 +982,7 @@ def default_config() -> gameactions.Config:
         Switch(None).name: SwitchConfig(),
         TorchToggle(None).name: TorchToggleConfig(),
         Talk(None).name: TalkConfig(),
+        Radio(None).name: RadioConfig(),
         LookUp(None).name: LookUpConfig(),
         LookDown(None).name: LookDownConfig(),
         LookLeft(None).name: LookLeftConfig(),
