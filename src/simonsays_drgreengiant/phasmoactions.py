@@ -822,6 +822,64 @@ class FeetConfig(LookConfig):
 
 
 @dataclasses.dataclass(slots=True)
+class Freeze(GenericActionBase):
+    """Counterstrafe to freeze on the spot"""
+    name: str = "freeze"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: FreezeConfig = self.config
+
+        forwardPress = hidactions.PressKeyOrButton(WalkForwardConfig().hidconfig)
+        rightPress = hidactions.PressKeyOrButton(WalkRightConfig().hidconfig)
+        backwardPress = hidactions.PressKeyOrButton(WalkBackwardConfig().hidconfig)
+        leftPress = hidactions.PressKeyOrButton(WalkLeftConfig().hidconfig)
+
+        press = actions.ActionSequence([forwardPress,
+                                        rightPress,
+                                        backwardPress,
+                                        leftPress])
+
+        forwardRelease = hidactions.ReleaseKeyOrButton(WalkForwardConfig().hidconfig)
+        rightRelease = hidactions.ReleaseKeyOrButton(WalkRightConfig().hidconfig)
+        backwardRelease = hidactions.ReleaseKeyOrButton(WalkBackwardConfig().hidconfig)
+        leftRelease = hidactions.ReleaseKeyOrButton(WalkLeftConfig().hidconfig)
+
+        release = actions.ActionSequence([forwardRelease,
+                                          rightRelease,
+                                          backwardRelease,
+                                          leftRelease])
+
+        once = actions.ActionSequence([press, actions.Wait(actionconfig.pause), release, actions.Wait(actionconfig.pause)])
+
+        return actions.ActionRepeat(once, actionconfig.repeats).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class FreezeConfig:
+    """Counterstrafe to freeze on the spot config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.01
+    _repeats: int = dataclasses.field(init=False)
+
+    def __post_init__(self) -> None:
+        self._repeats = int(5.0 / 4.0 / self._pause)
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
 class RandomAction(GenericActionBase):
     """Pich a random action and run it"""
     name: str = "random"
@@ -886,6 +944,7 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         Headbang(None).name: gameactions.ActionAndConfig(Headbang, HeadbangConfig()),
         Yoga(None).name: gameactions.ActionAndConfig(Yoga, YogaConfig()),
         Feet(None).name: gameactions.ActionAndConfig(Feet, FeetConfig()),
+        Freeze(None).name: gameactions.ActionAndConfig(Freeze, FreezeConfig()),
     }
 
 
@@ -955,6 +1014,7 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         Headbang(config_fn),
         Yoga(config_fn),
         Feet(config_fn),
+        Freeze(config_fn),
     ]
 
 
@@ -1002,4 +1062,5 @@ def default_config() -> gameactions.Config:
         Headbang(None).name: HeadbangConfig(),
         Yoga(None).name: YogaConfig(),
         Feet(None).name: FeetConfig(),
+        Freeze(None).name: FreezeConfig(),
     })
