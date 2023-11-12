@@ -772,6 +772,21 @@ class HeadbangConfig:
 
 
 @dataclasses.dataclass(slots=True)
+class Yoga(GenericAction):
+    """Look up to the sky"""
+    name: str = "yoga"
+    chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class YogaConfig(LookConfig):
+    """Look up to the sky config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP))
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
 class RandomAction(GenericActionBase):
     """Pich a random action and run it"""
     name: str = "random"
@@ -833,6 +848,7 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         DropAllItems(None).name: gameactions.ActionAndConfig(DropAllItems, DropAllItemsConfig()),
         Spin(None).name: gameactions.ActionAndConfig(Spin, SpinConfig()),
         Headbang(None).name: gameactions.ActionAndConfig(Headbang, HeadbangConfig()),
+        Yoga(None).name: gameactions.ActionAndConfig(Yoga, YogaConfig()),
     }
 
 
@@ -899,6 +915,7 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         DropAllItems(config_fn),
         Spin(config_fn),
         Headbang(config_fn),
+        Yoga(config_fn),
     ]
 
 
@@ -943,4 +960,5 @@ def default_config() -> gameactions.Config:
         DropAllItems(None).name: DropAllItemsConfig(),
         Spin(None).name: SpinConfig(),
         Headbang(None).name: HeadbangConfig(),
+        Yoga(None).name: YogaConfig(),
     })
