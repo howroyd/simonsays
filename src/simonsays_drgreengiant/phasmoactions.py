@@ -792,6 +792,60 @@ class HeadbangConfig:
 
 
 @dataclasses.dataclass(slots=True)
+class Headshake(GenericActionBase):
+    """Look left and right repeatedly"""
+    name: str = "headshake"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: HeadshakeConfig = self.config
+        repeats = actionconfig.repeats
+        pause = actionconfig.pause
+
+        if DEBUG:
+            print(f"Headshake: repeats={repeats}, pause={pause}")
+
+        distance = actionconfig.distance or DEFAULTS.PEEK_DISTANCE
+
+        lookleft = hidactions.MoveMouseRelativeDirectionSmooth(hidactions.MouseMoveDirectionSmoothActionConfig(distance, hidactions.MouseMoveDirection.LEFT))
+        lookright = hidactions.MoveMouseRelativeDirectionSmooth(hidactions.MouseMoveDirectionSmoothActionConfig(distance, hidactions.MouseMoveDirection.RIGHT))
+
+        once = actions.ActionSequence([lookleft, actions.Wait(pause), lookright])
+        return actions.ActionRepeatWithWait(once, repeats, actions.Wait(pause)).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class HeadshakeConfig:
+    """Look left and right repeatedly config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.33
+    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
+    _distance: int = DEFAULTS.PEEK_DISTANCE
+
+    def __post_init__(self) -> None:
+        if not isinstance(self._repeats, tuple):
+            self._repeats = tuple(self._repeats)
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return random.randint(*self._repeats)
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
 class Yoga(GenericAction):
     """Look up to the sky"""
     name: str = "yoga"
@@ -932,6 +986,64 @@ class TornadoConfig:
     def distance(self) -> int:
         """Get the distance"""
         return self._distance
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Hurricane(GenericActionBase):
+    """Spin on the spot whilst using items"""
+    name: str = "hurricane"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: TornadoConfig = self.config
+
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance,
+                                                              actionconfig.mousemovedirection,
+                                                              pause=actionconfig.pause)
+
+        look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
+        lookfar = actions.ActionRepeat(look, actionconfig.repeats)
+        useconfig = Use(self.config_fn).config.hidconfig
+        useaction = hidactions.PressReleaseKeyOrButton(useconfig, delay=0.01)
+        dropconfig = Drop(self.config_fn).config.hidconfig
+        dropaction = hidactions.PressReleaseKeyOrButton(dropconfig, delay=0.01)
+        switchaction = Switch(self.config_fn)
+
+        lookanduse = actions.ActionSequence([lookfar, useaction, dropaction, switchaction])
+
+        return actions.ActionRepeat(lookanduse, 4).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class HurricaneConfig:
+    """Spin on the spot whilst using items config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.005
+    _repeats: int = 4
+    _mousemovedirection: hidactions.MouseMoveDirection = None
+    _distance: int = DEFAULTS.LOOK_DISTANCE
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
+
+    @property
+    def mousemovedirection(self) -> hidactions.MouseMoveDirection:
+        """Get the mouse move direction"""
+        return self._mousemovedirection or random.choice(list([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]))
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
 
 #####################################################################
 
@@ -999,10 +1111,12 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         DropAllItems(None).name: gameactions.ActionAndConfig(DropAllItems, DropAllItemsConfig()),
         Spin(None).name: gameactions.ActionAndConfig(Spin, SpinConfig()),
         Headbang(None).name: gameactions.ActionAndConfig(Headbang, HeadbangConfig()),
+        Headshake(None).name: gameactions.ActionAndConfig(Headshake, HeadshakeConfig()),
         Yoga(None).name: gameactions.ActionAndConfig(Yoga, YogaConfig()),
         Feet(None).name: gameactions.ActionAndConfig(Feet, FeetConfig()),
         Freeze(None).name: gameactions.ActionAndConfig(Freeze, FreezeConfig()),
         Tornado(None).name: gameactions.ActionAndConfig(Tornado, TornadoConfig()),
+        Hurricane(None).name: gameactions.ActionAndConfig(Hurricane, HurricaneConfig()),
     }
 
 
@@ -1070,10 +1184,12 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         DropAllItems(config_fn),
         Spin(config_fn),
         Headbang(config_fn),
+        Headshake(config_fn),
         Yoga(config_fn),
         Feet(config_fn),
         Freeze(config_fn),
         Tornado(config_fn),
+        Hurricane(config_fn),
     ]
 
 
@@ -1119,8 +1235,10 @@ def default_config() -> gameactions.Config:
         DropAllItems(None).name: DropAllItemsConfig(),
         Spin(None).name: SpinConfig(),
         Headbang(None).name: HeadbangConfig(),
+        Headshake(None).name: HeadshakeConfig(),
         Yoga(None).name: YogaConfig(),
         Feet(None).name: FeetConfig(),
         Freeze(None).name: FreezeConfig(),
         Tornado(None).name: TornadoConfig(),
+        Hurricane(None).name: HurricaneConfig(),
     })
