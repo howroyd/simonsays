@@ -889,12 +889,12 @@ class Tornado(GenericActionBase):
         """Run the action"""
         actionconfig: TornadoConfig = self.config
 
-        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE,
-                                                              actionconfig.mousemovedirection or random.choice([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]),
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance,
+                                                              actionconfig.mousemovedirection,
                                                               pause=actionconfig.pause)
 
         look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
-        lookfar = actions.ActionRepeat(look, 4)
+        lookfar = actions.ActionRepeat(look, actionconfig.repeats)
         dropaction = Drop(self.config_fn)
         switchaction = Switch(self.config_fn)
 
@@ -908,15 +908,9 @@ class TornadoConfig:
     """Spin on the spot whilst yeeting config"""
     hidconfig: hidactions.Config = None
     _pause: float = 0.005
-    _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (25, 50))
+    _repeats: int = 4
     _mousemovedirection: hidactions.MouseMoveDirection = None
-    _distance: int = DEFAULTS.LOOK_DISTANCE // 5
-
-    def __post_init__(self) -> None:
-        if not isinstance(self._repeats, tuple):
-            self._repeats = tuple(self._repeats)
-
-        self.hidconfig = hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, None, pause=self._pause)
+    _distance: int = DEFAULTS.LOOK_DISTANCE
 
     @property
     def pause(self) -> float:
@@ -926,7 +920,7 @@ class TornadoConfig:
     @property
     def repeats(self) -> int:
         """Get the repeats"""
-        return random.randint(*self._repeats)
+        return self._repeats
 
     @property
     def mousemovedirection(self) -> hidactions.MouseMoveDirection:
