@@ -895,7 +895,8 @@ class Tornado(GenericActionBase):
 
         look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
         lookfar = actions.ActionRepeat(look, actionconfig.repeats)
-        dropaction = Drop(self.config_fn)
+        dropconfig = Drop(self.config_fn).config.hidconfig
+        dropaction = hidactions.PressReleaseKeyOrButton(dropconfig, delay=0.01)
         switchaction = Switch(self.config_fn)
 
         lookanddrop = actions.ActionSequence([lookfar, dropaction, switchaction])
