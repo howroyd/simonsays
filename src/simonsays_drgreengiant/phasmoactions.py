@@ -332,6 +332,26 @@ class TalkConfig:
         """Get the duration"""
         return self._duration
 
+
+@dataclasses.dataclass(slots=True)
+class Radio(GenericAction):
+    """Toggle global push to talk radio for a period of time"""
+    name: str = "radio"
+    chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class RadioConfig:
+    """Toggle global push to talk radio for a period of time config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("b"))
+    _duration: float = DEFAULTS.TALK_DURATION
+
+    @property
+    def duration(self) -> float:
+        """Get the duration"""
+        return self._duration
+
+
 #####################################################################
 
 
@@ -772,6 +792,151 @@ class HeadbangConfig:
 
 
 @dataclasses.dataclass(slots=True)
+class Yoga(GenericAction):
+    """Look up to the sky"""
+    name: str = "yoga"
+    chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class YogaConfig(LookConfig):
+    """Look up to the sky config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP))
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Feet(GenericAction):
+    """Look down to the floor"""
+    name: str = "feet"
+    chained: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class FeetConfig(LookConfig):
+    """Look down to the floor config"""
+    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.DOWN))
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Freeze(GenericActionBase):
+    """Counterstrafe to freeze on the spot"""
+    name: str = "freeze"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: FreezeConfig = self.config
+
+        forwardPress = hidactions.PressKeyOrButton(WalkForwardConfig().hidconfig)
+        rightPress = hidactions.PressKeyOrButton(WalkRightConfig().hidconfig)
+        backwardPress = hidactions.PressKeyOrButton(WalkBackwardConfig().hidconfig)
+        leftPress = hidactions.PressKeyOrButton(WalkLeftConfig().hidconfig)
+
+        press = actions.ActionSequence([forwardPress,
+                                        rightPress,
+                                        backwardPress,
+                                        leftPress])
+
+        forwardRelease = hidactions.ReleaseKeyOrButton(WalkForwardConfig().hidconfig)
+        rightRelease = hidactions.ReleaseKeyOrButton(WalkRightConfig().hidconfig)
+        backwardRelease = hidactions.ReleaseKeyOrButton(WalkBackwardConfig().hidconfig)
+        leftRelease = hidactions.ReleaseKeyOrButton(WalkLeftConfig().hidconfig)
+
+        release = actions.ActionSequence([forwardRelease,
+                                          rightRelease,
+                                          backwardRelease,
+                                          leftRelease])
+
+        once = actions.ActionSequence([press, actions.Wait(actionconfig.pause), release, actions.Wait(actionconfig.pause)])
+
+        return actions.ActionRepeat(once, actionconfig.repeats).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class FreezeConfig:
+    """Counterstrafe to freeze on the spot config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.01
+    _repeats: int = int(5 / 4 / 0.01)
+
+    def __post_init__(self) -> None:
+        self._repeats = int(5.0 / 4.0 / self._pause)
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
+class Tornado(GenericActionBase):
+    """Spin on the spot whilst yeeting"""
+    name: str = "tornado"
+    chained: bool = True
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        """Run the action"""
+        actionconfig: TornadoConfig = self.config
+
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance,
+                                                              actionconfig.mousemovedirection,
+                                                              pause=actionconfig.pause)
+
+        look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
+        lookfar = actions.ActionRepeat(look, actionconfig.repeats)
+        dropconfig = Drop(self.config_fn).config.hidconfig
+        dropaction = hidactions.PressReleaseKeyOrButton(dropconfig, delay=0.01)
+        switchaction = Switch(self.config_fn)
+
+        lookanddrop = actions.ActionSequence([lookfar, dropaction, switchaction])
+
+        return actions.ActionRepeat(lookanddrop, 4).run(force=force)
+
+
+@dataclasses.dataclass(slots=True)
+class TornadoConfig:
+    """Spin on the spot whilst yeeting config"""
+    hidconfig: hidactions.Config = None
+    _pause: float = 0.005
+    _repeats: int = 4
+    _mousemovedirection: hidactions.MouseMoveDirection = None
+    _distance: int = DEFAULTS.LOOK_DISTANCE
+
+    @property
+    def pause(self) -> float:
+        """Get the pause"""
+        return self._pause
+
+    @property
+    def repeats(self) -> int:
+        """Get the repeats"""
+        return self._repeats
+
+    @property
+    def mousemovedirection(self) -> hidactions.MouseMoveDirection:
+        """Get the mouse move direction"""
+        return self._mousemovedirection or random.choice(list([hidactions.MouseMoveDirection.RIGHT, hidactions.MouseMoveDirection.LEFT]))
+
+    @property
+    def distance(self) -> int:
+        """Get the distance"""
+        return self._distance
+
+#####################################################################
+
+
+@dataclasses.dataclass(slots=True)
 class RandomAction(GenericActionBase):
     """Pich a random action and run it"""
     name: str = "random"
@@ -816,6 +981,7 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         Switch(None).name: gameactions.ActionAndConfig(Switch, SwitchConfig()),
         TorchToggle(None).name: gameactions.ActionAndConfig(TorchToggle, TorchToggleConfig()),
         Talk(None).name: gameactions.ActionAndConfig(Talk, TalkConfig()),
+        Radio(None).name: gameactions.ActionAndConfig(Radio, RadioConfig()),
         LookUp(None).name: gameactions.ActionAndConfig(LookUp, LookUpConfig()),
         LookDown(None).name: gameactions.ActionAndConfig(LookDown, LookDownConfig()),
         LookLeft(None).name: gameactions.ActionAndConfig(LookLeft, LookLeftConfig()),
@@ -833,6 +999,10 @@ def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict
         DropAllItems(None).name: gameactions.ActionAndConfig(DropAllItems, DropAllItemsConfig()),
         Spin(None).name: gameactions.ActionAndConfig(Spin, SpinConfig()),
         Headbang(None).name: gameactions.ActionAndConfig(Headbang, HeadbangConfig()),
+        Yoga(None).name: gameactions.ActionAndConfig(Yoga, YogaConfig()),
+        Feet(None).name: gameactions.ActionAndConfig(Feet, FeetConfig()),
+        Freeze(None).name: gameactions.ActionAndConfig(Freeze, FreezeConfig()),
+        Tornado(None).name: gameactions.ActionAndConfig(Tornado, TornadoConfig()),
     }
 
 
@@ -882,6 +1052,7 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         Switch(config_fn),
         TorchToggle(config_fn),
         Talk(config_fn),
+        Radio(config_fn),
         LookUp(config_fn),
         LookDown(config_fn),
         LookLeft(config_fn),
@@ -899,6 +1070,10 @@ def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
         DropAllItems(config_fn),
         Spin(config_fn),
         Headbang(config_fn),
+        Yoga(config_fn),
+        Feet(config_fn),
+        Freeze(config_fn),
+        Tornado(config_fn),
     ]
 
 
@@ -926,6 +1101,7 @@ def default_config() -> gameactions.Config:
         Switch(None).name: SwitchConfig(),
         TorchToggle(None).name: TorchToggleConfig(),
         Talk(None).name: TalkConfig(),
+        Radio(None).name: RadioConfig(),
         LookUp(None).name: LookUpConfig(),
         LookDown(None).name: LookDownConfig(),
         LookLeft(None).name: LookLeftConfig(),
@@ -943,4 +1119,8 @@ def default_config() -> gameactions.Config:
         DropAllItems(None).name: DropAllItemsConfig(),
         Spin(None).name: SpinConfig(),
         Headbang(None).name: HeadbangConfig(),
+        Yoga(None).name: YogaConfig(),
+        Feet(None).name: FeetConfig(),
+        Freeze(None).name: FreezeConfig(),
+        Tornado(None).name: TornadoConfig(),
     })
