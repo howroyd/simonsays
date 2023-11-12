@@ -1,12 +1,16 @@
 #!./.venv/bin/python3
 import dataclasses
 import enum
+import pathlib
 import random
 from typing import Any, Callable, ClassVar
+
+import playsound
 
 from . import actions, environment, errorcodes, gameactions, hidactions
 
 DEBUG = environment.getenvboolean("DEBUG", False)
+
 
 GenericActionBase = gameactions.GenericActionBase
 GenericAction = gameactions.GenericAction
@@ -320,6 +324,11 @@ class Talk(GenericAction):
     name: str = "talk"
     chained: bool = False
 
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        sound = pathlib.Path(environment.resource_path("assets", "wassup.mp3"))
+        playsound.playsound(str(sound), block=False)
+        return super(Radio, self).run(force=force)
+
 
 @dataclasses.dataclass(slots=True)
 class TalkConfig:
@@ -338,6 +347,11 @@ class Radio(GenericAction):
     """Toggle global push to talk radio for a period of time"""
     name: str = "radio"
     chained: bool = False
+
+    def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
+        sound = pathlib.Path(environment.resource_path("assets", "wassup.mp3"))
+        playsound.playsound(str(sound), block=False)
+        return super(Radio, self).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -698,6 +712,10 @@ class Spin(GenericActionBase):
         distance = actionconfig.distance or (LookRight().config.hidconfig.distance // 5)
 
         look_action = hidactions.MoveMouseRelativeDirection(hidactions.MouseMoveDirectionActionConfig(distance, direction))
+
+        sound = pathlib.Path(environment.resource_path("assets", "weeeeee.mp3"))
+        playsound.playsound(str(sound), block=False)
+
         return actions.ActionRepeatWithWait(look_action, actionconfig.repeats, actions.Wait(actionconfig.pause)).run(force=force)
 
 
@@ -955,6 +973,9 @@ class Tornado(GenericActionBase):
 
         lookanddrop = actions.ActionSequence([lookfar, dropaction, switchaction])
 
+        sound = pathlib.Path(environment.resource_path("assets", "weeeeee.mp3"))
+        playsound.playsound(str(sound), block=False)
+
         return actions.ActionRepeat(lookanddrop, 4).run(force=force)
 
 
@@ -1012,6 +1033,9 @@ class Hurricane(GenericActionBase):
         switchaction = Switch(self.config_fn)
 
         lookanduse = actions.ActionSequence([lookfar, useaction, dropaction, switchaction])
+
+        sound = pathlib.Path(environment.resource_path("assets", "weeeeee.mp3"))
+        playsound.playsound(str(sound), block=False)
 
         return actions.ActionRepeat(lookanduse, 4).run(force=force)
 
