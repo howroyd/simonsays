@@ -128,7 +128,7 @@ def main() -> NoReturn:
         else:
             if updateavailable := check_for_updates():
                 print(f"Update available!  Current version: {VERSION}, Latest version: {updateavailable}")
-                print("https://github.com/howroyd/simonsays/releases/tag/2.0.0\n\n")
+                print(f"https://github.com/howroyd/simonsays/releases/tag/{updateavailable}\n\n")
             irc = stack.enter_context(twitchirc.TwitchIrc(myconfig.channel))
 
         print(channel_connected(myconfig))
