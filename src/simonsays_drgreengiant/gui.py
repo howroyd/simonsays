@@ -210,7 +210,7 @@ def make_selection_frame(where, cfg: config.Config) -> tuple[tk.Frame, tk.String
     selection.set(next(iter(cfg.config)))
 
     tk.Label(frame, text="Select action:").pack(side=tk.LEFT, anchor=tk.W, padx=10)
-    tk.OptionMenu(frame, selection, *list(cfg.config.keys())).pack(side=tk.RIGHT, anchor=tk.E, padx=10)
+    tk.OptionMenu(frame, selection, *sorted(list(cfg.config.keys()))).pack(side=tk.RIGHT, anchor=tk.E, padx=10)
 
     return frame, selection
 

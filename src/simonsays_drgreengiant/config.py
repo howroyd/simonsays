@@ -79,6 +79,7 @@ class Config:
         actions.update(randomaction)
 
         self.config.update(randomconfig)
+
         self.actions = actions
 
     def find_tag_by_command(self, command: str) -> str | None:

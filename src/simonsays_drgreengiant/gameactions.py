@@ -132,6 +132,15 @@ class GenericAction(GenericActionBase):
 
 #####################################################################
 
+@dataclasses.dataclass(slots=True, frozen=True)
+class ActionConfigPair:
+    """A pair of an action and config"""
+    action: Action
+    config: ActionConfig
+
+
+ActionConfigFp = tuple[GenericAction, ActionConfig]
+
 
 @dataclasses.dataclass(slots=True)
 class ActionAndConfig:
