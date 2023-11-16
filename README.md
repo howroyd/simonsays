@@ -19,6 +19,11 @@ For basic installation and usage in a video format, I have recorded the below on
 
 [![How to guide video](https://img.youtube.com/vi/tYnfSwJiYAY/default.jpg)](https://youtu.be/tYnfSwJiYAY)
 
+## Gameplay Examples
+
+[Chat driving player around Phasmo map](https://clips.twitch.tv/LachrymoseBetterPlumagePoooound-QCVryh5okrpf5rHB)
+[Chat drives player around Phasmo lobby, handsfree](https://www.twitch.tv/videos/1978662007)
+
 The latest release can be found [here](https://github.com/howroyd/simonsays/releases/latest).
 
 ## Compatibility
