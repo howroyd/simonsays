@@ -38,7 +38,7 @@ jobs:
         Compress-Archive -Path dist/* -Destination windows_release.zip
         dir
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-executable-windows-zip
         path: windows_release.zip
@@ -74,12 +74,12 @@ jobs:
       run: |
         python tools/hashnames.py
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-executable-linux-zip
         path: linux_release.tar.gz
     - name: Upload Blocklist
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: blocklist
         path: blocklist
