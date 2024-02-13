@@ -27,6 +27,9 @@ dynamic = ["dependencies"]
 "Repository" = "https://github.com/howroyd/simonsays"
 "Bug Tracker" = "https://github.com/howroyd/simonsays/issues"
 
+[project.optional-dependencies]
+dev = ["ruff"]
+
 [tool.setuptools.packages.find]
 where = ["src", "tests"]
 
