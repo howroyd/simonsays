@@ -16,6 +16,7 @@ jobs:
   linting:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         python_version: ["3.11", "3.12"]
 
@@ -23,10 +24,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python_version }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python_version }}
     - name: Install dependencies
       run: |
         git submodule update --init --recursive
@@ -39,14 +40,19 @@ jobs:
 
   windows-test:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.11", "3.12"]
+
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python_version }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python_version }}
     - name: Install dependencies
       run: |
         git submodule update --init --recursive
@@ -66,14 +72,19 @@ jobs:
 
   linux-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.11", "3.12"]
+
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python_version }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python_version }}
     - name: Install dependencies
       run: |
         git submodule update --init --recursive
