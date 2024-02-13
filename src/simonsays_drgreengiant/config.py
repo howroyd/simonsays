@@ -4,12 +4,13 @@ import enum
 import functools
 import hashlib
 import shutil
-from typing import Callable, NoReturn, Self
+from collections.abc import Callable, Iterable, MutableMapping
+from typing import NoReturn, Self
 
 import tomlkit
 
-from . import (environment, errorcodes, gameactions, phasmoactions,
-               twitchactions)
+from . import environment, errorcodes, gameactions, twitchactions
+from .phasmoactions import phasmoactions
 
 OFFLINE = environment.getenvboolean("OFFLINE", False)
 NO_BLOCKLIST = environment.getenvboolean("NO_BLOCKLIST", OFFLINE)
@@ -25,16 +26,18 @@ if not NO_BLOCKLIST:
     import urllib.request as urllib_request
 
     with urllib_request.urlopen("https://github.com/howroyd/simonsays/releases/latest/download/blocklist") as _blocklist:
-        BLOCKLIST = set((line.strip() for line in _blocklist.readlines()))
+        BLOCKLIST = set(line.strip() for line in _blocklist.readlines())
 
         del urllib_request
     del _blocklist
 
 
-def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> set[str] | NoReturn:
+def check_blocklist(channel: str | Iterable[str], *, abort: bool = True, silent: bool = False) -> set[str] | NoReturn:
     """Return any channels/users in the blocklist"""
-    channels = channel if isinstance(channel, set) else set(channel)
-    blockedchannels = set((channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST))
+    channels = set(channel) if isinstance(channel, str) else channel
+    assert isinstance(channels, Iterable)
+    blockedchannels = set(channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST)
+    assert isinstance(blockedchannels, Iterable)
 
     if blockedchannels:
         if not silent:
@@ -48,6 +51,7 @@ def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool
 @dataclasses.dataclass(slots=True)
 class ActionConfig:
     """The global config for SimonSays actions"""
+
     phasmo: gameactions.ActionConfig
     twitch: twitchactions.TwitchActionConfig
 
@@ -58,20 +62,25 @@ ConfigDict = dict[str, ActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for SimonSays"""
+
     config: ConfigDict
     version: str
     enabled: bool = True
-    channel: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_CHANNELS)
-    superusers: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_SUPERUSERS)
+    channel: Iterable[str] = dataclasses.field(default_factory=lambda: DEFAULT_CHANNELS)
+    superusers: Iterable[str] = dataclasses.field(default_factory=lambda: DEFAULT_SUPERUSERS)
     superuser_prefix: str = DEFAULT_SUPERUSER_COMMAND_PREFIX
-    bots: set[str] = dataclasses.field(default_factory=lambda: DEFAULT_BOTS)
+    bots: Iterable[str] = dataclasses.field(default_factory=lambda: DEFAULT_BOTS)
     filename: str = DEFAULT_FILENAME
     actions: twitchactions.ActionDict = dataclasses.field(init=False, default_factory=dict)
 
     def __post_init__(self):
-        self.channel = self.channel if isinstance(self.channel, set) else set(self.channel)
-        self.superusers = self.superusers if isinstance(self.superusers, set) else set(self.superusers)
-        self.bots = self.bots if isinstance(self.bots, set) else set(self.bots)
+        self.channel = set(self.channel) if isinstance(self.channel, str) else self.channel
+        assert isinstance(self.channel, Iterable)
+        self.superusers = set(self.superusers) if isinstance(self.superusers, str) else self.superusers
+        assert isinstance(self.superusers, Iterable)
+        self.bots = set(self.bots) if isinstance(self.bots, set) else self.bots
+        assert isinstance(self.bots, Iterable)
+
         check_blocklist(self.channel)
 
         actions = self._make_twitch_actions()
@@ -91,7 +100,7 @@ class Config:
     @staticmethod
     def root_keys() -> set[str]:
         """Return the root keys"""
-        return [
+        return {
             "version",
             "enabled",
             "channel",
@@ -99,15 +108,16 @@ class Config:
             "superuser_prefix",
             "bots",
             "filename",
-        ]
+        }
 
     def to_dict(self) -> dict:
         """Convert the config to a dict"""
         return {key: dataclasses.asdict(item) for key, item in self.config.items()}
 
     @staticmethod
-    def replace_enum(config: dict) -> dict:
+    def replace_enum(config: MutableMapping) -> dict:
         """Replace enums with their values"""
+
         def _replace_enum(obj):
             """Replace enums with their values"""
             if isinstance(obj, dict):
@@ -115,16 +125,19 @@ class Config:
             if isinstance(obj, enum.Enum):
                 return obj.name
             return obj
+
         return {key: {k: _replace_enum(v) for k, v in item.items()} for key, item in config.items()}
 
     @staticmethod
-    def remove_none(config: dict) -> dict:
+    def remove_none(config: MutableMapping) -> dict:
         """Remove keys containing None values"""
+
         def _remove_none(obj):
             """Remove None values"""
             if isinstance(obj, dict):
                 return {k: _remove_none(v) for k, v in obj.items() if v is not None}
             return obj
+
         return {key: _remove_none(item) for key, item in config.items()}
 
     def to_toml(self) -> str:
@@ -134,13 +147,16 @@ class Config:
         asdict = self.replace_enum(asdict)
         asdict = self.remove_none(asdict)
 
-        return tomlkit.dumps(asdict | {
-            "version": self.version,
-            "channel": list(self.channel),
-            "superusers": list(self.superusers),
-            "superuser_prefix": self.superuser_prefix,
-            "bots": list(self.bots),
-        })
+        return tomlkit.dumps(
+            asdict
+            | {
+                "version": self.version,
+                "channel": list(self.channel),
+                "superusers": list(self.superusers),
+                "superuser_prefix": self.superuser_prefix,
+                "bots": list(self.bots),
+            }
+        )
 
     def save(self, *, backup_old: bool = False) -> None:
         """Save the config to file"""
@@ -162,7 +178,7 @@ class Config:
         filename = filename or DEFAULT_FILENAME
 
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 tomldata = tomlkit.loads(f.read())
         except FileNotFoundError:
             print(f"Config file not found: {filename=}")
@@ -185,14 +201,15 @@ class Config:
         superuser_prefix = tomldata.get("superuser_prefix", DEFAULT_SUPERUSER_COMMAND_PREFIX) if tomldata else DEFAULT_SUPERUSER_COMMAND_PREFIX
         bots = set(tomldata.get("bots", DEFAULT_BOTS)) if tomldata else DEFAULT_BOTS
 
-        return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
-                   version=version,
-                   channel=channel,
-                   superusers=superusers,
-                   superuser_prefix=superuser_prefix,
-                   bots=bots,
-                   filename=filename
-                   )
+        return cls(
+            {key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
+            version=version,
+            channel=channel,
+            superusers=superusers,
+            superuser_prefix=superuser_prefix,
+            bots=bots,
+            filename=filename,
+        )
 
     def _make_phasmo_actions(self) -> gameactions.ActionDict:
         """Make the phasmo actions"""
@@ -215,11 +232,12 @@ class Config:
         random_action = self._make_random_phasmo_action()
 
         random_config = ActionConfig(
-            phasmo=phasmoactions.RandomActionConfig(lambda: existingactions),
-            twitch=twitchactions.TwitchActionConfig(random_action.name, random_chance=10)
+            phasmo=phasmoactions.RandomActionConfig(lambda: existingactions), twitch=twitchactions.TwitchActionConfig(random_action.name, random_chance=10)
         )
 
-        twitchactiondict = {random_action.name: twitchactions.TwitchAction(self._get_twitch_config_fn(), random_action.name, random_action, force_underlying=True)}
+        twitchactiondict = {
+            random_action.name: twitchactions.TwitchAction(self._get_twitch_config_fn(), random_action.name, random_action, force_underlying=True)
+        }
         configdict = {random_action.name: random_config}
 
         return twitchactiondict, configdict

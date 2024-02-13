@@ -5,17 +5,17 @@ import multiprocessing as mp
 import os
 import pprint as pp
 import tkinter as tk
-from collections.abc import Iterable
-from typing import Any, Callable, NoReturn, Optional
+from collections.abc import Callable, Iterable
+from typing import Any, NoReturn
 
 import semantic_version
 
 from . import config, environment, hidactions
 
-KEY_IGNORED_STR = 'ignored'
+KEY_IGNORED_STR = "ignored"
 
 
-def on_closing(exit_event: Optional[mp.Event] = None) -> NoReturn:
+def on_closing(exit_event: mp.Event = None) -> NoReturn:
     """Exit the program when window is closed"""
     if exit_event is None:
         print("GUI closed, exiting...")
@@ -25,6 +25,7 @@ def on_closing(exit_event: Optional[mp.Event] = None) -> NoReturn:
 
 class Callbacks:
     """Callbacks for the GUI"""
+
     @staticmethod
     def print_runtime_cb(cfg: config.Config, selection: tk.StringVar):
         """Print the runtime data for the selected action"""
@@ -145,14 +146,16 @@ def get_hid_type_text(cfg: config.Config, tag: str) -> str:
     return hid_type_text
 
 
-def populate_frame(cfg: config.Config,
-                   selection: tk.StringVar,
-                   enabled: tk.BooleanVar,
-                   key: tk.StringVar,
-                   cooldown: tk.DoubleVar,
-                   random_chance: tk.IntVar,
-                   command: tk.StringVar,
-                   key_entry: tk.Entry) -> None:
+def populate_frame(
+    cfg: config.Config,
+    selection: tk.StringVar,
+    enabled: tk.BooleanVar,
+    key: tk.StringVar,
+    cooldown: tk.DoubleVar,
+    random_chance: tk.IntVar,
+    command: tk.StringVar,
+    key_entry: tk.Entry,
+) -> None:
     """Populate the frame with the selected action"""
     enabled.set(cfg.config[selection.get()].twitch.enabled)
 
@@ -177,6 +180,7 @@ def make_canvas(cfg: config.Config, image_path: str, updateavailable: semantic_v
     """Make the canvas with a background image"""
     # img = tk.PhotoImage(file=image_path)
     from PIL import Image
+
     width, height = Image.open(image_path).size
 
     window = window or make_window(cfg, width, height)
@@ -204,7 +208,7 @@ def make_canvas(cfg: config.Config, image_path: str, updateavailable: semantic_v
 
 def make_selection_frame(where, cfg: config.Config) -> tuple[tk.Frame, tk.StringVar]:
     """Make the selection frame"""
-    frame = tk.Frame(where, width=320, height=50, relief='raised', borderwidth=5)
+    frame = tk.Frame(where, width=320, height=50, relief="raised", borderwidth=5)
 
     selection = tk.StringVar(where)
     selection.set(next(iter(cfg.config)))
@@ -230,6 +234,7 @@ def pack_rhs(thing: tk.Frame) -> None:
 @dataclasses.dataclass(frozen=True, slots=True)
 class RuntimeFrames:
     """Runtime frames"""
+
     root: tk.Tk
     cfg: config.Config
     selection: tk.StringVar
@@ -244,11 +249,7 @@ class RuntimeFrames:
 
         label = tk.Label(frame, text=name, width=25, anchor=tk.E)
 
-        cb = functools.partial(Callbacks.set_var_cb,
-                               self.cfg,
-                               setter,
-                               self.selection,
-                               enabled)
+        cb = functools.partial(Callbacks.set_var_cb, self.cfg, setter, self.selection, enabled)
         button = tk.Checkbutton(frame, width=25, onvalue=True, offvalue=False, variable=enabled, command=cb, anchor=tk.W)
 
         pack_lhs(label)
@@ -256,18 +257,16 @@ class RuntimeFrames:
 
         return frame, enabled
 
-    def make_labelled_text_frame(self, name: str, initial_value: str, setter: Callable[[str], None], *, disabled: bool = False) -> tuple[tk.Frame, tk.StringVar]:
+    def make_labelled_text_frame(
+        self, name: str, initial_value: str, setter: Callable[[str], None], *, disabled: bool = False
+    ) -> tuple[tk.Frame, tk.StringVar]:
         """Make a labelled text frame"""
         frame = tk.Frame(self.root, width=self.frame_width, height=50)
 
         command = tk.StringVar(frame)
         command.set(initial_value)
 
-        cb = functools.partial(Callbacks.set_key_cb,
-                               self.cfg,
-                               setter,
-                               self.selection,
-                               command)
+        cb = functools.partial(Callbacks.set_key_cb, self.cfg, setter, self.selection, command)
         command.trace_add("write", cb)
 
         label = tk.Label(frame, text=name, width=25, anchor=tk.E)
@@ -359,6 +358,7 @@ def set_enabled(cfg: config.Config, selection: tk.StringVar, state: bool) -> Non
 @dataclasses.dataclass(slots=True)
 class UpdateArgs:
     """Arguments for updating the GUI"""
+
     canvas: tk.Canvas
     cfg: config.Config
     option_frame: tk.Frame | None
@@ -376,17 +376,18 @@ def make_option_frame(optionargs: UpdateArgs, *args) -> tuple[tk.Frame, dict]:
     guivars = {}
 
     name = "Enabled"
-    enabled_frame, var = runtimeframes.make_labelled_checkbox_frame(name,
-                                                                    optionargs.cfg.config[optionargs.selection.get()].twitch.enabled,
-                                                                    functools.partial(set_enabled, optionargs.cfg, optionargs.selection))
+    enabled_frame, var = runtimeframes.make_labelled_checkbox_frame(
+        name, optionargs.cfg.config[optionargs.selection.get()].twitch.enabled, functools.partial(set_enabled, optionargs.cfg, optionargs.selection)
+    )
     enabled_frame.pack()
     guivars[name.lower()] = var
 
     name = "Command"
-    command_frame, var = runtimeframes.make_labelled_text_frame(name,
-                                                                get_command_text(optionargs.cfg, optionargs.selection.get()),
-                                                                lambda state, cfg=optionargs.cfg, selection=optionargs.selection:
-                                                                set_command_text(optionargs.cfg, optionargs.selection.get(), state))
+    command_frame, var = runtimeframes.make_labelled_text_frame(
+        name,
+        get_command_text(optionargs.cfg, optionargs.selection.get()),
+        lambda state, cfg=optionargs.cfg, selection=optionargs.selection: set_command_text(optionargs.cfg, optionargs.selection.get(), state),
+    )
     command_frame.pack()
     guivars[name.lower()] = var
 
@@ -399,6 +400,7 @@ def make_option_frame(optionargs: UpdateArgs, *args) -> tuple[tk.Frame, dict]:
     #     guivars[name.lower()] = var
 
     if not optionargs.cfg.actions[optionargs.selection.get()].action.chained:
+
         def on_press(key: hidactions.Key | hidactions.Button, tag: str, triggerredraw: mp.Event) -> None:
             """On press"""
             hidactions.stop_listeners()
@@ -427,36 +429,36 @@ def make_option_frame(optionargs: UpdateArgs, *args) -> tuple[tk.Frame, dict]:
         callback = functools.partial(on_press, tag=optionargs.selection.get(), triggerredraw=optionargs.redraw)
 
         name = ""
-        action_type_frame, var = runtimeframes.make_button_frame(name,
-                                                                 "Set keybind",
-                                                                 lambda: hidactions.start_listeners(callback))
+        action_type_frame, var = runtimeframes.make_button_frame(name, "Set keybind", lambda: hidactions.start_listeners(callback))
         action_type_frame.pack()
         guivars[name.lower()] = var
 
     if isinstance(optionargs.cfg.config[optionargs.selection.get()].phasmo.hidconfig, hidactions.KeyboardActionConfig):
         name = "Keyboard"
-        keybind_frame, var = runtimeframes.make_labelled_text_frame(name,
-                                                                    get_keybind_text(optionargs.cfg, optionargs.selection.get()),
-                                                                    lambda state, cfg=optionargs.cfg, selection=optionargs.selection:
-                                                                    set_keybind_text(optionargs.cfg, optionargs.selection.get(), state))
+        keybind_frame, var = runtimeframes.make_labelled_text_frame(
+            name,
+            get_keybind_text(optionargs.cfg, optionargs.selection.get()),
+            lambda state, cfg=optionargs.cfg, selection=optionargs.selection: set_keybind_text(optionargs.cfg, optionargs.selection.get(), state),
+        )
         keybind_frame.pack()
         guivars[name.lower()] = var
     elif isinstance(optionargs.cfg.config[optionargs.selection.get()].phasmo.hidconfig, hidactions.MouseButtonActionConfig):
         name = "Mouse Button"
-        button_frame, var = runtimeframes.make_labelled_text_frame(name,
-                                                                   get_button_text(optionargs.cfg, optionargs.selection.get()),
-                                                                   lambda state, cfg=optionargs.cfg, selection=optionargs.selection:
-                                                                   set_button_text(optionargs.cfg, optionargs.selection.get(), state))
+        button_frame, var = runtimeframes.make_labelled_text_frame(
+            name,
+            get_button_text(optionargs.cfg, optionargs.selection.get()),
+            lambda state, cfg=optionargs.cfg, selection=optionargs.selection: set_button_text(optionargs.cfg, optionargs.selection.get(), state),
+        )
         button_frame.pack()
         guivars[name.lower()] = var
 
     cooldown_frame, cooldown = make_cooldown_frame(frame, optionargs.cfg, optionargs.selection, FRAME_WIDTH)
     cooldown_frame.pack()
-    guivars['cooldown'] = cooldown
+    guivars["cooldown"] = cooldown
 
     random_chance_frame, random_chance = make_random_frame(frame, optionargs.cfg, optionargs.selection, FRAME_WIDTH)
     random_chance_frame.pack()
-    guivars['random_chance'] = random_chance
+    guivars["random_chance"] = random_chance
 
     return frame, guivars
 

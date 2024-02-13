@@ -1,5 +1,4 @@
 import pytest
-
 from simonsays_drgreengiant import errorcodes
 
 

@@ -1,13 +1,12 @@
 import dataclasses
 
-import pytest
-
-from simonsays_drgreengiant import gameactions, hidactions, errorcodes
+from simonsays_drgreengiant import errorcodes, gameactions, hidactions
 
 
 @dataclasses.dataclass(slots=True)
 class Config:
     """A config for a Phasmophobia action"""
+
     duration: float = 0.1
     pause: float = 0.2
     repeats: int = 3
@@ -52,6 +51,7 @@ def test_getitem():
 @dataclasses.dataclass(slots=True)
 class Action(gameactions.GenericAction):
     """A generic action"""
+
     name: str
     chained: bool
 
@@ -60,7 +60,11 @@ def test_genericaction():
     """Test GenericAction"""
     testitem = {"test": Config()}
     config = gameactions.Config(testitem)
-    configfn: gameactions.ConfigFn = lambda: config
+
+    def get_config() -> gameactions.Config:
+        return config
+
+    configfn: gameactions.ConfigFn = get_config
     genericaction = Action(configfn, "test", False)
 
     hidaction = hidactions.KeyboardActionConfig("x")

@@ -1,11 +1,13 @@
 #!./.venv/bin/python3
 import enum
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 
 @enum.unique
 class ErrorCode(enum.IntEnum):
     """Error codes"""
+
     OK = 0
     UNKNOWN = 1
     NOT_IMPLEMENTED = 2
@@ -23,7 +25,7 @@ ErrorSet = set[ErrorCode]
 def flatten(iter: Iterable[Any]) -> Any:
     """Flatten an iterable which may contain nested iterables"""
     for x in iter:
-        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+        if isinstance(x, Iterable) and not isinstance(x, str | bytes):
             yield from flatten(x)
         else:
             yield x

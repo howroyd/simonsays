@@ -2,10 +2,11 @@
 import dataclasses
 import random
 import time
-from collections.abc import Iterable
-from typing import Any, Callable
+from collections.abc import Callable, Iterable
+from typing import Any
 
-from . import actions, environment, errorcodes, phasmoactions
+from . import actions, environment, errorcodes
+from .phasmoactions import phasmoactions
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 
@@ -13,6 +14,7 @@ DEBUG = environment.getenvboolean("DEBUG", False)
 @dataclasses.dataclass(slots=True)
 class TwitchActionConfig:
     """A config for a Twitch action"""
+
     command: tuple[str]
     enabled: bool = True
     cooldown: int = 0
@@ -45,6 +47,7 @@ ConfigDict = dict[str, TwitchActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for all Twitch actions"""
+
     config: dict[str, TwitchActionConfig] = dataclasses.field(default_factory=dict)
 
     def get_config(self, name: str) -> TwitchActionConfig | None:
@@ -65,6 +68,7 @@ ConfigFn = Callable[[], Config]
 @dataclasses.dataclass(slots=True)
 class GenericTwitchAction:
     """Generic Twitch action base class"""
+
     config_fn: ConfigFn
 
     @property
@@ -76,6 +80,7 @@ class GenericTwitchAction:
 @dataclasses.dataclass(slots=True)
 class TwitchAction(GenericTwitchAction, actions.Action):
     """A Twitch action"""
+
     name: str
     action: actions.Action
     force_underlying: bool = False
@@ -201,11 +206,13 @@ if __name__ == "__main__":
             """Get the repeats"""
             return random.randint(*self._repeats)
 
-    myphasmoconfig = phasmoactions.Config(config={
-        "look_up": phasmo_look_up_config,
-        "look_down": phasmo_look_down_config,
-        "headbang": PhasmoHeadbangActionConfig(),
-    })
+    myphasmoconfig = phasmoactions.Config(
+        config={
+            "look_up": phasmo_look_up_config,
+            "look_down": phasmo_look_down_config,
+            "headbang": PhasmoHeadbangActionConfig(),
+        }
+    )
 
     ##
 
@@ -213,11 +220,13 @@ if __name__ == "__main__":
     twitch_look_down_config = TwitchActionConfig("look down", cooldown=0.5)
     twitch_headbang_config = TwitchActionConfig("look up", cooldown=0.5)
 
-    mytwitchconfig = Config(config={
-        "look_up": twitch_look_up_config,
-        "look_down": twitch_look_down_config,
-        "headbang": twitch_headbang_config,
-    })
+    mytwitchconfig = Config(
+        config={
+            "look_up": twitch_look_up_config,
+            "look_down": twitch_look_down_config,
+            "headbang": twitch_headbang_config,
+        }
+    )
 
     global_config = GlobalConfig(myphasmoconfig, mytwitchconfig)
 
@@ -228,6 +237,7 @@ if __name__ == "__main__":
         return global_config.twitchconfig
 
     myactions = {key: TwitchAction(get_twitch_config, key, value) for key, value in phasmoactions.all_actions_dict(get_phasmo_config).items()}
+    force = False
     myactions["look_up"].run(force=force)
     myactions["look_down"].run(force=force)
     myactions["look_down"].run(force=force)

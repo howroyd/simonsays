@@ -1,10 +1,9 @@
 {
-    "autopep8.args": [
-        "--max-line-length",
-        "160"
-    ],
-    "flake8.args": [
-        "--config",
-        ".flake8"
-    ],
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    }
 }

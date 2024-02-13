@@ -19,9 +19,9 @@ def done_callback(future: cf.Future, msg: twitchirc.TwitchMessage, tag: str) -> 
     result: errorcodes.ErrorSet = future.result()
 
     if errorcodes.success(result):
-        print(f"Done \'{tag}\' from {msg.username}")
+        print(f"Done '{tag}' from {msg.username}")
     else:
-        print(f"Failed \'{tag}\' from {msg.username} ({result=})")
+        print(f"Failed '{tag}' from {msg.username} ({result=})")
 
 
 def make_commands_str(myconfig: config.Config) -> str:
@@ -91,13 +91,13 @@ def get_action_from_message(myconfig: config.Config, msg: twitchirc.TwitchMessag
         return None
 
     if not myconfig.enabled:
-        print(f"Commands disabled!  Ignoring \'{tag}\' from {msg.username}")
+        print(f"Commands disabled!  Ignoring '{tag}' from {msg.username}")
         return None
 
     if config.check_blocklist(msg.username, abort=False, silent=True):
         return None
 
-    print(f"Running {'superuser ' if sudo else ''}\'{tag}\' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
+    print(f"Running {'superuser ' if sudo else ''}'{tag}' from {msg.username}{' in channel ' + msg.channel if len(myconfig.channel) > 1 else ''}")
 
     return functools.partial(myconfig.actions[tag].run, force=sudo), tag
 

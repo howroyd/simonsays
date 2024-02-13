@@ -3,13 +3,13 @@ import os
 import sys
 from typing import Any
 
-TRUTHYSTRINGS = frozenset(('true', '1', 'yes'))  # Add more entries if you want, like: `y`, `yes`, `on`, ...
-FALSYSTRINGS = frozenset(('false', '0', 'no'))  # Add more entries if you want, like: `n`, `no`, `off`, ...
+TRUTHYSTRINGS = frozenset(("true", "1", "yes"))  # Add more entries if you want, like: `y`, `yes`, `on`, ...
+FALSYSTRINGS = frozenset(("false", "0", "no"))  # Add more entries if you want, like: `n`, `no`, `off`, ...
 
 
 def resource_path(*paths: str) -> str:
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, *paths) if paths else base_path
 
 
@@ -21,7 +21,7 @@ def update_env() -> None:
     newvars = {}
 
     try:
-        with open(os.path.join(DATAPATH, ".env"), "r") as f:
+        with open(os.path.join(DATAPATH, ".env")) as f:
             # with open(DATAPATH, "r") as f:
             for line in f.readlines():
                 thisline = line.strip()
@@ -47,9 +47,9 @@ def getenvboolean(name: str, default_value: bool | None = None) -> bool:
     value = getenv(name)
     if not value:
         if default_value is None:
-            raise ValueError(f'Variable `{name}` not set!')
+            raise ValueError(f"Variable `{name}` not set!")
         else:
             value = str(default_value)
     if value.lower() not in frozenset.union(*[TRUTHYSTRINGS, FALSYSTRINGS]):
-        raise ValueError(f'Invalid value `{value}` for variable `{name}`')
+        raise ValueError(f"Invalid value `{value}` for variable `{name}`")
     return value in TRUTHYSTRINGS

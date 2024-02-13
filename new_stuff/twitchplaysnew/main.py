@@ -1,61 +1,65 @@
 #!./.venv/bin/python3
 import dataclasses
-import actions
 import pprint
+
+import actions
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class PhasmophobiaPresetActions:
-    '''Preset actions'''
-    keybinds: dict[str, str] = dataclasses.field(default_factory=lambda: {
-        "walk_forward": "w",
-        "walk_backward": "s",
-        "walk_left": "a",
-        "walk_right": "d",
-        "crouch": "c",
-        "journal": "j",
-        "place": "f",
-        "grab": "e",
-    })
+    """Preset actions"""
+
+    keybinds: dict[str, str] = dataclasses.field(
+        default_factory=lambda: {
+            "walk_forward": "w",
+            "walk_backward": "s",
+            "walk_left": "a",
+            "walk_right": "d",
+            "crouch": "c",
+            "journal": "j",
+            "place": "f",
+            "grab": "e",
+        }
+    )
     toggle_duration: float = 0.1
 
     def WalkForward(self, *, key: str | None = None, duration: float | None = None) -> actions.ActionSequence:
-        '''Walk forward'''
+        """Walk forward"""
         key = key or self.keybinds.get("walk_forward", "w")
         return actions.PressReleaseKey(key, duration or 1.0)
 
     def WalkBackward(self, *, key: str | None = None, duration: float | None = None) -> actions.ActionSequence:
-        '''Walk backward'''
+        """Walk backward"""
         key = key or self.keybinds.get("walk_backward", "s")
         return actions.PressReleaseKey(key, duration or 1.0)
 
     def WalkLeft(self, *, key: str | None = None, duration: float | None = None) -> actions.ActionSequence:
-        '''Walk left'''
+        """Walk left"""
         key = key or self.keybinds.get("walk_left", "a")
         return actions.PressReleaseKey(key, duration or 1.0)
 
     def WalkRight(self, *, key: str | None = None, duration: float | None = None) -> actions.ActionSequence:
-        '''Walk right'''
+        """Walk right"""
         key = key or self.keybinds.get("walk_right", "d")
         return actions.PressReleaseKey(key, duration or 1.0)
 
     def CrouchToggle(self, *, key: str | None = None) -> actions.ActionSequence:
-        '''Toggle crouch'''
+        """Toggle crouch"""
         key = key or self.keybinds.get("crouch", "c")
         return actions.PressReleaseKey(key, self.toggle_duration)
 
     def JournalToggle(self, *, key: str | None = None) -> actions.ActionSequence:
-        '''Toggle journal'''
+        """Toggle journal"""
         key = key or self.keybinds.get("journal", "j")
         return actions.PressReleaseKey(key, self.toggle_duration)
 
     def Place(self, *, key: str | None = None) -> actions.ActionSequence:
-        '''Place an item'''
+        """Place an item"""
         key = key or self.keybinds.get("place", "f")
         return actions.PressReleaseKey(key, self.toggle_duration)
 
     def Grab(self, *, key: str | None = None) -> actions.ActionSequence:
-        '''Pickup and item'''
+        """Pickup and item"""
         key = key or self.keybinds.get("grab", "e")
         return actions.PressReleaseKey(key, self.toggle_duration)
 

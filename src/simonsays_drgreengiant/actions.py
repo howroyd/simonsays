@@ -22,6 +22,7 @@ class Action(Protocol):
 @dataclasses.dataclass(slots=True)
 class ActionRepeat:
     """Repeat an action"""
+
     action: Action
     times: int
 
@@ -33,6 +34,7 @@ class ActionRepeat:
 @dataclasses.dataclass(slots=True)
 class ActionSequence:
     """Run actions in sequence"""
+
     actions: list[Action]
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -43,6 +45,7 @@ class ActionSequence:
 @dataclasses.dataclass(slots=True)
 class Wait:
     """Wait for a duration"""
+
     duration: float
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -56,6 +59,7 @@ class Wait:
 @dataclasses.dataclass(slots=True)
 class WaitRandom:
     """Wait for a random duration"""
+
     min_duration: float
     max_duration: float
     wait_time: float = None
@@ -79,6 +83,7 @@ class WaitRandom:
 @dataclasses.dataclass(slots=True)
 class ActionRepeatWithWait:
     """Repeat an action with a wait between each repeat"""
+
     action: Action
     times: int
     wait: Wait | WaitRandom

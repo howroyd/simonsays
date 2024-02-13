@@ -2,10 +2,11 @@
 import dataclasses
 import enum
 import platform
-from typing import Any, Callable, Protocol, Self
+from collections.abc import Callable
+from typing import Any, Protocol, Self
 
 from pynput.keyboard import Controller as Keyboard
-from pynput.keyboard import Key, KeyCode
+from pynput.keyboard import Key
 from pynput.keyboard import Listener as KeyboardListener
 
 from . import actions, environment, errorcodes
@@ -79,6 +80,7 @@ def dummy_run(message: str) -> errorcodes.ErrorSet:
 
 class ButtonUnknown(Exception):
     """Unknown mouse button"""
+
     pass
 
 
@@ -102,6 +104,7 @@ def str_to_button(button: str) -> Button:
 @enum.unique
 class HidType(enum.Enum):
     """The type of HID action"""
+
     KEYBOARD = enum.auto()  # FIXME remove all autos
     MOUSE_BUTTON = enum.auto()
     MOUSE_MOVE = enum.auto()
@@ -111,6 +114,7 @@ class HidType(enum.Enum):
 @dataclasses.dataclass(slots=True)
 class KeyboardActionConfig:
     """An action to a keyboard"""
+
     key: str
     device: HidType = HidType.KEYBOARD
 
@@ -118,6 +122,7 @@ class KeyboardActionConfig:
 @dataclasses.dataclass(slots=True)
 class MouseButtonActionConfig:
     """An action to a mouse button"""
+
     button: str
     device: HidType = HidType.MOUSE_BUTTON
 
@@ -125,6 +130,7 @@ class MouseButtonActionConfig:
 @dataclasses.dataclass(slots=True)
 class MouseMoveCartesianActionConfig:
     """An action to move the mouse in cartesian coordinates"""
+
     x: int
     y: int
     device: HidType = HidType.MOUSE_MOVE
@@ -133,6 +139,7 @@ class MouseMoveCartesianActionConfig:
 @dataclasses.dataclass(slots=True)
 class MouseMoveCartesianSmoothActionConfig:
     """An action to move the mouse in cartesian coordinates in a smooth way"""
+
     x: int
     y: int
     repeats: int = 10
@@ -142,12 +149,14 @@ class MouseMoveCartesianSmoothActionConfig:
 
 class MouseMoveDirectionUnknown(Exception):
     """Unknown mouse move direction"""
+
     pass
 
 
 @enum.unique
 class MouseMoveDirection(enum.Enum):
     """Mouse move direction"""
+
     UP = "up"
     DOWN = "down"
     LEFT = "left"
@@ -177,6 +186,7 @@ class MouseMoveDirection(enum.Enum):
 @dataclasses.dataclass(slots=True)
 class MouseMoveDirectionActionConfig:
     """An action to move the mouse in a direction"""
+
     distance: int
     direction: MouseMoveDirection
     device: HidType = HidType.MOUSE_MOVE
@@ -185,6 +195,7 @@ class MouseMoveDirectionActionConfig:
 @dataclasses.dataclass(slots=True)
 class MouseMoveDirectionSmoothActionConfig:
     """An action to move the mouse smoothly in a direction"""
+
     distance: int
     direction: MouseMoveDirection
     repeats: int = 10
@@ -192,7 +203,14 @@ class MouseMoveDirectionSmoothActionConfig:
     device: HidType = HidType.MOUSE_MOVE
 
 
-Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveCartesianActionConfig | MouseMoveCartesianSmoothActionConfig | MouseMoveDirectionActionConfig | MouseMoveDirectionSmoothActionConfig
+Config = (
+    KeyboardActionConfig
+    | MouseButtonActionConfig
+    | MouseMoveCartesianActionConfig
+    | MouseMoveCartesianSmoothActionConfig
+    | MouseMoveDirectionActionConfig
+    | MouseMoveDirectionSmoothActionConfig
+)
 
 #####################################################################
 
@@ -200,12 +218,14 @@ Config = KeyboardActionConfig | MouseButtonActionConfig | MouseMoveCartesianActi
 @dataclasses.dataclass(slots=True)
 class HidAction(actions.Action, Protocol):
     """An action to a Human Interface Device (keyboard, mouse...)"""
+
     config: Config
 
 
 @dataclasses.dataclass(slots=True)
 class PressButton:
     """Press a mouse button"""
+
     config: MouseButtonActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -218,6 +238,7 @@ class PressButton:
 @dataclasses.dataclass(slots=True)
 class ReleaseButton:
     """Release a mouse button"""
+
     config: MouseButtonActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -230,21 +251,21 @@ class ReleaseButton:
 @dataclasses.dataclass(slots=True)
 class PressReleaseButton:
     """Press and release a button"""
+
     config: MouseButtonActionConfig
     delay: float = 0.1
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        return errorcodes.errorset([
-            PressButton(self.config).run(force=force),
-            actions.Wait(self.delay).run(force=force),
-            ReleaseButton(self.config).run(force=force)
-        ])
+        return errorcodes.errorset(
+            [PressButton(self.config).run(force=force), actions.Wait(self.delay).run(force=force), ReleaseButton(self.config).run(force=force)]
+        )
 
 
 @dataclasses.dataclass(slots=True)
 class MoveMouse:
     """Move the mouse"""
+
     config: MouseMoveCartesianActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -255,6 +276,7 @@ class MoveMouse:
 @dataclasses.dataclass(slots=True)
 class MoveMouseRelative:
     """Move the mouse relative to its current position"""
+
     config: MouseMoveCartesianActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -267,6 +289,7 @@ class MoveMouseRelative:
 @dataclasses.dataclass(slots=True)
 class MoveMouseRelativeSmooth:
     """Move the mouse relative to its current position"""
+
     config: MouseMoveCartesianSmoothActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -277,12 +300,15 @@ class MoveMouseRelativeSmooth:
             look_action = MoveMouseRelative(MouseMoveCartesianActionConfig(x, y))
 
             return actions.ActionRepeatWithWait(look_action, self.config.repeats, actions.Wait(self.config.pause)).run(force=force)
-        return dummy_run(f"Moving mouse smoothly (relative) by: {self.config.x}, {self.config.y} in {self.config.repeats} repeats with {self.config.pause} pause")
+        return dummy_run(
+            f"Moving mouse smoothly (relative) by: {self.config.x}, {self.config.y} in {self.config.repeats} repeats with {self.config.pause} pause"
+        )
 
 
 @dataclasses.dataclass(slots=True)
 class MoveMouseRelativeDirection:
     """Move the mouse relative to its current position in a direction"""
+
     config: MouseMoveDirectionActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -295,6 +321,7 @@ class MoveMouseRelativeDirection:
 @dataclasses.dataclass(slots=True)
 class MoveMouseRelativeDirectionSmooth:
     """Move the mouse relative to its current position, smoothly in a direction"""
+
     config: MouseMoveDirectionSmoothActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -306,12 +333,15 @@ class MoveMouseRelativeDirectionSmooth:
             look_action = MoveMouseRelative(MouseMoveCartesianActionConfig(x, y))
 
             return actions.ActionRepeatWithWait(look_action, self.config.repeats, actions.Wait(self.config.pause)).run(force=force)
-        return dummy_run(f"Moving mouse smoothly (relative direction) by: {self.config.distance} in directino {self.config.direction.value} repeats with {self.config.pause} pause")
+        return dummy_run(
+            f"Moving mouse smoothly (relative direction) by: {self.config.distance} in directino {self.config.direction.value} repeats with {self.config.pause} pause"
+        )
 
 
 @dataclasses.dataclass(slots=True)
 class PressKey:
     """Press a key"""
+
     config: KeyboardActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -327,6 +357,7 @@ class PressKey:
 @dataclasses.dataclass(slots=True)
 class ReleaseKey:
     """Release a key"""
+
     config: KeyboardActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -342,16 +373,16 @@ class ReleaseKey:
 @dataclasses.dataclass(slots=True)
 class PressReleaseKey:
     """Press and release a key"""
+
     config: KeyboardActionConfig
     delay: float = 0.1
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
         """Run the action"""
-        return errorcodes.errorset([
-            PressKey(self.config).run(force=force),
-            actions.Wait(self.delay).run(force=force),
-            ReleaseKey(self.config).run(force=force)
-        ])
+        return errorcodes.errorset(
+            [PressKey(self.config).run(force=force), actions.Wait(self.delay).run(force=force), ReleaseKey(self.config).run(force=force)]
+        )
+
 
 #####################################################################
 
@@ -359,6 +390,7 @@ class PressReleaseKey:
 @dataclasses.dataclass(slots=True)
 class PressKeyOrButton:
     """Press a key or button"""
+
     config: KeyboardActionConfig | MouseButtonActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -374,6 +406,7 @@ class PressKeyOrButton:
 @dataclasses.dataclass(slots=True)
 class ReleaseKeyOrButton:
     """Release a key or button"""
+
     config: KeyboardActionConfig | MouseButtonActionConfig
 
     def run(self, *, force: bool = False) -> errorcodes.ErrorSet:
@@ -389,6 +422,7 @@ class ReleaseKeyOrButton:
 @dataclasses.dataclass(slots=True)
 class PressReleaseKeyOrButton:
     """Press and release a key or button"""
+
     config: KeyboardActionConfig | MouseButtonActionConfig
     delay: float = 0.1
 

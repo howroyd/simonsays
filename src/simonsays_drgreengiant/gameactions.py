@@ -1,6 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
-from typing import Any, Callable, Protocol, Self
+from collections.abc import Callable, Mapping
+from typing import Any, Protocol, Self
 
 from . import errorcodes, hidactions
 
@@ -8,6 +9,7 @@ from . import errorcodes, hidactions
 @dataclasses.dataclass(slots=True)
 class ActionConfig(Protocol):
     """A config for a Phasmophobia action"""
+
     hidconfig: hidactions.Config
 
     @property
@@ -42,6 +44,7 @@ ConfigDict = dict[str, ActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for all game actions"""
+
     config: ConfigDict = dataclasses.field(default_factory=ConfigDict)
 
     def __getitem__(self, name: str) -> ActionConfig | None:
@@ -49,7 +52,7 @@ class Config:
         return self.config.get(name, None)
 
     @classmethod
-    def from_toml(cls, existing: dict[str, dict[str, Any]], *, default: Self | None = None) -> Self:
+    def from_toml(cls, existing: Mapping[str, Mapping[str, Any]], *, default: Self | None = None) -> Self:
         """Get a config from an existing config"""
         ret = default or {}
         for key in ret.config.keys():
@@ -82,6 +85,7 @@ ConfigFn = Callable[[], Config]
 @dataclasses.dataclass(slots=True, kw_only=True)
 class Action(hidactions.HidAction, Protocol):
     """Base class for Phasmophobia actions"""
+
     config_fn: ConfigFn
     name: str
     chained: bool
@@ -98,6 +102,7 @@ ActionDict = dict[str, Action]
 @dataclasses.dataclass(slots=True)
 class GenericActionBase:
     """Generic Phasmophobia action base class"""
+
     config_fn: ConfigFn
 
     @property
@@ -130,12 +135,14 @@ class GenericAction(GenericActionBase):
         else:
             return errorcodes.errorset(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class ActionAndConfig:
     """A pair of an action and config"""
+
     actiontype: type(Action)
     config: ActionConfig
     action: Action = dataclasses.field(init=False)
