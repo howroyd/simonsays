@@ -1,6 +1,6 @@
 #!./.venv/bin/python3
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, Protocol, Self
 
 from . import errorcodes, hidactions
@@ -52,7 +52,7 @@ class Config:
         return self.config.get(name, None)
 
     @classmethod
-    def from_toml(cls, existing: dict[str, dict[str, Any]], *, default: Self | None = None) -> Self:
+    def from_toml(cls, existing: Mapping[str, Mapping[str, Any]], *, default: Self | None = None) -> Self:
         """Get a config from an existing config"""
         ret = default or {}
         for key in ret.config.keys():
