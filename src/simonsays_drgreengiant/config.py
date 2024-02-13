@@ -8,8 +8,7 @@ from typing import Callable, NoReturn, Self
 
 import tomlkit
 
-from . import (environment, errorcodes, gameactions, phasmoactions,
-               twitchactions)
+from . import environment, errorcodes, gameactions, phasmoactions, twitchactions
 
 OFFLINE = environment.getenvboolean("OFFLINE", False)
 NO_BLOCKLIST = environment.getenvboolean("NO_BLOCKLIST", OFFLINE)
@@ -48,6 +47,7 @@ def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool
 @dataclasses.dataclass(slots=True)
 class ActionConfig:
     """The global config for SimonSays actions"""
+
     phasmo: gameactions.ActionConfig
     twitch: twitchactions.TwitchActionConfig
 
@@ -58,6 +58,7 @@ ConfigDict = dict[str, ActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for SimonSays"""
+
     config: ConfigDict
     version: str
     enabled: bool = True
@@ -108,6 +109,7 @@ class Config:
     @staticmethod
     def replace_enum(config: dict) -> dict:
         """Replace enums with their values"""
+
         def _replace_enum(obj):
             """Replace enums with their values"""
             if isinstance(obj, dict):
@@ -115,16 +117,19 @@ class Config:
             if isinstance(obj, enum.Enum):
                 return obj.name
             return obj
+
         return {key: {k: _replace_enum(v) for k, v in item.items()} for key, item in config.items()}
 
     @staticmethod
     def remove_none(config: dict) -> dict:
         """Remove keys containing None values"""
+
         def _remove_none(obj):
             """Remove None values"""
             if isinstance(obj, dict):
                 return {k: _remove_none(v) for k, v in obj.items() if v is not None}
             return obj
+
         return {key: _remove_none(item) for key, item in config.items()}
 
     def to_toml(self) -> str:
@@ -134,13 +139,16 @@ class Config:
         asdict = self.replace_enum(asdict)
         asdict = self.remove_none(asdict)
 
-        return tomlkit.dumps(asdict | {
-            "version": self.version,
-            "channel": list(self.channel),
-            "superusers": list(self.superusers),
-            "superuser_prefix": self.superuser_prefix,
-            "bots": list(self.bots),
-        })
+        return tomlkit.dumps(
+            asdict
+            | {
+                "version": self.version,
+                "channel": list(self.channel),
+                "superusers": list(self.superusers),
+                "superuser_prefix": self.superuser_prefix,
+                "bots": list(self.bots),
+            }
+        )
 
     def save(self, *, backup_old: bool = False) -> None:
         """Save the config to file"""
@@ -185,14 +193,15 @@ class Config:
         superuser_prefix = tomldata.get("superuser_prefix", DEFAULT_SUPERUSER_COMMAND_PREFIX) if tomldata else DEFAULT_SUPERUSER_COMMAND_PREFIX
         bots = set(tomldata.get("bots", DEFAULT_BOTS)) if tomldata else DEFAULT_BOTS
 
-        return cls({key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
-                   version=version,
-                   channel=channel,
-                   superusers=superusers,
-                   superuser_prefix=superuser_prefix,
-                   bots=bots,
-                   filename=filename
-                   )
+        return cls(
+            {key: ActionConfig(phasmo=phasmo.config[key], twitch=twitch.config[key]) for key in phasmo.config.keys()},
+            version=version,
+            channel=channel,
+            superusers=superusers,
+            superuser_prefix=superuser_prefix,
+            bots=bots,
+            filename=filename,
+        )
 
     def _make_phasmo_actions(self) -> gameactions.ActionDict:
         """Make the phasmo actions"""
@@ -215,11 +224,12 @@ class Config:
         random_action = self._make_random_phasmo_action()
 
         random_config = ActionConfig(
-            phasmo=phasmoactions.RandomActionConfig(lambda: existingactions),
-            twitch=twitchactions.TwitchActionConfig(random_action.name, random_chance=10)
+            phasmo=phasmoactions.RandomActionConfig(lambda: existingactions), twitch=twitchactions.TwitchActionConfig(random_action.name, random_chance=10)
         )
 
-        twitchactiondict = {random_action.name: twitchactions.TwitchAction(self._get_twitch_config_fn(), random_action.name, random_action, force_underlying=True)}
+        twitchactiondict = {
+            random_action.name: twitchactions.TwitchAction(self._get_twitch_config_fn(), random_action.name, random_action, force_underlying=True)
+        }
         configdict = {random_action.name: random_config}
 
         return twitchactiondict, configdict

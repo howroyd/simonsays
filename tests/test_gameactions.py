@@ -8,6 +8,7 @@ from simonsays_drgreengiant import gameactions, hidactions, errorcodes
 @dataclasses.dataclass(slots=True)
 class Config:
     """A config for a Phasmophobia action"""
+
     duration: float = 0.1
     pause: float = 0.2
     repeats: int = 3
@@ -52,6 +53,7 @@ def test_getitem():
 @dataclasses.dataclass(slots=True)
 class Action(gameactions.GenericAction):
     """A generic action"""
+
     name: str
     chained: bool
 

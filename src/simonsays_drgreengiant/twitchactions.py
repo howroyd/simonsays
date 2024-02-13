@@ -13,6 +13,7 @@ DEBUG = environment.getenvboolean("DEBUG", False)
 @dataclasses.dataclass(slots=True)
 class TwitchActionConfig:
     """A config for a Twitch action"""
+
     command: tuple[str]
     enabled: bool = True
     cooldown: int = 0
@@ -45,6 +46,7 @@ ConfigDict = dict[str, TwitchActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for all Twitch actions"""
+
     config: dict[str, TwitchActionConfig] = dataclasses.field(default_factory=dict)
 
     def get_config(self, name: str) -> TwitchActionConfig | None:
@@ -65,6 +67,7 @@ ConfigFn = Callable[[], Config]
 @dataclasses.dataclass(slots=True)
 class GenericTwitchAction:
     """Generic Twitch action base class"""
+
     config_fn: ConfigFn
 
     @property
@@ -76,6 +79,7 @@ class GenericTwitchAction:
 @dataclasses.dataclass(slots=True)
 class TwitchAction(GenericTwitchAction, actions.Action):
     """A Twitch action"""
+
     name: str
     action: actions.Action
     force_underlying: bool = False
@@ -201,11 +205,13 @@ if __name__ == "__main__":
             """Get the repeats"""
             return random.randint(*self._repeats)
 
-    myphasmoconfig = phasmoactions.Config(config={
-        "look_up": phasmo_look_up_config,
-        "look_down": phasmo_look_down_config,
-        "headbang": PhasmoHeadbangActionConfig(),
-    })
+    myphasmoconfig = phasmoactions.Config(
+        config={
+            "look_up": phasmo_look_up_config,
+            "look_down": phasmo_look_down_config,
+            "headbang": PhasmoHeadbangActionConfig(),
+        }
+    )
 
     ##
 
@@ -213,11 +219,13 @@ if __name__ == "__main__":
     twitch_look_down_config = TwitchActionConfig("look down", cooldown=0.5)
     twitch_headbang_config = TwitchActionConfig("look up", cooldown=0.5)
 
-    mytwitchconfig = Config(config={
-        "look_up": twitch_look_up_config,
-        "look_down": twitch_look_down_config,
-        "headbang": twitch_headbang_config,
-    })
+    mytwitchconfig = Config(
+        config={
+            "look_up": twitch_look_up_config,
+            "look_down": twitch_look_down_config,
+            "headbang": twitch_headbang_config,
+        }
+    )
 
     global_config = GlobalConfig(myphasmoconfig, mytwitchconfig)
 

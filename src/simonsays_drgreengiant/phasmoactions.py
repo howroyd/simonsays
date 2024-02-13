@@ -15,6 +15,7 @@ GenericAction = gameactions.GenericAction
 @dataclasses.dataclass(slots=True, frozen=True)
 class DEFAULTS:
     """Default values for Phasmophobia actions"""
+
     LOOK_DISTANCE: ClassVar[int] = 500
     PEEK_DISTANCE: ClassVar[int] = 250
     TOGGLE_DURATION: ClassVar[float] = 0.1
@@ -25,6 +26,7 @@ class DEFAULTS:
     @dataclasses.dataclass(slots=True, frozen=True)
     class KEYBINDS:
         """Default Phasmophobia keybinds"""
+
         FORWARD: ClassVar[str] = "w"
         BACKWARD: ClassVar[str] = "s"
         LEFT: ClassVar[str] = "a"
@@ -45,12 +47,14 @@ class DEFAULTS:
 
 class WalkDirectionUnknown(Exception):
     """Unknown walk direction"""
+
     pass
 
 
 @enum.unique
 class WalkDirection(enum.Enum):
     """Walk direction"""
+
     FORWARD = "forward"
     BACKWARD = "backward"
     LEFT = "left"
@@ -78,6 +82,7 @@ class WalkDirection(enum.Enum):
 @dataclasses.dataclass(slots=True)
 class Walk(GenericAction):
     """Walk in a direction"""
+
     direction: WalkDirection
     name: str = dataclasses.field(init=False)
     chained: bool = False
@@ -105,49 +110,58 @@ class WalkConfig:
 @dataclasses.dataclass(slots=True)
 class WalkForward(Walk):
     """Walk forward"""
+
     direction: WalkDirection = WalkDirection.FORWARD
 
 
 @dataclasses.dataclass(slots=True)
 class WalkForwardConfig(WalkConfig):
     """Walk forward config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("w"))
 
 
 @dataclasses.dataclass(slots=True)
 class WalkBackward(Walk):
     """Walk backward"""
+
     direction: WalkDirection = WalkDirection.BACKWARD
 
 
 @dataclasses.dataclass(slots=True)
 class WalkBackwardConfig(WalkConfig):
     """Walk backward config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("s"))
 
 
 @dataclasses.dataclass(slots=True)
 class WalkLeft(Walk):
     """Walk left"""
+
     direction: WalkDirection = WalkDirection.LEFT
 
 
 @dataclasses.dataclass(slots=True)
 class WalkLeftConfig(WalkConfig):
     """Walk left config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("a"))
 
 
 @dataclasses.dataclass(slots=True)
 class WalkRight(Walk):
     """Walk right"""
+
     direction: WalkDirection = WalkDirection.RIGHT
 
 
 @dataclasses.dataclass(slots=True)
 class WalkRightConfig(WalkConfig):
     """Walk right config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("d"))
+
 
 #####################################################################
 
@@ -163,11 +177,13 @@ class Sprint(Walk):
         """Run the action"""
         actionconfig: SprintConfig = self.config
 
-        return actions.ActionSequence([
-            hidactions.PressKeyOrButton(actionconfig.hidconfig),
-            self.direction.to_action()(self.config_fn),
-            hidactions.ReleaseKeyOrButton(actionconfig.hidconfig),
-        ]).run(force=force)
+        return actions.ActionSequence(
+            [
+                hidactions.PressKeyOrButton(actionconfig.hidconfig),
+                self.direction.to_action()(self.config_fn),
+                hidactions.ReleaseKeyOrButton(actionconfig.hidconfig),
+            ]
+        ).run(force=force)
 
 
 @dataclasses.dataclass(slots=True)
@@ -184,25 +200,30 @@ class SprintConfig:
 @dataclasses.dataclass(slots=True)
 class SprintForward(Sprint):
     """Sprint forward"""
+
     direction: WalkDirection = WalkDirection.FORWARD
 
 
 @dataclasses.dataclass(slots=True)
 class SprintBackward(Sprint):
     """Sprint backward"""
+
     direction: WalkDirection = WalkDirection.BACKWARD
 
 
 @dataclasses.dataclass(slots=True)
 class SprintLeft(Sprint):
     """Sprint left"""
+
     direction: WalkDirection = WalkDirection.LEFT
 
 
 @dataclasses.dataclass(slots=True)
 class SprintRight(Sprint):
     """Sprint right"""
+
     direction: WalkDirection = WalkDirection.RIGHT
+
 
 #####################################################################
 
@@ -210,6 +231,7 @@ class SprintRight(Sprint):
 @dataclasses.dataclass(slots=True)
 class CrouchToggle(GenericAction):
     """Toggle crouch"""
+
     name: str = "crouch"
     chained: bool = False
 
@@ -217,6 +239,7 @@ class CrouchToggle(GenericAction):
 @dataclasses.dataclass(slots=True)
 class CrouchToggleConfig:
     """Toggle crouch config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("c"))
 
 
@@ -226,6 +249,7 @@ class CrouchToggleConfig:
 @dataclasses.dataclass(slots=True)
 class JournalToggle(GenericAction):
     """Toggle the journal"""
+
     name: str = "journal"
     chained: bool = False
 
@@ -233,6 +257,7 @@ class JournalToggle(GenericAction):
 @dataclasses.dataclass(slots=True)
 class JournalToggleConfig:
     """Toggle the journal config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("j"))
 
 
@@ -242,6 +267,7 @@ class JournalToggleConfig:
 @dataclasses.dataclass(slots=True)
 class Place(GenericAction):
     """Place an item"""
+
     name: str = "place"
     chained: bool = False
 
@@ -249,7 +275,9 @@ class Place(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PlaceConfig:
     """Place an item config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("f"))
+
 
 #####################################################################
 
@@ -257,6 +285,7 @@ class PlaceConfig:
 @dataclasses.dataclass(slots=True)
 class Pickup(GenericAction):
     """Pickup an item"""
+
     name: str = "pickup"
     chained: bool = False
 
@@ -264,7 +293,9 @@ class Pickup(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PickupConfig:
     """Pickup an item config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("e"))
+
 
 #####################################################################
 
@@ -272,6 +303,7 @@ class PickupConfig:
 @dataclasses.dataclass(slots=True)
 class Drop(GenericAction):
     """Drop an item"""
+
     name: str = "drop"
     chained: bool = False
 
@@ -279,7 +311,9 @@ class Drop(GenericAction):
 @dataclasses.dataclass(slots=True)
 class DropConfig:
     """Drop an item config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("g"))
+
 
 #####################################################################
 
@@ -287,6 +321,7 @@ class DropConfig:
 @dataclasses.dataclass(slots=True)
 class Switch(GenericAction):
     """Switch to next inventory item"""
+
     name: str = "switch"
     chained: bool = False
 
@@ -294,7 +329,9 @@ class Switch(GenericAction):
 @dataclasses.dataclass(slots=True)
 class SwitchConfig:
     """Switch to next inventory item config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("q"))
+
 
 #####################################################################
 
@@ -302,6 +339,7 @@ class SwitchConfig:
 @dataclasses.dataclass(slots=True)
 class TorchToggle(GenericAction):
     """Toggle the torch"""
+
     name: str = "torch"
     chained: bool = False
 
@@ -309,7 +347,9 @@ class TorchToggle(GenericAction):
 @dataclasses.dataclass(slots=True)
 class TorchToggleConfig:
     """Toggle the torch config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("t"))
+
 
 #####################################################################
 
@@ -317,6 +357,7 @@ class TorchToggleConfig:
 @dataclasses.dataclass(slots=True)
 class Talk(GenericAction):
     """Toggle push to talk for a period of time"""
+
     name: str = "talk"
     chained: bool = False
 
@@ -324,6 +365,7 @@ class Talk(GenericAction):
 @dataclasses.dataclass(slots=True)
 class TalkConfig:
     """Toggle push to talk for a period of time config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("v"))
     _duration: float = DEFAULTS.TALK_DURATION
 
@@ -336,6 +378,7 @@ class TalkConfig:
 @dataclasses.dataclass(slots=True)
 class Radio(GenericAction):
     """Toggle global push to talk radio for a period of time"""
+
     name: str = "radio"
     chained: bool = False
 
@@ -343,6 +386,7 @@ class Radio(GenericAction):
 @dataclasses.dataclass(slots=True)
 class RadioConfig:
     """Toggle global push to talk radio for a period of time config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("b"))
     _duration: float = DEFAULTS.TALK_DURATION
 
@@ -363,6 +407,7 @@ class LookConfig:
 @dataclasses.dataclass(slots=True)
 class LookUp(GenericAction):
     """Look up"""
+
     name: str = "look_up"
     chained: bool = False
 
@@ -370,12 +415,16 @@ class LookUp(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookUpConfig(LookConfig):
     """Look up config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.UP))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.UP)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class LookDown(GenericAction):
     """Look down"""
+
     name: str = "look_down"
     chained: bool = False
 
@@ -383,12 +432,16 @@ class LookDown(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookDownConfig(LookConfig):
     """Look down config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.DOWN)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class LookLeft(GenericAction):
     """Look left"""
+
     name: str = "look_left"
     chained: bool = False
 
@@ -396,12 +449,16 @@ class LookLeft(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookLeftConfig(LookConfig):
     """Look left config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.LEFT)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class LookRight(GenericAction):
     """Look right"""
+
     name: str = "look_right"
     chained: bool = False
 
@@ -409,7 +466,10 @@ class LookRight(GenericAction):
 @dataclasses.dataclass(slots=True)
 class LookRightConfig(LookConfig):
     """Look right config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.LOOK_DISTANCE, hidactions.MouseMoveDirection.RIGHT)
+    )
 
 
 PeekConfig = LookConfig
@@ -418,6 +478,7 @@ PeekConfig = LookConfig
 @dataclasses.dataclass(slots=True)
 class PeekUp(GenericAction):
     """Peek up"""
+
     name: str = "peek_up"
     chained: bool = False
 
@@ -425,12 +486,16 @@ class PeekUp(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekUpConfig(PeekConfig):
     """Peek up config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.UP))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.UP)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class PeekDown(GenericAction):
     """Peek down"""
+
     name: str = "peek_down"
     chained: bool = False
 
@@ -438,12 +503,16 @@ class PeekDown(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekDownConfig(PeekConfig):
     """Peek down config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.DOWN))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.DOWN)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class PeekLeft(GenericAction):
     """Peek left"""
+
     name: str = "peek_left"
     chained: bool = False
 
@@ -451,12 +520,16 @@ class PeekLeft(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekLeftConfig(PeekConfig):
     """Peek left config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.LEFT))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.LEFT)
+    )
 
 
 @dataclasses.dataclass(slots=True)
 class PeekRight(GenericAction):
     """Peek right"""
+
     name: str = "peek_right"
     chained: bool = False
 
@@ -464,7 +537,11 @@ class PeekRight(GenericAction):
 @dataclasses.dataclass(slots=True)
 class PeekRightConfig(PeekConfig):
     """Peek right config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.RIGHT))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(DEFAULTS.PEEK_DISTANCE, hidactions.MouseMoveDirection.RIGHT)
+    )
+
 
 #####################################################################
 
@@ -472,6 +549,7 @@ class PeekRightConfig(PeekConfig):
 @dataclasses.dataclass(slots=True)
 class Use(GenericAction):
     """Use item"""
+
     name: str = "use"
     chained: bool = False
 
@@ -479,7 +557,9 @@ class Use(GenericAction):
 @dataclasses.dataclass(slots=True)
 class UseConfig:
     """Use item config"""
+
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseButtonActionConfig("right"))
+
 
 #####################################################################
 
@@ -487,6 +567,7 @@ class UseConfig:
 @dataclasses.dataclass(slots=True)
 class Box(GenericAction):
     """Music box grenade; use and drop"""
+
     name: str = "box"
     chained: bool = True
 
@@ -499,6 +580,7 @@ class Box(GenericAction):
 @dataclasses.dataclass(slots=True)
 class BoxConfig:
     """Use item config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.5
 
@@ -507,12 +589,14 @@ class BoxConfig:
         """Get the pause"""
         return self._pause
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Teabag(GenericActionBase):
     """Crouch repeatedly"""
+
     name: str = "teabag"
     chained: bool = True
 
@@ -525,6 +609,7 @@ class Teabag(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class TeabagConfig:
     """Crouch repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.5
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
@@ -543,12 +628,14 @@ class TeabagConfig:
         """Get the repeats"""
         return random.randint(*self._repeats)
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Disco(GenericActionBase):
     """Turn the torch on and off repeatedly"""
+
     name: str = "disco"
     chained: bool = True
 
@@ -561,6 +648,7 @@ class Disco(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class DiscoConfig:
     """Turn the torch on and off repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
@@ -579,12 +667,14 @@ class DiscoConfig:
         """Get the repeats"""
         return random.randint(*self._repeats)
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class CycleItems(GenericActionBase):
     """Cycle through the inventory repeatedly"""
+
     name: str = "cycle"
     chained: bool = True
 
@@ -597,6 +687,7 @@ class CycleItems(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class CycleItemsConfig:
     """Cycle through the inventory repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.25
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
@@ -615,12 +706,14 @@ class CycleItemsConfig:
         """Get the repeats"""
         return random.randint(*self._repeats)
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class CycleItemsAndUse(GenericActionBase):
     """Cycle through the inventory and use the item, repeatedly"""
+
     name: str = "rekt"
     chained: bool = True
 
@@ -634,6 +727,7 @@ class CycleItemsAndUse(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class CycleItemsAndUseConfig:
     """Cycle through the inventory and use the item, repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.25
     _repeats: int = 3
@@ -648,12 +742,14 @@ class CycleItemsAndUseConfig:
         """Get the repeats"""
         return self._repeats
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class DropAllItems(GenericActionBase):
     """Cycle through the inventory and drop each item"""
+
     name: str = "yeet"
     chained: bool = True
 
@@ -667,6 +763,7 @@ class DropAllItems(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class DropAllItemsConfig:
     """Cycle through the inventory and drop each item config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.10
     _repeats: int = 3
@@ -681,12 +778,14 @@ class DropAllItemsConfig:
         """Get the repeats"""
         return self._repeats
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Spin(GenericActionBase):
     """Spin on the spot"""
+
     name: str = "spin"
     chained: bool = True
 
@@ -704,6 +803,7 @@ class Spin(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class SpinConfig:
     """Spin on the spot config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.015
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (25, 50))
@@ -734,12 +834,14 @@ class SpinConfig:
         """Get the distance"""
         return self._distance
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Headbang(GenericActionBase):
     """Look up and down repeatedly"""
+
     name: str = "headbang"
     chained: bool = True
 
@@ -764,6 +866,7 @@ class Headbang(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class HeadbangConfig:
     """Look up and down repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
@@ -788,12 +891,14 @@ class HeadbangConfig:
         """Get the distance"""
         return self._distance
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Headshake(GenericActionBase):
     """Look left and right repeatedly"""
+
     name: str = "headshake"
     chained: bool = True
 
@@ -818,6 +923,7 @@ class Headshake(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class HeadshakeConfig:
     """Look left and right repeatedly config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.33
     _repeats: tuple[int] = dataclasses.field(default_factory=lambda: (5, 10))
@@ -842,12 +948,14 @@ class HeadshakeConfig:
         """Get the distance"""
         return self._distance
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Yoga(GenericAction):
     """Look up to the sky"""
+
     name: str = "yoga"
     chained: bool = False
 
@@ -855,7 +963,11 @@ class Yoga(GenericAction):
 @dataclasses.dataclass(slots=True)
 class YogaConfig(LookConfig):
     """Look up to the sky config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP)
+    )
+
 
 #####################################################################
 
@@ -863,6 +975,7 @@ class YogaConfig(LookConfig):
 @dataclasses.dataclass(slots=True)
 class Feet(GenericAction):
     """Look down to the floor"""
+
     name: str = "feet"
     chained: bool = False
 
@@ -870,7 +983,11 @@ class Feet(GenericAction):
 @dataclasses.dataclass(slots=True)
 class FeetConfig(LookConfig):
     """Look down to the floor config"""
-    hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.DOWN))
+
+    hidconfig: hidactions.Config = dataclasses.field(
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.DOWN)
+    )
+
 
 #####################################################################
 
@@ -878,6 +995,7 @@ class FeetConfig(LookConfig):
 @dataclasses.dataclass(slots=True)
 class Freeze(GenericActionBase):
     """Counterstrafe to freeze on the spot"""
+
     name: str = "freeze"
     chained: bool = True
 
@@ -890,20 +1008,14 @@ class Freeze(GenericActionBase):
         backwardPress = hidactions.PressKeyOrButton(WalkBackwardConfig().hidconfig)
         leftPress = hidactions.PressKeyOrButton(WalkLeftConfig().hidconfig)
 
-        press = actions.ActionSequence([forwardPress,
-                                        rightPress,
-                                        backwardPress,
-                                        leftPress])
+        press = actions.ActionSequence([forwardPress, rightPress, backwardPress, leftPress])
 
         forwardRelease = hidactions.ReleaseKeyOrButton(WalkForwardConfig().hidconfig)
         rightRelease = hidactions.ReleaseKeyOrButton(WalkRightConfig().hidconfig)
         backwardRelease = hidactions.ReleaseKeyOrButton(WalkBackwardConfig().hidconfig)
         leftRelease = hidactions.ReleaseKeyOrButton(WalkLeftConfig().hidconfig)
 
-        release = actions.ActionSequence([forwardRelease,
-                                          rightRelease,
-                                          backwardRelease,
-                                          leftRelease])
+        release = actions.ActionSequence([forwardRelease, rightRelease, backwardRelease, leftRelease])
 
         once = actions.ActionSequence([press, actions.Wait(actionconfig.pause), release, actions.Wait(actionconfig.pause)])
 
@@ -913,6 +1025,7 @@ class Freeze(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class FreezeConfig:
     """Counterstrafe to freeze on the spot config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.01
     _repeats: int = int(5 / 4 / 0.01)
@@ -930,12 +1043,14 @@ class FreezeConfig:
         """Get the repeats"""
         return self._repeats
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Tornado(GenericActionBase):
     """Spin on the spot whilst yeeting"""
+
     name: str = "tornado"
     chained: bool = True
 
@@ -943,9 +1058,7 @@ class Tornado(GenericActionBase):
         """Run the action"""
         actionconfig: TornadoConfig = self.config
 
-        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance,
-                                                              actionconfig.mousemovedirection,
-                                                              pause=actionconfig.pause)
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance, actionconfig.mousemovedirection, pause=actionconfig.pause)
 
         look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
         lookfar = actions.ActionRepeat(look, actionconfig.repeats)
@@ -961,6 +1074,7 @@ class Tornado(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class TornadoConfig:
     """Spin on the spot whilst yeeting config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.005
     _repeats: int = 4
@@ -986,12 +1100,15 @@ class TornadoConfig:
     def distance(self) -> int:
         """Get the distance"""
         return self._distance
+
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class Hurricane(GenericActionBase):
     """Spin on the spot whilst using items"""
+
     name: str = "hurricane"
     chained: bool = True
 
@@ -999,9 +1116,7 @@ class Hurricane(GenericActionBase):
         """Run the action"""
         actionconfig: TornadoConfig = self.config
 
-        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance,
-                                                              actionconfig.mousemovedirection,
-                                                              pause=actionconfig.pause)
+        cfg = hidactions.MouseMoveDirectionSmoothActionConfig(actionconfig.distance, actionconfig.mousemovedirection, pause=actionconfig.pause)
 
         look = hidactions.MoveMouseRelativeDirectionSmooth(cfg)
         lookfar = actions.ActionRepeat(look, actionconfig.repeats)
@@ -1019,6 +1134,7 @@ class Hurricane(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class HurricaneConfig:
     """Spin on the spot whilst using items config"""
+
     hidconfig: hidactions.Config = None
     _pause: float = 0.005
     _repeats: int = 4
@@ -1045,12 +1161,14 @@ class HurricaneConfig:
         """Get the distance"""
         return self._distance
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class RandomAction(GenericActionBase):
     """Pich a random action and run it"""
+
     name: str = "random"
     chained: bool = True
 
@@ -1064,6 +1182,7 @@ class RandomAction(GenericActionBase):
 @dataclasses.dataclass(slots=True)
 class RandomActionConfig:
     """Look up and down repeatedly config"""
+
     _actiondict: Callable[[], gameactions.ActionDict]
     hidconfig: hidactions.Config = None
 
@@ -1074,6 +1193,7 @@ class RandomActionConfig:
 
 
 #####################################################################
+
 
 def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict:
     return {
@@ -1200,45 +1320,47 @@ def all_actions_dict(config_fn: gameactions.ConfigFn) -> gameactions.ActionDict:
 
 def default_config() -> gameactions.Config:
     """Get the default config"""
-    return gameactions.Config({
-        WalkForward(None).name: WalkForwardConfig(),
-        WalkBackward(None).name: WalkBackwardConfig(),
-        WalkLeft(None).name: WalkLeftConfig(),
-        WalkRight(None).name: WalkRightConfig(),
-        SprintForward(None).name: SprintConfig(),
-        SprintBackward(None).name: SprintConfig(),
-        SprintLeft(None).name: SprintConfig(),
-        SprintRight(None).name: SprintConfig(),
-        CrouchToggle(None).name: CrouchToggleConfig(),
-        JournalToggle(None).name: JournalToggleConfig(),
-        Place(None).name: PlaceConfig(),
-        Pickup(None).name: PickupConfig(),
-        Drop(None).name: DropConfig(),
-        Switch(None).name: SwitchConfig(),
-        TorchToggle(None).name: TorchToggleConfig(),
-        Talk(None).name: TalkConfig(),
-        Radio(None).name: RadioConfig(),
-        LookUp(None).name: LookUpConfig(),
-        LookDown(None).name: LookDownConfig(),
-        LookLeft(None).name: LookLeftConfig(),
-        LookRight(None).name: LookRightConfig(),
-        PeekUp(None).name: PeekUpConfig(),
-        PeekDown(None).name: PeekDownConfig(),
-        PeekLeft(None).name: PeekLeftConfig(),
-        PeekRight(None).name: PeekRightConfig(),
-        Use(None).name: UseConfig(),
-        Box(None).name: BoxConfig(),
-        Teabag(None).name: TeabagConfig(),
-        Disco(None).name: DiscoConfig(),
-        CycleItems(None).name: CycleItemsConfig(),
-        CycleItemsAndUse(None).name: CycleItemsAndUseConfig(),
-        DropAllItems(None).name: DropAllItemsConfig(),
-        Spin(None).name: SpinConfig(),
-        Headbang(None).name: HeadbangConfig(),
-        Headshake(None).name: HeadshakeConfig(),
-        Yoga(None).name: YogaConfig(),
-        Feet(None).name: FeetConfig(),
-        Freeze(None).name: FreezeConfig(),
-        Tornado(None).name: TornadoConfig(),
-        Hurricane(None).name: HurricaneConfig(),
-    })
+    return gameactions.Config(
+        {
+            WalkForward(None).name: WalkForwardConfig(),
+            WalkBackward(None).name: WalkBackwardConfig(),
+            WalkLeft(None).name: WalkLeftConfig(),
+            WalkRight(None).name: WalkRightConfig(),
+            SprintForward(None).name: SprintConfig(),
+            SprintBackward(None).name: SprintConfig(),
+            SprintLeft(None).name: SprintConfig(),
+            SprintRight(None).name: SprintConfig(),
+            CrouchToggle(None).name: CrouchToggleConfig(),
+            JournalToggle(None).name: JournalToggleConfig(),
+            Place(None).name: PlaceConfig(),
+            Pickup(None).name: PickupConfig(),
+            Drop(None).name: DropConfig(),
+            Switch(None).name: SwitchConfig(),
+            TorchToggle(None).name: TorchToggleConfig(),
+            Talk(None).name: TalkConfig(),
+            Radio(None).name: RadioConfig(),
+            LookUp(None).name: LookUpConfig(),
+            LookDown(None).name: LookDownConfig(),
+            LookLeft(None).name: LookLeftConfig(),
+            LookRight(None).name: LookRightConfig(),
+            PeekUp(None).name: PeekUpConfig(),
+            PeekDown(None).name: PeekDownConfig(),
+            PeekLeft(None).name: PeekLeftConfig(),
+            PeekRight(None).name: PeekRightConfig(),
+            Use(None).name: UseConfig(),
+            Box(None).name: BoxConfig(),
+            Teabag(None).name: TeabagConfig(),
+            Disco(None).name: DiscoConfig(),
+            CycleItems(None).name: CycleItemsConfig(),
+            CycleItemsAndUse(None).name: CycleItemsAndUseConfig(),
+            DropAllItems(None).name: DropAllItemsConfig(),
+            Spin(None).name: SpinConfig(),
+            Headbang(None).name: HeadbangConfig(),
+            Headshake(None).name: HeadshakeConfig(),
+            Yoga(None).name: YogaConfig(),
+            Feet(None).name: FeetConfig(),
+            Freeze(None).name: FreezeConfig(),
+            Tornado(None).name: TornadoConfig(),
+            Hurricane(None).name: HurricaneConfig(),
+        }
+    )

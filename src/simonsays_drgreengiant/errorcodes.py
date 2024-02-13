@@ -6,6 +6,7 @@ from typing import Any, Iterable
 @enum.unique
 class ErrorCode(enum.IntEnum):
     """Error codes"""
+
     OK = 0
     UNKNOWN = 1
     NOT_IMPLEMENTED = 2

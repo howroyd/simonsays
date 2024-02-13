@@ -8,6 +8,7 @@ from . import errorcodes, hidactions
 @dataclasses.dataclass(slots=True)
 class ActionConfig(Protocol):
     """A config for a Phasmophobia action"""
+
     hidconfig: hidactions.Config
 
     @property
@@ -42,6 +43,7 @@ ConfigDict = dict[str, ActionConfig]
 @dataclasses.dataclass(slots=True)
 class Config:
     """The global config for all game actions"""
+
     config: ConfigDict = dataclasses.field(default_factory=ConfigDict)
 
     def __getitem__(self, name: str) -> ActionConfig | None:
@@ -82,6 +84,7 @@ ConfigFn = Callable[[], Config]
 @dataclasses.dataclass(slots=True, kw_only=True)
 class Action(hidactions.HidAction, Protocol):
     """Base class for Phasmophobia actions"""
+
     config_fn: ConfigFn
     name: str
     chained: bool
@@ -98,6 +101,7 @@ ActionDict = dict[str, Action]
 @dataclasses.dataclass(slots=True)
 class GenericActionBase:
     """Generic Phasmophobia action base class"""
+
     config_fn: ConfigFn
 
     @property
@@ -130,12 +134,14 @@ class GenericAction(GenericActionBase):
         else:
             return errorcodes.errorset(errorcodes.ErrorCode.NOT_IMPLEMENTED)
 
+
 #####################################################################
 
 
 @dataclasses.dataclass(slots=True)
 class ActionAndConfig:
     """A pair of an action and config"""
+
     actiontype: type(Action)
     config: ActionConfig
     action: Action = dataclasses.field(init=False)
