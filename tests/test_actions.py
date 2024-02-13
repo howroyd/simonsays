@@ -1,7 +1,6 @@
 import dataclasses
 
 import pytest
-
 from simonsays_drgreengiant import actions, errorcodes
 
 WAIT_TIME = 0.01

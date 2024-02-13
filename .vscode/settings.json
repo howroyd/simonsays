@@ -1,4 +1,9 @@
 {
-    "editor.defaultFormatter": "charliermarsh.ruff",
-    "restructuredtext.preview.docutils.disabled": true
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    }
 }

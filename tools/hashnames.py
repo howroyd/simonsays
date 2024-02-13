@@ -15,7 +15,7 @@ OTHER = [
 if __name__ == "__main__":
     names = set(NAMES)
 
-    blocked = set((hashlib.sha256(name.strip().lower().encode("utf-8")).hexdigest() for name in names))
+    blocked = set(hashlib.sha256(name.strip().lower().encode("utf-8")).hexdigest() for name in names)
 
     blocked.update(OTHER)
 

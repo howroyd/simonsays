@@ -21,7 +21,7 @@ def update_env() -> None:
     newvars = {}
 
     try:
-        with open(os.path.join(DATAPATH, ".env"), "r") as f:
+        with open(os.path.join(DATAPATH, ".env")) as f:
             # with open(DATAPATH, "r") as f:
             for line in f.readlines():
                 thisline = line.strip()

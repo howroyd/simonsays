@@ -1,8 +1,6 @@
 import dataclasses
 
-import pytest
-
-from simonsays_drgreengiant import gameactions, hidactions, errorcodes
+from simonsays_drgreengiant import errorcodes, gameactions, hidactions
 
 
 @dataclasses.dataclass(slots=True)
@@ -62,7 +60,11 @@ def test_genericaction():
     """Test GenericAction"""
     testitem = {"test": Config()}
     config = gameactions.Config(testitem)
-    configfn: gameactions.ConfigFn = lambda: config
+
+    def get_config() -> gameactions.Config:
+        return config
+
+    configfn: gameactions.ConfigFn = get_config
     genericaction = Action(configfn, "test", False)
 
     hidaction = hidactions.KeyboardActionConfig("x")

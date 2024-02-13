@@ -2,8 +2,8 @@
 import dataclasses
 import random
 import time
-from collections.abc import Iterable
-from typing import Any, Callable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from . import actions, environment, errorcodes, phasmoactions
 
@@ -236,6 +236,7 @@ if __name__ == "__main__":
         return global_config.twitchconfig
 
     myactions = {key: TwitchAction(get_twitch_config, key, value) for key, value in phasmoactions.all_actions_dict(get_phasmo_config).items()}
+    force = False
     myactions["look_up"].run(force=force)
     myactions["look_down"].run(force=force)
     myactions["look_down"].run(force=force)

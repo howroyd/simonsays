@@ -1,6 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
-from typing import Any, Callable, Protocol, Self
+from collections.abc import Callable
+from typing import Any, Protocol, Self
 
 from . import errorcodes, hidactions
 

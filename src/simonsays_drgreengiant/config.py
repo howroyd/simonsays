@@ -4,7 +4,8 @@ import enum
 import functools
 import hashlib
 import shutil
-from typing import Callable, NoReturn, Self
+from collections.abc import Callable
+from typing import NoReturn, Self
 
 import tomlkit
 
@@ -24,7 +25,7 @@ if not NO_BLOCKLIST:
     import urllib.request as urllib_request
 
     with urllib_request.urlopen("https://github.com/howroyd/simonsays/releases/latest/download/blocklist") as _blocklist:
-        BLOCKLIST = set((line.strip() for line in _blocklist.readlines()))
+        BLOCKLIST = set(line.strip() for line in _blocklist.readlines())
 
         del urllib_request
     del _blocklist
@@ -33,7 +34,7 @@ if not NO_BLOCKLIST:
 def check_blocklist(channel: str | set[str], *, abort: bool = True, silent: bool = False) -> set[str] | NoReturn:
     """Return any channels/users in the blocklist"""
     channels = channel if isinstance(channel, set) else set(channel)
-    blockedchannels = set((channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST))
+    blockedchannels = set(channel for channel in channels if hashlib.sha256(channel.strip().lower().encode("utf-8")).hexdigest() in BLOCKLIST)
 
     if blockedchannels:
         if not silent:
@@ -170,7 +171,7 @@ class Config:
         filename = filename or DEFAULT_FILENAME
 
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 tomldata = tomlkit.loads(f.read())
         except FileNotFoundError:
             print(f"Config file not found: {filename=}")

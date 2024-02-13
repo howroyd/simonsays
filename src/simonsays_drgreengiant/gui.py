@@ -5,8 +5,8 @@ import multiprocessing as mp
 import os
 import pprint as pp
 import tkinter as tk
-from collections.abc import Iterable
-from typing import Any, Callable, NoReturn, Optional
+from collections.abc import Callable, Iterable
+from typing import Any, NoReturn
 
 import semantic_version
 
@@ -15,7 +15,7 @@ from . import config, environment, hidactions
 KEY_IGNORED_STR = "ignored"
 
 
-def on_closing(exit_event: Optional[mp.Event] = None) -> NoReturn:
+def on_closing(exit_event: mp.Event = None) -> NoReturn:
     """Exit the program when window is closed"""
     if exit_event is None:
         print("GUI closed, exiting...")

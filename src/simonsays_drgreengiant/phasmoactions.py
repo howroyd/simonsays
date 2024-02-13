@@ -2,7 +2,8 @@
 import dataclasses
 import enum
 import random
-from typing import Any, Callable, ClassVar
+from collections.abc import Callable
+from typing import Any, ClassVar
 
 from . import actions, environment, errorcodes, gameactions, hidactions
 
