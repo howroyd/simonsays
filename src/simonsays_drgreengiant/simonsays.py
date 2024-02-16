@@ -9,7 +9,7 @@ import requests
 import semantic_version
 from twitchirc_drgreengiant import offlineirc, twitchirc
 
-from . import config, environment, errorcodes, gui, twitchactions
+from . import api, config, environment, errorcodes, gui, twitchactions
 
 VERSION = environment.getenv("VERSION", "0.0.0dev")
 
@@ -117,7 +117,7 @@ def main() -> NoReturn:
 
     print(preamble(myconfig))
 
-    with contextlib.ExitStack() as stack:
+    with contextlib.ExitStack() as stack, api.make_server(myconfig)() as myapi:
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
         updateavailable = None

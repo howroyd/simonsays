@@ -3,6 +3,7 @@ import dataclasses
 import enum
 import functools
 import hashlib
+import pprint
 import shutil
 from collections.abc import Callable, Iterable, MutableMapping
 from typing import NoReturn, Self
@@ -250,3 +251,9 @@ class Config:
             self.superuser_prefix + " reload": lambda: print("Reload!"),  # TODO
             self.superuser_prefix + " reset": lambda: [action.clear_cooldown() for action in twitch_actions.values()],
         } | superuser_actions
+
+
+def make_commands_str(myconfig: Config) -> str:
+    """Make a command string to paste into chat"""
+    ret = pprint.pformat([value.twitch.command[0] for value in myconfig.config.values()], compact=True)
+    return ret.replace("'", "").replace("[", "").replace("]", "")
