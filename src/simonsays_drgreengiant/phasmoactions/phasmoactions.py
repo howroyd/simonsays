@@ -3,12 +3,13 @@ import dataclasses
 import random
 from collections.abc import Callable
 
-from .. import phasmoactions as pa
-from . import errorcodes, gameactions, hidactions
+from .. import errorcodes, gameactions, hidactions
+from . import crouch, defaults, drop, journal, look, move, peek, pickup, place, radio, sprint, switch, talk, torch, use, walk
+from .combos import box, cycle, cycleuse, disco, dropall, feet, freeze, headbang, headshake, hurricane, spin, teabag, tornado, yoga
 
 
 @dataclasses.dataclass(slots=True)
-class RandomAction(pa.defaults.GenericActionBase):
+class RandomAction(defaults.GenericActionBase):
     """Pick a random action and run it"""
 
     # TODO can this be generalised into actions.RandomAction?
@@ -38,48 +39,48 @@ class RandomActionConfig:
 #####################################################################
 
 
-def _get_all(config_fn: gameactions.ConfigFn) -> gameactions.ActionAndConfigDict:
+def _get_all() -> gameactions.ActionAndConfigDict:
     return {
-        pa.WalkForward(None).name: gameactions.ActionAndConfig(pa.WalkForward, pa.WalkForwardConfig()),
-        pa.WalkBackward(None).name: gameactions.ActionAndConfig(pa.WalkBackward, pa.WalkBackwardConfig()),
-        pa.WalkLeft(None).name: gameactions.ActionAndConfig(pa.WalkLeft, pa.WalkLeftConfig()),
-        pa.WalkRight(None).name: gameactions.ActionAndConfig(pa.WalkRight, pa.WalkRightConfig()),
-        pa.SprintForward(None).name: gameactions.ActionAndConfig(pa.SprintForward, pa.SprintConfig()),
-        pa.SprintBackward(None).name: gameactions.ActionAndConfig(pa.SprintBackward, pa.SprintConfig()),
-        pa.SprintLeft(None).name: gameactions.ActionAndConfig(pa.SprintLeft, pa.SprintConfig()),
-        pa.SprintRight(None).name: gameactions.ActionAndConfig(pa.SprintRight, pa.SprintConfig()),
-        pa.CrouchToggle(None).name: gameactions.ActionAndConfig(pa.CrouchToggle, pa.CrouchToggleConfig()),
-        pa.JournalToggle(None).name: gameactions.ActionAndConfig(pa.JournalToggle, pa.JournalToggleConfig()),
-        pa.Place(None).name: gameactions.ActionAndConfig(pa.Place, pa.PlaceConfig()),
-        pa.Pickup(None).name: gameactions.ActionAndConfig(pa.Pickup, pa.PickupConfig()),
-        pa.Drop(None).name: gameactions.ActionAndConfig(pa.Drop, pa.DropConfig()),
-        pa.Switch(None).name: gameactions.ActionAndConfig(pa.Switch, pa.SwitchConfig()),
-        pa.TorchToggle(None).name: gameactions.ActionAndConfig(pa.TorchToggle, pa.TorchToggleConfig()),
-        pa.Talk(None).name: gameactions.ActionAndConfig(pa.Talk, pa.TalkConfig()),
-        pa.Radio(None).name: gameactions.ActionAndConfig(pa.Radio, pa.RadioConfig()),
-        pa.LookUp(None).name: gameactions.ActionAndConfig(pa.LookUp, pa.LookUpConfig()),
-        pa.LookDown(None).name: gameactions.ActionAndConfig(pa.LookDown, pa.LookDownConfig()),
-        pa.LookLeft(None).name: gameactions.ActionAndConfig(pa.LookLeft, pa.LookLeftConfig()),
-        pa.LookRight(None).name: gameactions.ActionAndConfig(pa.LookRight, pa.LookRightConfig()),
-        pa.PeekUp(None).name: gameactions.ActionAndConfig(pa.PeekUp, pa.PeekUpConfig()),
-        pa.PeekDown(None).name: gameactions.ActionAndConfig(pa.PeekDown, pa.PeekDownConfig()),
-        pa.PeekLeft(None).name: gameactions.ActionAndConfig(pa.PeekLeft, pa.PeekLeftConfig()),
-        pa.PeekRight(None).name: gameactions.ActionAndConfig(pa.PeekRight, pa.PeekRightConfig()),
-        pa.Use(None).name: gameactions.ActionAndConfig(pa.Use, pa.UseConfig()),
-        pa.combos.Box(None).name: gameactions.ActionAndConfig(pa.combos.Box, pa.combos.BoxConfig()),
-        pa.combos.Teabag(None).name: gameactions.ActionAndConfig(pa.combos.Teabag, pa.combos.TeabagConfig()),
-        pa.combos.Disco(None).name: gameactions.ActionAndConfig(pa.combos.Disco, pa.combos.DiscoConfig()),
-        pa.combos.CycleItems(None).name: gameactions.ActionAndConfig(pa.combos.CycleItems, pa.combos.CycleItemsConfig()),
-        pa.combos.CycleItemsAndUse(None).name: gameactions.ActionAndConfig(pa.combos.CycleItemsAndUse, pa.combos.CycleItemsAndUseConfig()),
-        pa.combos.DropAllItems(None).name: gameactions.ActionAndConfig(pa.combos.DropAllItems, pa.combos.DropAllItemsConfig()),
-        pa.combos.Spin(None).name: gameactions.ActionAndConfig(pa.combos.Spin, pa.combos.SpinConfig()),
-        pa.combos.Headbang(None).name: gameactions.ActionAndConfig(pa.combos.Headbang, pa.combos.HeadbangConfig()),
-        pa.combos.Headshake(None).name: gameactions.ActionAndConfig(pa.combos.Headshake, pa.combos.HeadshakeConfig()),
-        pa.combos.Yoga(None).name: gameactions.ActionAndConfig(pa.combos.Yoga, pa.combos.YogaConfig()),
-        pa.combos.Feet(None).name: gameactions.ActionAndConfig(pa.combos.Feet, pa.combos.FeetConfig()),
-        pa.combos.Freeze(None).name: gameactions.ActionAndConfig(pa.combos.Freeze, pa.combos.FreezeConfig()),
-        pa.combos.Tornado(None).name: gameactions.ActionAndConfig(pa.combos.Tornado, pa.combos.TornadoConfig()),
-        pa.combos.Hurricane(None).name: gameactions.ActionAndConfig(pa.combos.Hurricane, pa.combos.HurricaneConfig()),
+        crouch.CrouchToggle(None).name: gameactions.ActionAndConfig(crouch.CrouchToggle, crouch.CrouchToggleConfig()),
+        drop.Drop(None).name: gameactions.ActionAndConfig(drop.Drop, drop.DropConfig()),
+        journal.JournalToggle(None).name: gameactions.ActionAndConfig(journal.JournalToggle, journal.JournalToggleConfig()),
+        look.LookUp(None).name: gameactions.ActionAndConfig(look.LookUp, look.LookUpConfig()),
+        look.LookDown(None).name: gameactions.ActionAndConfig(look.LookDown, look.LookDownConfig()),
+        look.LookLeft(None).name: gameactions.ActionAndConfig(look.LookLeft, look.LookLeftConfig()),
+        look.LookRight(None).name: gameactions.ActionAndConfig(look.LookRight, look.LookRightConfig()),
+        peek.PeekUp(None).name: gameactions.ActionAndConfig(peek.PeekUp, peek.PeekUpConfig()),
+        peek.PeekDown(None).name: gameactions.ActionAndConfig(peek.PeekDown, peek.PeekDownConfig()),
+        peek.PeekLeft(None).name: gameactions.ActionAndConfig(peek.PeekLeft, peek.PeekLeftConfig()),
+        peek.PeekRight(None).name: gameactions.ActionAndConfig(peek.PeekRight, peek.PeekRightConfig()),
+        pickup.Pickup(None).name: gameactions.ActionAndConfig(pickup.Pickup, pickup.PickupConfig()),
+        place.Place(None).name: gameactions.ActionAndConfig(place.Place, place.PlaceConfig()),
+        radio.Radio(None).name: gameactions.ActionAndConfig(radio.Radio, radio.RadioConfig()),
+        sprint.SprintForward(None).name: gameactions.ActionAndConfig(sprint.SprintForward, sprint.SprintConfig()),
+        sprint.SprintBackward(None).name: gameactions.ActionAndConfig(sprint.SprintBackward, sprint.SprintConfig()),
+        sprint.SprintLeft(None).name: gameactions.ActionAndConfig(sprint.SprintLeft, sprint.SprintConfig()),
+        sprint.SprintRight(None).name: gameactions.ActionAndConfig(sprint.SprintRight, sprint.SprintConfig()),
+        switch.Switch(None).name: gameactions.ActionAndConfig(switch.Switch, switch.SwitchConfig()),
+        talk.Talk(None).name: gameactions.ActionAndConfig(talk.Talk, talk.TalkConfig()),
+        torch.TorchToggle(None).name: gameactions.ActionAndConfig(torch.TorchToggle, torch.TorchToggleConfig()),
+        use.Use(None).name: gameactions.ActionAndConfig(use.Use, use.UseConfig()),
+        walk.WalkForward(None).name: gameactions.ActionAndConfig(walk.WalkForward, walk.WalkForwardConfig()),
+        walk.WalkBackward(None).name: gameactions.ActionAndConfig(walk.WalkBackward, walk.WalkBackwardConfig()),
+        walk.WalkLeft(None).name: gameactions.ActionAndConfig(walk.WalkLeft, walk.WalkLeftConfig()),
+        walk.WalkRight(None).name: gameactions.ActionAndConfig(walk.WalkRight, walk.WalkRightConfig()),
+        box.Box(None).name: gameactions.ActionAndConfig(box.Box, box.BoxConfig()),
+        cycle.CycleItems(None).name: gameactions.ActionAndConfig(cycle.CycleItems, cycle.CycleItemsConfig()),
+        cycleuse.CycleItemsAndUse(None).name: gameactions.ActionAndConfig(cycleuse.CycleItemsAndUse, cycleuse.CycleItemsAndUseConfig()),
+        disco.Disco(None).name: gameactions.ActionAndConfig(disco.Disco, disco.DiscoConfig()),
+        dropall.DropAllItems(None).name: gameactions.ActionAndConfig(dropall.DropAllItems, dropall.DropAllItemsConfig()),
+        feet.Feet(None).name: gameactions.ActionAndConfig(feet.Feet, feet.FeetConfig()),
+        freeze.Freeze(None).name: gameactions.ActionAndConfig(freeze.Freeze, freeze.FreezeConfig()),
+        headbang.Headbang(None).name: gameactions.ActionAndConfig(headbang.Headbang, headbang.HeadbangConfig()),
+        headshake.Headshake(None).name: gameactions.ActionAndConfig(headshake.Headshake, headshake.HeadshakeConfig()),
+        hurricane.Hurricane(None).name: gameactions.ActionAndConfig(hurricane.Hurricane, hurricane.HurricaneConfig()),
+        spin.Spin(None).name: gameactions.ActionAndConfig(spin.Spin, spin.SpinConfig()),
+        teabag.Teabag(None).name: gameactions.ActionAndConfig(teabag.Teabag, teabag.TeabagConfig()),
+        tornado.Tornado(None).name: gameactions.ActionAndConfig(tornado.Tornado, tornado.TornadoConfig()),
+        yoga.Yoga(None).name: gameactions.ActionAndConfig(yoga.Yoga, yoga.YogaConfig()),
     }
 
 
@@ -112,48 +113,7 @@ class PhasmoActions:
 
 def all_actions(config_fn: gameactions.ConfigFn) -> list[gameactions.Action]:
     """Get all actions"""
-    return [
-        pa.WalkForward(config_fn),
-        pa.WalkBackward(config_fn),
-        pa.WalkLeft(config_fn),
-        pa.WalkRight(config_fn),
-        pa.SprintForward(config_fn),
-        pa.SprintBackward(config_fn),
-        pa.SprintLeft(config_fn),
-        pa.SprintRight(config_fn),
-        pa.CrouchToggle(config_fn),
-        pa.JournalToggle(config_fn),
-        pa.Place(config_fn),
-        pa.Pickup(config_fn),
-        pa.Drop(config_fn),
-        pa.Switch(config_fn),
-        pa.TorchToggle(config_fn),
-        pa.Talk(config_fn),
-        pa.Radio(config_fn),
-        pa.LookUp(config_fn),
-        pa.LookDown(config_fn),
-        pa.LookLeft(config_fn),
-        pa.LookRight(config_fn),
-        pa.PeekUp(config_fn),
-        pa.PeekDown(config_fn),
-        pa.PeekLeft(config_fn),
-        pa.PeekRight(config_fn),
-        pa.Use(config_fn),
-        pa.combo.Box(config_fn),
-        pa.combo.Teabag(config_fn),
-        pa.combo.Disco(config_fn),
-        pa.combo.CycleItems(config_fn),
-        pa.combo.CycleItemsAndUse(config_fn),
-        pa.combo.DropAllItems(config_fn),
-        pa.combo.Spin(config_fn),
-        pa.combo.Headbang(config_fn),
-        pa.combo.Headshake(config_fn),
-        pa.combo.Yoga(config_fn),
-        pa.combo.Feet(config_fn),
-        pa.combo.Freeze(config_fn),
-        pa.combo.Tornado(config_fn),
-        pa.combo.Hurricane(config_fn),
-    ]
+    return [T.actiontype(config_fn) for T in _get_all().values()]
 
 
 def all_actions_dict(config_fn: gameactions.ConfigFn) -> gameactions.ActionDict:
@@ -163,47 +123,4 @@ def all_actions_dict(config_fn: gameactions.ConfigFn) -> gameactions.ActionDict:
 
 def default_config() -> gameactions.Config:
     """Get the default config"""
-    return gameactions.Config(
-        {
-            pa.WalkForward(None).name: pa.WalkForwardConfig(),
-            pa.WalkBackward(None).name: pa.WalkBackwardConfig(),
-            pa.WalkLeft(None).name: pa.WalkLeftConfig(),
-            pa.WalkRight(None).name: pa.WalkRightConfig(),
-            pa.SprintForward(None).name: pa.SprintConfig(),
-            pa.SprintBackward(None).name: pa.SprintConfig(),
-            pa.SprintLeft(None).name: pa.SprintConfig(),
-            pa.SprintRight(None).name: pa.SprintConfig(),
-            pa.CrouchToggle(None).name: pa.CrouchToggleConfig(),
-            pa.JournalToggle(None).name: pa.JournalToggleConfig(),
-            pa.Place(None).name: pa.PlaceConfig(),
-            pa.Pickup(None).name: pa.PickupConfig(),
-            pa.Drop(None).name: pa.DropConfig(),
-            pa.Switch(None).name: pa.SwitchConfig(),
-            pa.TorchToggle(None).name: pa.TorchToggleConfig(),
-            pa.Talk(None).name: pa.TalkConfig(),
-            pa.Radio(None).name: pa.RadioConfig(),
-            pa.LookUp(None).name: pa.LookUpConfig(),
-            pa.LookDown(None).name: pa.LookDownConfig(),
-            pa.LookLeft(None).name: pa.LookLeftConfig(),
-            pa.LookRight(None).name: pa.LookRightConfig(),
-            pa.PeekUp(None).name: pa.PeekUpConfig(),
-            pa.PeekDown(None).name: pa.PeekDownConfig(),
-            pa.PeekLeft(None).name: pa.PeekLeftConfig(),
-            pa.PeekRight(None).name: pa.PeekRightConfig(),
-            pa.Use(None).name: pa.UseConfig(),
-            pa.combo.Box(None).name: pa.combo.BoxConfig(),
-            pa.combo.Teabag(None).name: pa.combo.TeabagConfig(),
-            pa.combo.Disco(None).name: pa.combo.DiscoConfig(),
-            pa.combo.CycleItems(None).name: pa.combo.CycleItemsConfig(),
-            pa.combo.CycleItemsAndUse(None).name: pa.combo.CycleItemsAndUseConfig(),
-            pa.combo.DropAllItems(None).name: pa.combo.DropAllItemsConfig(),
-            pa.combo.Spin(None).name: pa.combo.SpinConfig(),
-            pa.combo.Headbang(None).name: pa.combo.HeadbangConfig(),
-            pa.combo.Headshake(None).name: pa.combo.HeadshakeConfig(),
-            pa.combo.Yoga(None).name: pa.combo.YogaConfig(),
-            pa.combo.Feet(None).name: pa.combo.FeetConfig(),
-            pa.combo.Freeze(None).name: pa.combo.FreezeConfig(),
-            pa.combo.Tornado(None).name: pa.combo.TornadoConfig(),
-            pa.combo.Hurricane(None).name: pa.combo.HurricaneConfig(),
-        }
-    )
+    return gameactions.Config({k: v.config for k, v in _get_all().items()})
