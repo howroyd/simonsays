@@ -1,7 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
 
-from .... import actions, errorcodes, hidactions
+from ... import actions, errorcodes, hidactions
 from .. import defaults, drop, switch
 
 

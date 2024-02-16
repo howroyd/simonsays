@@ -2,7 +2,7 @@
 import dataclasses
 from typing import ClassVar
 
-from . import environment, gameactions
+from .. import environment, gameactions
 
 DEBUG = environment.getenvboolean("DEBUG", False)
 

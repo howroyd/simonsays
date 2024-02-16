@@ -2,7 +2,7 @@
 import dataclasses
 import random
 
-from .... import actions, errorcodes, hidactions
+from ... import actions, errorcodes, hidactions
 from .. import defaults, look
 
 

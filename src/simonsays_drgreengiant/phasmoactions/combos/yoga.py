@@ -2,7 +2,7 @@
 import dataclasses
 
 from ... import hidactions
-from .. import defaults
+from .. import defaults, look
 
 
 @dataclasses.dataclass(slots=True)
@@ -14,9 +14,9 @@ class Yoga(defaults.GenericAction):
 
 
 @dataclasses.dataclass(slots=True)
-class YogaConfig(defaults.LookConfig):
+class YogaConfig(look.LookConfig):
     """Look up to the sky config"""
 
     hidconfig: hidactions.Config = dataclasses.field(
-        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP)
+        default_factory=lambda: hidactions.MouseMoveDirectionSmoothActionConfig(4096, hidactions.MouseMoveDirection.UP, pause=0.0025, repeats=100)
     )

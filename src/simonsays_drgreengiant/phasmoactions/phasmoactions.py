@@ -4,7 +4,7 @@ import random
 from collections.abc import Callable
 
 from .. import errorcodes, gameactions, hidactions
-from . import crouch, defaults, drop, journal, look, move, peek, pickup, place, radio, sprint, switch, talk, torch, use, walk
+from . import crouch, defaults, drop, journal, look, peek, pickup, place, radio, sprint, switch, talk, torch, use, walk
 from .combos import box, cycle, cycleuse, disco, dropall, feet, freeze, headbang, headshake, hurricane, spin, teabag, tornado, yoga
 
 
