@@ -3,6 +3,8 @@ import dataclasses
 import random
 from collections.abc import Callable
 
+from fastapi import APIRouter, status
+
 from .. import errorcodes, gameactions, hidactions
 from . import crouch, defaults, drop, journal, look, peek, pickup, place, radio, sprint, switch, talk, torch, use, walk
 from .combos import box, cycle, cycleuse, disco, dropall, feet, freeze, headbang, headshake, hurricane, spin, teabag, tornado, yoga
@@ -84,6 +86,20 @@ def _get_all() -> gameactions.ActionAndConfigDict:
     }
 
 
+def all_names_api(runner) -> Callable[[], list[str]]:
+    def all_names() -> list[str]:
+        return _get_all().keys()
+
+    return all_names
+
+
+def all_types_api(runner) -> Callable[[], dict[str, str]]:
+    def all_names() -> dict[str, str]:
+        return {k: str(v.actiontype) for k, v in _get_all().items()}
+
+    return all_names
+
+
 @dataclasses.dataclass(slots=True)
 class PhasmoActions:
     masterdict: gameactions.ActionAndConfigDict = dataclasses.field(init=False)
@@ -124,3 +140,17 @@ def all_actions_dict(config_fn: gameactions.ConfigFn) -> gameactions.ActionDict:
 def default_config() -> gameactions.Config:
     """Get the default config"""
     return gameactions.Config({k: v.config for k, v in _get_all().items()})
+
+
+def make_router(runner) -> APIRouter:
+    """Add functions to the router"""
+    router = APIRouter(
+        prefix="/phasmo",
+        tags=["phasmo", "phasmophobia"],
+        responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
+    )
+
+    router.add_api_route("/names", endpoint=all_names_api(runner))
+    router.add_api_route("/types", endpoint=all_types_api(runner))
+
+    return router

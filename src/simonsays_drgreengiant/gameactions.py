@@ -143,7 +143,7 @@ class GenericAction(GenericActionBase):
 class ActionAndConfig:
     """A pair of an action and config"""
 
-    actiontype: type(Action)
+    actiontype: type[Action]
     config: ActionConfig
     action: Action = dataclasses.field(init=False)
 

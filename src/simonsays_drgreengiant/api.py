@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
 from . import config
+from .phasmoactions import phasmoactions
 
 TITLE = "Simon Says API"
 
@@ -83,6 +84,8 @@ def make_api(myconfig: config.Config) -> FastAPI:
     ret.add_api_route("/channel", endpoint=twitch_channel)
 
     ret.add_api_route("/channel", endpoint=make_command_setter(myconfig), methods=["POST"])
+
+    ret.include_router(phasmoactions.make_router(myconfig))
 
     return ret
 

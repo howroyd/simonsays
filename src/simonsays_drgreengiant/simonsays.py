@@ -117,7 +117,7 @@ def main() -> NoReturn:
 
     print(preamble(myconfig))
 
-    with contextlib.ExitStack() as stack, api.make_server(myconfig)() as myapi:
+    with contextlib.ExitStack() as stack, api.make_server(myconfig)():
         executor = stack.enter_context(cf.ThreadPoolExecutor(max_workers=1))
 
         updateavailable = None

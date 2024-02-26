@@ -4,6 +4,15 @@
 			"path": "."
 		}
 	],
+	"settings": {
+		"discord.detailsDebugging": "Working on {git_repo_name}:{git_branch}",
+		"discord.detailsEditing": "Working on {git_repo_name}:{git_branch}",
+		"discord.detailsIdling": "Idling",
+		"discord.largeImage": "Working on {LANG}",
+		"discord.largeImageIdling": "Idling",
+		"discord.lowerDetailsDebugging": "Working on {git_repo_name}:{git_branch}",
+		"discord.lowerDetailsEditing": "Working on {git_repo_name}:{git_branch}"
+	},
 	//"settings": {
 	//	"editor.fontSize": 13,
 	//	"window.zoomLevel": 1.75

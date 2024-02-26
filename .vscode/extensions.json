@@ -5,17 +5,16 @@
         "charliermarsh.ruff",
         "davidanson.vscode-markdownlint",
         "donjayamanne.githistory",
-        "donjayamanne.python-environment-manager",
         "donjayamanne.python-extension-pack",
         "eamodio.gitlens",
         "github.vscode-pull-request-github",
         "gruntfuggly.todo-tree",
         "gurumukhi.selected-lines-count",
-        "kevinrose.vsc-python-indent",
         "ms-azuretools.vscode-docker",
         "ms-python.debugpy",
         "ms-python.vscode-pylance",
         "shardulm94.trailing-spaces",
         "tamasfe.even-better-toml",
+        "donjayamanne.python-environment-manager",
     ]
 }
