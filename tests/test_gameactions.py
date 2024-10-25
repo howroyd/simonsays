@@ -14,31 +14,6 @@ class Config:
     distance: int = 10
     hidconfig: hidactions.Config = dataclasses.field(default_factory=lambda: hidactions.KeyboardActionConfig("x"))
 
-    @property
-    def duration(self) -> float | None:
-        """Get the duration"""
-        return self.duration
-
-    @property
-    def pause(self) -> float | None:
-        """Get the pause"""
-        return self.pause
-
-    @property
-    def repeats(self) -> int | None:
-        """Get the repeats"""
-        return self.repeats
-
-    @property
-    def mousemovedirection(self) -> hidactions.MouseMoveDirection | None:
-        """Get the mouse move direction"""
-        return self.mousemovedirection
-
-    @property
-    def distance(self) -> int | None:
-        """Get the distance"""
-        return self.distance
-
 
 def test_getitem():
     """Test __getitem__"""
