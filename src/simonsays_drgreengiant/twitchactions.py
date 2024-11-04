@@ -3,7 +3,7 @@ import dataclasses
 import random
 import time
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, TypeAlias
 
 from . import actions, environment, errorcodes
 from .phasmoactions import phasmoactions
@@ -41,7 +41,7 @@ class TwitchActionConfig:
         return False
 
 
-ConfigDict = dict[str, TwitchActionConfig]
+ConfigDict: TypeAlias = dict[str, TwitchActionConfig]
 
 
 @dataclasses.dataclass(slots=True)
@@ -62,7 +62,7 @@ class Config:
         return None
 
 
-ConfigFn = Callable[[], Config]
+ConfigFn: TypeAlias = Callable[[], Config]
 
 
 @dataclasses.dataclass(slots=True)
@@ -153,7 +153,7 @@ class TwitchAction(GenericTwitchAction, actions.Action):
         self.last_used = 0.0
 
 
-ActionDict = dict[str, TwitchAction]
+ActionDict: TypeAlias = dict[str, TwitchAction]
 
 
 def default_config(keys: Iterable[str]) -> Config:

@@ -1,7 +1,7 @@
 #!./.venv/bin/python3
 import enum
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, TypeAlias
 
 
 @enum.unique
@@ -19,7 +19,7 @@ class ErrorCode(enum.IntEnum):
     BLOCKED_CHANNEL = 8
 
 
-ErrorSet = set[ErrorCode]
+ErrorSet: TypeAlias = set[ErrorCode]
 
 
 def flatten(iter: Iterable[Any]) -> Any:

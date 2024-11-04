@@ -2,7 +2,7 @@
 import dataclasses
 import random
 import time
-from typing import Protocol, runtime_checkable
+from typing import Protocol, TypeAlias, runtime_checkable
 
 from . import environment, errorcodes
 
@@ -106,4 +106,4 @@ class ActionRepeatWithWait:
         return errorcodes.errorset(ret)
 
 
-ActionDict = dict[str, Action]
+ActionDict: TypeAlias = dict[str, Action]

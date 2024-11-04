@@ -3,7 +3,7 @@ import dataclasses
 import enum
 import platform
 from collections.abc import Callable
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, TypeAlias
 
 from pynput.keyboard import Controller as Keyboard
 from pynput.keyboard import Key
@@ -31,7 +31,7 @@ mouse = Mouse()
 keyboard_listener: KeyboardListener | None = None
 mouse_listener: MouseListener | None = None
 
-KeybindChangeCallback = Callable[[Key | Button], None]
+KeybindChangeCallback: TypeAlias = Callable[[Key | Button], None]
 
 
 def start_listeners(on_press: KeybindChangeCallback) -> tuple[KeyboardListener, MouseListener]:

@@ -1,7 +1,7 @@
 #!./.venv/bin/python3
 import dataclasses
 from collections.abc import Callable, Mapping
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, TypeAlias
 
 from . import errorcodes, hidactions
 
@@ -38,7 +38,7 @@ class ActionConfig(Protocol):
         ...
 
 
-ConfigDict = dict[str, ActionConfig]
+ConfigDict: TypeAlias = dict[str, ActionConfig]
 
 
 @dataclasses.dataclass(slots=True)
@@ -77,7 +77,7 @@ class Config:
         return ret
 
 
-ConfigFn = Callable[[], Config]
+ConfigFn: TypeAlias = Callable[[], Config]
 
 #####################################################################
 
@@ -96,7 +96,7 @@ class Action(hidactions.HidAction, Protocol):
         ...
 
 
-ActionDict = dict[str, Action]
+ActionDict: TypeAlias = dict[str, Action]
 
 
 @dataclasses.dataclass(slots=True)
@@ -151,4 +151,4 @@ class ActionAndConfig:
         self.action = self.actiontype(lambda: self.config)
 
 
-ActionAndConfigDict = dict[str, ActionAndConfig]
+ActionAndConfigDict: TypeAlias = dict[str, ActionAndConfig]

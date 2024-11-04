@@ -5,7 +5,7 @@ import functools
 import hashlib
 import shutil
 from collections.abc import Callable, Iterable, MutableMapping
-from typing import NoReturn, Self
+from typing import NoReturn, Self, TypeAlias
 
 import tomlkit
 
@@ -56,7 +56,7 @@ class ActionConfig:
     twitch: twitchactions.TwitchActionConfig
 
 
-ConfigDict = dict[str, ActionConfig]
+ConfigDict: TypeAlias = dict[str, ActionConfig]
 
 
 @dataclasses.dataclass(slots=True)

@@ -27,7 +27,6 @@ The latest release can be found [here](https://github.com/howroyd/simonsays/rele
 
 [Chat drives player around Phasmo lobby, handsfree](https://www.twitch.tv/videos/1978662007)
 
-
 ## Compatibility
 
 This software talks directly to the operating system *as if* it were a mouse or keyboard plugged into your machine.  It does not modify any game code nor any files on your computer.  It has been tested in Windows and Linux.
